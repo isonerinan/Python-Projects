@@ -1,0 +1,5 @@
+{'name': 'tgh', 'surname': 'tgh', 'department': 'tgh', 'salary': 'tgh'}
+{'name': 'tgh', 'surname': 'tgh', 'department': 'tgh', 'salary': 'tgh'}
+['["{\'name\':",', '"\'fgh\',",', '"\'surname\':",', '"\'fgh\',",', '"\'department\':",', '"\'fgh\',",', '"\'salary\':",', '"\'fgh\'}"]']
+['["{\'name\':",', '"\'fgh\',",', '"\'surname\':",', '"\'fgh\',",', '"\'department\':",', '"\'fgh\',",', '"\'salary\':",', '"\'fgh\'}"]']
+['[\'[\\\'[{"name":\\\',\',', '\'\\\'"qwe",\\\',\',', '\'\\\'"surname":\\\',\',', '\'\\\'"qwe",\\\',\',', '\'\\\'"department":\\\',\',', '\'\\\'"qwe",\\\',\',', '\'\\\'"salary":\\\',\',', '\'\\\'"qwe"}]\\\']\']']
