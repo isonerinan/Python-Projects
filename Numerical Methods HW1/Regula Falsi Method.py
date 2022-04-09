@@ -1,5 +1,3 @@
-import math
-
 # First function given as f(x) = x^4 + 7x^3 - 11x^2 + 5 = 0 with the initial points x0 = -1, x1 = 0
 # Second function is given as g(x) = -x^6 + 3x + 7 = 0 with the initial interval [xl, xu] = [2, 0]
 # acceptable maximum error is given as |xr_n - xr_n-1| = 10^-5
