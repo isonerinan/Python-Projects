@@ -10,7 +10,7 @@ xu = 0
 maxError = pow(10, -5)
 n = 0
 
-# First estimation
+# First estimation - used to calculate error
 xr_current = xu - (f(xu) / ((f(xl) - f(xu)) / (xl - xu)))
 
 print("{:<5} {:<25} {:<25} {:<25} {:<25} {:<25}".format("n", "xl", "xu", "xr", "|xr_n - xr_n-1|", "f(xr_n)"))
