@@ -34,9 +34,11 @@ You can:
 To replace them, first go to your IMDB Watchlist and Ratings pages. (Example: https://www.imdb.com/user/YOUR_USER_NAME/ratings and https://www.imdb.com/user/YOUR_USER_NAME/watchlist)
 
 Download the ratings.csv every time you want to update your ratings history for the program using "Export" button:
+
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/47e54226-9744-4844-9c68-0d9db57e09ee)
 
 Copy the link at the bottom of your Watchlist page:
+
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/d4a0a6e7-4699-4224-9bd1-53f71c6b2843)
 
 
@@ -63,6 +65,7 @@ You are now ready to use the program. Have a nice watch!
 ## Custom User Lists
 
 If, for whatever reason, you decided to give a shot to someone else's taste in movies and found a user list (maybe your friend shared their list with you?) that you would like to try, you can just copy the link (example: https://www.imdb.com/list/ls521086952/) and paste it when prompted:
+
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/46c6493b-d243-4a7e-83de-5504704f4b83)
 
 # TODO
