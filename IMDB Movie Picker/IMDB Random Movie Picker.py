@@ -248,7 +248,7 @@ while True:
                 custom_soup = BeautifulSoup(custom_response.content, 'html.parser')
 
                 # Extract the movie or TV series details from the list
-                selected_list_name = soup.select_one('.list-name').text.strip()
+                selected_list_name = custom_soup.select_one('.list-name').text.strip()
 
             print(f"selected list: {selected_list_name}")
             list_random(selected_list_link)
