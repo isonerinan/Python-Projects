@@ -141,7 +141,7 @@ def watchlist_random():
         return
 
 
-
+## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
 def checkRatings(title, title_type):
     # URL of the IMDb ratings export page
     # (does not work because of IMDB's robots.txt's web scraping precautions)
@@ -268,8 +268,6 @@ while True:
 
     else:
         print("Failed to retrieve the IMDb user lists page. Check the URL and try again.")
-
-    ## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
 
 
     ## ASK USER IF THEY WANT ANOTHER RECOMMENDATION
