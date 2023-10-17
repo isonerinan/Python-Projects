@@ -68,7 +68,10 @@ If, for whatever reason, you decided to give a shot to someone else's taste in m
 
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/46c6493b-d243-4a7e-83de-5504704f4b83)
 
+# Working On
+- Adding GUI
+
 # TODO
-- Add GUI
+- Add favouriting the recommended movie/series feature
 - Find out if I can bypass IMDB's robots.txt (probably not)
 - Add support for other sites like Letterboxd, maybe?

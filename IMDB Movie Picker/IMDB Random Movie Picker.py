@@ -165,7 +165,7 @@ def checkRatings(title, title_type):
             file.write(content)
     else:
         print(ratings_response)
-        print("\nFailed to download the CSV file. Check the URL or make sure your ratings list is public and try again.")
+        print("Failed to download the CSV file. Check the URL or make sure your ratings list is public and try again.")
         return
     """
 

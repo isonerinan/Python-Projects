@@ -1,11 +1,12 @@
 import sys
-import os  # Import the 'os' module
+import os
 import requests
 from bs4 import BeautifulSoup
 import csv
 import random
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QFrame, QComboBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QComboBox, QInputDialog
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -58,6 +59,12 @@ class ModernApp(QMainWindow):
 
         main_layout.addWidget(list_combo)
 
+        # Create a new QLabel for displaying the movie/series poster
+        self.poster_label = QLabel()
+        self.poster_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.poster_label)
+
+        # Create a QLabel for displaying movie/series details
         self.result_label = QLabel("Movie Recommendation Will Appear Here")
         self.result_label.setAlignment(Qt.AlignCenter)
         self.result_label.setOpenExternalLinks(True)
@@ -76,10 +83,10 @@ class ModernApp(QMainWindow):
         return os.path.isfile(self.preferences_file)
 
     def create_preferences_file(self):
-        with open(self.preferences_file, "w") as file:
-            # Prompt the user to enter their IMDB user page link
-            user_page_link = input("Enter your IMDB user page link: ")
-            file.write(user_page_link)
+        user_page_link, ok = QInputDialog.getText(self, "IMDB User Page Link", "Enter your IMDB user page link:")
+        if ok:
+            with open(self.preferences_file, "w") as file:
+                file.write(user_page_link)
 
     def load_user_page_link(self):
         with open(self.preferences_file, "r") as file:
@@ -115,8 +122,7 @@ class ModernApp(QMainWindow):
 
                 # Extract the desired information
                 title = random_movie_detail.find('h3', class_='lister-item-header').find('a').text.strip()
-                url = 'https://www.imdb.com' + random_movie_detail.find('h3', class_='lister-item-header').find('a')[
-                    'href']
+                url = 'https://www.imdb.com' + random_movie_detail.find('h3', class_='lister-item-header').find('a')['href']
 
                 title_type = ""
                 directors = ""
@@ -133,8 +139,7 @@ class ModernApp(QMainWindow):
                     # Extract the movie or TV series details from the list
                     type_details = second_soup.select("div.iwmAVw")
                     if type_details:
-                        title_type = type_details[0].select_one(
-                            'li.ipc-inline-list__item[role="presentation"]').text.strip()
+                        title_type = type_details[0].select_one('li.ipc-inline-list__item[role="presentation"]').text.strip()
 
                     if title_type.isdigit():
                         title_type = "Movie"
@@ -142,8 +147,20 @@ class ModernApp(QMainWindow):
                     director_details = second_soup.select("div.sc-dffc6c81-3")
 
                     if director_details:
-                        directors = director_details[0].select_one(
-                            "a.ipc-metadata-list-item__list-content-item--link").text.strip()
+                        directors = director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
+
+                    # Get the movie poster URL from the IMDb page
+                    poster_image = second_soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.poster_label.setPixmap(pixmap)
 
 
                 else:
@@ -153,28 +170,20 @@ class ModernApp(QMainWindow):
                 runtime = random_movie_detail.find('span', class_='runtime').text.strip()
                 year = random_movie_detail.find('span', class_='lister-item-year').text.strip()
                 genres = random_movie_detail.find('span', class_='genre').text.strip()
+                user_rating = self.checkRatings(title, title_type)
 
                 # Update self.result_label with the movie recommendation
-                self.result_label.setText(f"Title: {title}<br>"
-                                          f"<a href=\"{url}\">URL: {url}</a><br>"
-                                          f"Title Type: {title_type}<br>"
-                                          f"IMDb Rating: {imdb_rating}<br>"
-                                          f"Runtime: {runtime}<br>"
-                                          f"Year: {year}<br>"
-                                          f"Genres: {genres}<br>"
-                                          f"Director/Creator: {directors}")
+                self.result_label.setText(f"<div style=\"font-size: 18px;\">"
+                                          f"<a href=\"{url}\"><h1>{title}</h1></a><br>"
+                                          f"<b>Title Type:</b> {title_type}<br>"
+                                          f"<b>IMDb Rating:</b> {imdb_rating}<br>"
+                                          f"<b>Runtime:</b> {runtime}<br>"
+                                          f"<b>Year:</b> {year}<br>"
+                                          f"<b>Genres:</b> {genres}<br>"
+                                          f"<b>Director/Creator:</b> {directors}<br><br></div>"
+                                          f"{user_rating}")
 
-                # Print the extracted information
-                print(f"\nTitle: {title}")
-                print(f"URL: {url}")
-                print(f"Title Type: {title_type}")
-                print(f"IMDb Rating: {imdb_rating}")
-                print(f"Runtime: {runtime}")
-                print(f"Year: {year}")
-                print(f"Genres: {genres}")
-                print(f"Director/Creator: {directors}")
 
-                #self.checkRatings(title, title_type)
 
             else:
                 print("\nNo movie details found on the list page. Check the HTML structure or the URL.")
@@ -184,7 +193,7 @@ class ModernApp(QMainWindow):
 
 
     ## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
-    def checkRatings(title, title_type):
+    def checkRatings(self, title, title_type):
         # URL of the IMDb ratings export page
         # (does not work because of IMDB's robots.txt's web scraping precautions)
         # So the best way would be to download ratings.csv manually
@@ -207,7 +216,7 @@ class ModernApp(QMainWindow):
                 file.write(content)
         else:
             print(ratings_response)
-            print("\nFailed to download the CSV file. Check the URL or make sure your ratings list is public and try again.")
+            print("Failed to download the CSV file. Check the URL or make sure your ratings list is public and try again.")
             return
         """
 
@@ -229,15 +238,17 @@ class ModernApp(QMainWindow):
                 if item["Title"] == title:
                     your_rating = item["Your Rating"]
                     date_rated = item["Date Rated"]
-                    print(f"\nYou have rated {title_type} '{title}' with a rating of {your_rating}/10 on {date_rated}.")
-                    return  # Exit the function once a match is found
+
+                    rating_result = f"\nYou have rated this {title_type} with a rating of <b>{your_rating}/10</b> on <b>{date_rated}</b>."
+                    return rating_result # Exit the function once a match is found
 
             # If no match is found, print a message
-            print(f"\nYou have not rated {title_type} '{title}'.")
+            rating_result = f"\nYou have not rated this {title_type}."
+            return rating_result
 
         else:
-            print("The CSV file is empty.")
-            return
+            rating_result = f"\nYou have not rated this {title_type}."
+            return rating_result
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
