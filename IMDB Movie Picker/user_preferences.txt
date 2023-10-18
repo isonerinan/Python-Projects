@@ -1,2 +1,2 @@
-"User Page Link": "abc"
-"Watchlist Link": "abc"
+"User Page Link": "https://www.imdb.com/user/ur135017478"
+"Watchlist Link": "https://www.imdb.com/list/ls507767575/export"

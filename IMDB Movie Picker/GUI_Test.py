@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 import random
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 
@@ -29,7 +29,7 @@ class PreferencesDialog(QDialog):
         self.ratings_file_input = QPushButton("Select File", self)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
-        button_box.accepted.connect(self.accept)
+        button_box.accepted.connect(self.custom_accept)
         button_box.rejected.connect(self.reject)
 
         layout = QVBoxLayout()
@@ -45,6 +45,42 @@ class PreferencesDialog(QDialog):
         # Connect the ratings_file_input button to the select_ratings_file function
         self.ratings_file_input.clicked.connect(self.select_ratings_file)
 
+    def custom_accept(self):
+            user_page_url = self.user_page_link_input.text()
+            watchlist_url = self.watchlist_link_input.text()
+
+            if self.check_url(user_page_url) and self.check_url(watchlist_url):
+                super().accept()  # If URLs are valid, close the dialog
+
+            elif self.check_url(user_page_url) and not self.check_url(watchlist_url):
+                # Show an error pop-up
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+                msg.setWindowTitle("Invalid URL")
+                msg.setText("Please enter a valid Watchlist URL.")
+                msg.exec_()
+
+            elif not self.check_url(user_page_url) and self.check_url(watchlist_url):
+                # Show an error pop-up
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+                msg.setWindowTitle("Invalid URL")
+                msg.setText("Please enter a valid User Page URL.")
+                msg.exec_()
+
+            else:
+                # Show an error pop-up
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+                msg.setWindowTitle("Invalid URLs")
+                msg.setText("Invalid URLs. Please enter valid IMDb URLs.")
+                msg.exec_()
+
+        # Check if the user input is a valid URL
+    def check_url(self, url):
+            # Check if the URL starts with "https://www.imdb.com/"
+            return url.startswith("https://www.imdb.com/")
+
     # Ask user to select the directory for their ratings.csv file
     def select_ratings_file(self):
         # Open a file dialog to select the ratings.csv file
@@ -52,8 +88,14 @@ class PreferencesDialog(QDialog):
 
         # Check if the user selected a file
         if ratings_file_path:
-            # Copy the ratings.csv and paste it to the same directory as the script
-            shutil.copy(ratings_file_path, os.path.dirname(os.path.realpath(__file__)))
+            # Check if the ratings.csv file is in the same directory as the script
+            if not os.path.isfile(ratings_file_path):
+                # If not, copy the ratings.csv file to the same directory as the script
+                shutil.copy(ratings_file_path, os.path.dirname(os.path.realpath(__file__)))
+
+
+            # Update the ratings_file_input text with the ratings.csv file path
+            self.ratings_file_input.setText(ratings_file_path)
 
 class ModernApp(QMainWindow):
     def __init__(self):
@@ -71,12 +113,18 @@ class ModernApp(QMainWindow):
         # Check if the preferences file exists, and create it if not
         self.preferences_file = "user_preferences.txt"
         self.user_page_link = ""
+        self.watchlist_link = ""
 
+        # Check if the preferences file exists or not empty
         if not self.check_preferences_file():
             self.create_preferences_file()
 
-        # Load the user's IMDB user page link from the preferences file
-        self.load_user_page_link()
+        elif os.stat(self.preferences_file).st_size == 0:
+            self.create_preferences_file()
+
+        # Check the preferences file and get the necessary links
+        self.user_page_link, self.watchlist_link = self.checkPreferences()
+
 
         # Create a combo box to select a list
         list_combo = QComboBox()
@@ -85,7 +133,7 @@ class ModernApp(QMainWindow):
         self.list_links = []
 
         # Send an HTTP GET request to fetch the IMDb user lists page
-        url = 'https://www.imdb.com/user/ur135017478/lists'
+        url = self.user_page_link + "/lists"
         response = requests.get(url, headers=headers)
 
         if response.status_code == 200:
@@ -130,19 +178,15 @@ class ModernApp(QMainWindow):
         dialog = PreferencesDialog()
         result = dialog.exec_()
         if result == QDialog.Accepted:
-            user_page_link = dialog.user_page_link_input.text()
-            watchlist_link = dialog.watchlist_link_input.text()
+            user_page_link = str(dialog.user_page_link_input.text())
+            watchlist_link = str(dialog.watchlist_link_input.text())
             with open(self.preferences_file, "w") as file:
                 file.write(f"\"User Page Link\": \"{user_page_link}\"\n\"Watchlist Link\": \"{watchlist_link}\"")
-
-    def load_user_page_link(self):
-        with open(self.preferences_file, "r") as file:
-            self.user_page_link = file.read()
 
     def find_random_movie(self):
         selected_index = self.list_combo.currentIndex()
         if selected_index == 0:
-            self.list_random('https://www.imdb.com/list/ls507767575/')
+            self.watchlist_random(self.watchlist_link)
         else:
             selected_list_link = self.list_links[selected_index - 1]
             self.list_random(selected_list_link)
@@ -174,7 +218,7 @@ class ModernApp(QMainWindow):
                 title_type = ""
                 directors = ""
 
-                # To get the title type, we need to scrape the movie's/series' own page
+                # To get the title type and the poster, we need to scrape the movie's/series' own page
                 # Send an HTTP GET request to fetch the list page
                 second_response = requests.get(url, headers=headers)
 
@@ -241,10 +285,9 @@ class ModernApp(QMainWindow):
     ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
     def watchlist_random(self, url):
         # URL of the IMDb watchlist export page
-        url = url + "/export"
 
         # Define the destination file path where you want to save the CSV file
-        watchlist_csv = 'watchlist.csv'
+        self.watchlist_csv = 'watchlist.csv'
 
         # Send an HTTP GET request to the URL0
         response = requests.get(url, headers=headers)
@@ -255,7 +298,7 @@ class ModernApp(QMainWindow):
             content = response.text
 
             # Save the content to the destination file
-            with open(watchlist_csv, 'w', encoding='utf-8') as file:
+            with open(self.watchlist_csv, 'w', encoding='utf-8') as file:
                 file.write(content)
         else:
             print(
@@ -264,7 +307,7 @@ class ModernApp(QMainWindow):
 
         # Read the CSV file and store its data in a list of dictionaries
         csv_data = []
-        with open(watchlist_csv, mode='r', encoding='utf-8') as file:
+        with open(self.watchlist_csv, mode='r', encoding='utf-8') as file:
             csv_reader = csv.DictReader(file)
             for row in csv_reader:
                 csv_data.append(row)
@@ -274,19 +317,45 @@ class ModernApp(QMainWindow):
             # Randomly select a row from the CSV data
             random_item = random.choice(csv_data)
 
+            # Check if the user has rated the movie/series before
+            user_rating = self.checkRatings(random_item['Title'], random_item['Title Type'])
+
             # Extract and print the desired columns
-            print(f"\nTitle: {random_item['Title']}")
-            print(f"URL: {random_item['URL']}")
-            print(f"Title Type: {random_item['Title Type']}")
-            print(f"IMDb Rating: {random_item['IMDb Rating']}")
-            print(f"Runtime (mins): {random_item['Runtime (mins)']}")
-            print(f"Year: {random_item['Year']}")
-            print(f"Genres: {random_item['Genres']}")
-            print(f"Release Date: {random_item['Release Date']}")
-            print(f"Director/Creator: {random_item['Directors']}")
+            self.result_label.setText(f"<div style=\"font-size: 18px;\">"
+                                      f"<a href=\"{random_item['URL']}\"><h1>{random_item['Title']}</h1></a><br>"
+                                      f"<b>Title Type:</b> {random_item['Title Type']}<br>"
+                                      f"<b>IMDb Rating:</b> {random_item['IMDb Rating']}<br>"
+                                      f"<b>Runtime:</b> {random_item['Runtime (mins)']}<br>"
+                                      f"<b>Year:</b> {random_item['Year']}<br>"
+                                      f"<b>Genres:</b> {random_item['Genres']}<br>"
+                                      f"<b>Director/Creator:</b> {random_item['Directors']}<br><br></div>"
+                                      f"{user_rating}")
 
-            checkRatings(random_item['Title'], random_item['Title Type'])
+            # To get the title type and the poster, we need to scrape the movie's/series' own page
+            # Send an HTTP GET request to fetch the list page
+            second_response = requests.get(random_item['URL'], headers=headers)
 
+            # Check if the request was successful
+            if second_response.status_code == 200:
+                # Parse the HTML content of the page
+                second_soup = BeautifulSoup(second_response.content, 'html.parser')
+
+                # Get the movie poster URL from the IMDb page
+                poster_image = second_soup.find('img', class_='ipc-image')
+
+                if poster_image:
+                    poster_url = poster_image['src']
+
+                    # Create a pixmap from the poster image URL
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(requests.get(poster_url).content)
+
+                    # Set the pixmap to the poster_label
+                    self.poster_label.setPixmap(pixmap)
+
+
+            else:
+                print("\nFailed to retrieve the list. Check the URL and try again.")
 
         else:
             print("The CSV file is empty.")
@@ -301,7 +370,7 @@ class ModernApp(QMainWindow):
         # ratings_url = "https://www.imdb.com/user/ur135017478/ratings/export"
 
         # Define the destination file path where you want to save the CSV file
-        ratings_csv = 'ratings.csv'
+        self.ratings_csv = 'ratings.csv'
 
         """
         # Send the request using the session
@@ -313,7 +382,7 @@ class ModernApp(QMainWindow):
             content = response.text
 
             # Save the content to the destination file
-            with open(ratings_csv, 'w', encoding='utf-8') as file:
+            with open(self.ratings_csv, 'w', encoding='utf-8') as file:
                 file.write(content)
         else:
             print(ratings_response)
@@ -325,10 +394,10 @@ class ModernApp(QMainWindow):
         try:
             # Read the CSV file and store its data in a list of dictionaries
             ratings_csv_data = []
-            with open(ratings_csv, mode='r', encoding='utf-8') as file:
+            with open(self.ratings_csv, mode='r', encoding='utf-8') as file:
                 csv_reader = csv.DictReader(file)
                 for row in csv_reader:
-                    ratings_csv_data.append(row)
+                    self.ratings_csv_data.append(row)
         except FileNotFoundError:
             return
 
@@ -352,6 +421,16 @@ class ModernApp(QMainWindow):
             return rating_result
 
 
+    # Check the preferences file for the user's IMDb user page link and watchlist export link
+    def checkPreferences(self):
+        with open(self.preferences_file, "r") as file:
+            preferences = file.read()
+            preferences = preferences.split("\n")
+
+            user_page_link = preferences[0].split(": ")[1].strip("\"")
+            watchlist_link = preferences[1].split(": ")[1].strip("\"")
+
+            return user_page_link, watchlist_link
 
 
 if __name__ == '__main__':
