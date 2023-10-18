@@ -4,8 +4,10 @@ import csv
 import random
 
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
-    'Referer': 'https://www.imdb.com/'}
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.60",
+    "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Referer": "https://www.imdb.com/",
+    "Sec-Ch-Ua-Platform": "Windows"}
 
 
 ### Function Definitions ###
@@ -146,14 +148,14 @@ def checkRatings(title, title_type):
     # URL of the IMDb ratings export page
     # (does not work because of IMDB's robots.txt's web scraping precautions)
     # So the best way would be to download ratings.csv manually
-    # ratings_url = "https://www.imdb.com/user/ur135017478/ratings/export"
+    ratings_url = "https://www.imdb.com/user/ur135017478/ratings/export"
 
     # Define the destination file path where you want to save the CSV file
     ratings_csv = 'ratings.csv'
 
-    """
+
     # Send the request using the session
-    ratings_response = session.get(ratings_url)
+    ratings_response = requests.get(ratings_url, headers=headers)
 
     # Check if the request was successful
     if ratings_response.status_code == 200:
@@ -167,7 +169,7 @@ def checkRatings(title, title_type):
         print(ratings_response)
         print("Failed to download the CSV file. Check the URL or make sure your ratings list is public and try again.")
         return
-    """
+
 
     # Check if ratings.csv exists
     try:

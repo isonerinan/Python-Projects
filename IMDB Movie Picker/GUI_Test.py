@@ -1,16 +1,59 @@
+import shutil
 import sys
 import os
 import requests
 from bs4 import BeautifulSoup
 import csv
 import random
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QComboBox, QInputDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
     'Referer': 'https://www.imdb.com/'}
+
+# Custom QDialog class for the Preferences dialog
+class PreferencesDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Preferences")
+        # Ask the user to enter their IMDb user page link and watchlist export link
+        self.user_page_link_label = QLabel("IMDB User Page Link:", self)
+        self.user_page_link_input = QLineEdit(self)
+        self.watchlist_link_label = QLabel("Watchlist Export Link:", self)
+        self.watchlist_link_input = QLineEdit(self)
+
+        # Add a button to select the ratings.csv file
+        self.ratings_file_label = QLabel("Ratings File Path:", self)
+        self.ratings_file_input = QPushButton("Select File", self)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.user_page_link_label)
+        layout.addWidget(self.user_page_link_input)
+        layout.addWidget(self.watchlist_link_label)
+        layout.addWidget(self.watchlist_link_input)
+        layout.addWidget(self.ratings_file_label)
+        layout.addWidget(self.ratings_file_input)
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+
+        # Connect the ratings_file_input button to the select_ratings_file function
+        self.ratings_file_input.clicked.connect(self.select_ratings_file)
+
+    # Ask user to select the directory for their ratings.csv file
+    def select_ratings_file(self):
+        # Open a file dialog to select the ratings.csv file
+        ratings_file_path = QFileDialog.getOpenFileName(self, 'Select ratings.csv', '', 'CSV files (*.csv)')[0]
+
+        # Check if the user selected a file
+        if ratings_file_path:
+            # Copy the ratings.csv and paste it to the same directory as the script
+            shutil.copy(ratings_file_path, os.path.dirname(os.path.realpath(__file__)))
 
 class ModernApp(QMainWindow):
     def __init__(self):
@@ -82,11 +125,15 @@ class ModernApp(QMainWindow):
     def check_preferences_file(self):
         return os.path.isfile(self.preferences_file)
 
+    # Create a new preferences file in a form of dictionary
     def create_preferences_file(self):
-        user_page_link, ok = QInputDialog.getText(self, "IMDB User Page Link", "Enter your IMDB user page link:")
-        if ok:
+        dialog = PreferencesDialog()
+        result = dialog.exec_()
+        if result == QDialog.Accepted:
+            user_page_link = dialog.user_page_link_input.text()
+            watchlist_link = dialog.watchlist_link_input.text()
             with open(self.preferences_file, "w") as file:
-                file.write(user_page_link)
+                file.write(f"\"User Page Link\": \"{user_page_link}\"\n\"Watchlist Link\": \"{watchlist_link}\"")
 
     def load_user_page_link(self):
         with open(self.preferences_file, "r") as file:
@@ -191,6 +238,60 @@ class ModernApp(QMainWindow):
             print("\nFailed to retrieve the list. Check the URL and try again.")
             return
 
+    ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
+    def watchlist_random(self, url):
+        # URL of the IMDb watchlist export page
+        url = url + "/export"
+
+        # Define the destination file path where you want to save the CSV file
+        watchlist_csv = 'watchlist.csv'
+
+        # Send an HTTP GET request to the URL0
+        response = requests.get(url, headers=headers)
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Get the content of the response
+            content = response.text
+
+            # Save the content to the destination file
+            with open(watchlist_csv, 'w', encoding='utf-8') as file:
+                file.write(content)
+        else:
+            print(
+                "\nFailed to download the CSV file. Check the URL or make sure your watchlist is public and try again.")
+            return
+
+        # Read the CSV file and store its data in a list of dictionaries
+        csv_data = []
+        with open(watchlist_csv, mode='r', encoding='utf-8') as file:
+            csv_reader = csv.DictReader(file)
+            for row in csv_reader:
+                csv_data.append(row)
+
+        # Check if there's data in the CSV file
+        if csv_data:
+            # Randomly select a row from the CSV data
+            random_item = random.choice(csv_data)
+
+            # Extract and print the desired columns
+            print(f"\nTitle: {random_item['Title']}")
+            print(f"URL: {random_item['URL']}")
+            print(f"Title Type: {random_item['Title Type']}")
+            print(f"IMDb Rating: {random_item['IMDb Rating']}")
+            print(f"Runtime (mins): {random_item['Runtime (mins)']}")
+            print(f"Year: {random_item['Year']}")
+            print(f"Genres: {random_item['Genres']}")
+            print(f"Release Date: {random_item['Release Date']}")
+            print(f"Director/Creator: {random_item['Directors']}")
+
+            checkRatings(random_item['Title'], random_item['Title Type'])
+
+
+        else:
+            print("The CSV file is empty.")
+            return
+
 
     ## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
     def checkRatings(self, title, title_type):
@@ -249,6 +350,9 @@ class ModernApp(QMainWindow):
         else:
             rating_result = f"\nYou have not rated this {title_type}."
             return rating_result
+
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
