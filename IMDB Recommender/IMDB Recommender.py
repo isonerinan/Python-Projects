@@ -140,9 +140,11 @@ class ModernApp(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("IMDB Movie Picker")
+        self.setWindowTitle("IMDB Recommender")
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
+
+        self.resize(800, 500)
 
         self.main_layout = QVBoxLayout()
         central_widget.setLayout(self.main_layout)
@@ -700,7 +702,7 @@ class ModernApp(QMainWindow):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
-        msg.setText("<h1>IMDB Movie Picker</h1>"
+        msg.setText("<h1>IMDB Recommender</h1>"
                     "<h3>Version 2.0</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
