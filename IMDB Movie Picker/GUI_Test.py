@@ -8,7 +8,7 @@ import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QPainter, QCursor, QIcon
+from PyQt5.QtGui import QPixmap, QPainter, QCursor, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
 
 headers = {
@@ -468,19 +468,11 @@ class ModernApp(QMainWindow):
 
     # Change the theme to light
     def light_theme(self):
-        self.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.list_combo.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.result_label.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.poster_label.setStyleSheet("background-color: #ffffff; color: #000000;")
-        self.menuBar().setStyleSheet("background-color: #ffffff; color: #000000;")
+        app.setPalette(light_palette)
 
     # Change the theme to dark
     def dark_theme(self):
-        self.setStyleSheet("background-color: #000000; color: #ffffff;")
-        self.list_combo.setStyleSheet("background-color: #000000; color: #ffffff;")
-        self.result_label.setStyleSheet("background-color: #000000; color: #ffffff;")
-        self.poster_label.setStyleSheet("background-color: #000000; color: #ffffff;")
-        self.menuBar().setStyleSheet("background-color: #000000; color: #ffffff;")
+        app.setPalette(dark_palette)
 
     # Show the help dialog
     # Show the help dialog
@@ -493,6 +485,7 @@ class ModernApp(QMainWindow):
             "For more information on how to use this program, please visit:<br><br>"
             "<a href='https://github.com/isonerinan/Python-Projects/tree/main/IMDB%20Movie%20Picker'>"
             "https://github.com/isonerinan/Python-Projects/tree/main/IMDB%20Movie%20Picker</a>")
+
         msg.exec_()
 
     # Show the about dialog
@@ -510,7 +503,46 @@ class ModernApp(QMainWindow):
         msg.exec_()
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    # Create the application
+    app = QApplication([])
+
+    app.setStyle("Fusion")
+
+    # Set the dark theme
+    dark_palette = QPalette()
+    dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.WindowText, Qt.white)
+    dark_palette.setColor(QPalette.Base, QColor(25, 25, 25))
+    dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ToolTipBase, Qt.white)
+    dark_palette.setColor(QPalette.ToolTipText, Qt.white)
+    dark_palette.setColor(QPalette.Text, Qt.white)
+    dark_palette.setColor(QPalette.Button, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ButtonText, Qt.white)
+    dark_palette.setColor(QPalette.BrightText, Qt.red)
+    dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.HighlightedText, Qt.white)
+
+    # Set the light theme
+    light_palette = QPalette()
+    light_palette.setColor(QPalette.Window, QColor(255, 255, 255))
+    light_palette.setColor(QPalette.WindowText, Qt.black)
+    light_palette.setColor(QPalette.Base, QColor(240, 240, 240))
+    light_palette.setColor(QPalette.AlternateBase, QColor(255, 255, 255))
+    light_palette.setColor(QPalette.ToolTipBase, Qt.black)
+    light_palette.setColor(QPalette.ToolTipText, Qt.black)
+    light_palette.setColor(QPalette.Text, Qt.black)
+    light_palette.setColor(QPalette.Button, QColor(255, 255, 255))
+    light_palette.setColor(QPalette.ButtonText, Qt.black)
+    light_palette.setColor(QPalette.BrightText, Qt.red)
+    light_palette.setColor(QPalette.Link, QColor(42, 130, 218))
+    light_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    light_palette.setColor(QPalette.HighlightedText, Qt.white)
+
+    # Initialize in dark mode
+    app.setPalette(dark_palette)
+
     window = ModernApp()
     window.show()
     sys.exit(app.exec_())

@@ -19,7 +19,7 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 18,tt0096283,2021-07-27,2021-07-27,,Tonari no Totoro,https://www.imdb.com/title/tt0096283/,movie,8.1,86,1988,"Animation, Comedy, Family, Fantasy",363464,1988-04-16,Hayao Miyazaki
 19,tt0015864,2021-07-27,2021-07-27,,The Gold Rush,https://www.imdb.com/title/tt0015864/,movie,8.1,95,1925,"Adventure, Comedy, Drama, Romance, Western",116091,1925-06-26,Charles Chaplin
 20,tt1130884,2021-07-27,2021-07-27,,Shutter Island,https://www.imdb.com/title/tt1130884/,movie,8.2,138,2010,"Mystery, Thriller",1402088,2010-02-13,Martin Scorsese
-21,tt0477348,2021-07-27,2021-07-27,,No Country for Old Men,https://www.imdb.com/title/tt0477348/,movie,8.2,122,2007,"Crime, Drama, Thriller",1027194,2007-05-19,"Joel Coen, Ethan Coen"
+21,tt0477348,2021-07-27,2021-07-27,,No Country for Old Men,https://www.imdb.com/title/tt0477348/,movie,8.2,122,2007,"Crime, Drama, Thriller",1027194,2007-05-19,"Ethan Coen, Joel Coen"
 22,tt0046912,2021-07-27,2021-07-27,,Dial M for Murder,https://www.imdb.com/title/tt0046912/,movie,8.2,105,1954,"Crime, Thriller",184303,1954-05-18,Alfred Hitchcock
 23,tt0084787,2021-07-27,2021-07-27,,The Thing,https://www.imdb.com/title/tt0084787/,movie,8.2,109,1982,"Horror, Mystery, Sci-Fi",450072,1982-06-25,John Carpenter
 24,tt0167404,2021-07-27,2021-07-27,,The Sixth Sense,https://www.imdb.com/title/tt0167404/,movie,8.2,107,1999,"Drama, Mystery, Thriller",1027428,1999-08-02,M. Night Shyamalan
@@ -28,14 +28,14 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 27,tt0117951,2021-07-27,2021-07-27,,Trainspotting,https://www.imdb.com/title/tt0117951/,movie,8.1,93,1996,Drama,711415,1996-02-23,Danny Boyle
 28,tt0107290,2021-07-27,2021-07-27,,Jurassic Park,https://www.imdb.com/title/tt0107290/,movie,8.2,127,1993,"Action, Adventure, Sci-Fi, Thriller",1038188,1993-06-09,Steven Spielberg
 29,tt0353969,2021-07-27,2021-07-27,,Salinui chueok,https://www.imdb.com/title/tt0353969/,movie,8.1,131,2003,"Crime, Drama, Mystery, Thriller",204719,2003-05-02,Bong Joon Ho
-30,tt0116282,2021-07-27,2021-07-27,,Fargo,https://www.imdb.com/title/tt0116282/,movie,8.1,98,1996,"Crime, Thriller",705071,1996-03-08,"Joel Coen, Ethan Coen"
+30,tt0116282,2021-07-27,2021-07-27,,Fargo,https://www.imdb.com/title/tt0116282/,movie,8.1,98,1996,"Crime, Thriller",705071,1996-03-08,"Ethan Coen, Joel Coen"
 31,tt0476735,2021-07-27,2021-07-27,,Babam ve Oglum,https://www.imdb.com/title/tt0476735/,movie,8.2,112,2005,"Drama, Family",90148,2005-11-18,Çagan Irmak
 32,tt0031381,2021-07-27,2021-07-27,,Gone with the Wind,https://www.imdb.com/title/tt0031381/,movie,8.2,238,1939,"Drama, Romance, War",327428,1939-12-15,"Sam Wood, George Cukor, Victor Fleming"
 33,tt0266697,2021-07-27,2021-07-27,,Kill Bill: Vol. 1,https://www.imdb.com/title/tt0266697/,movie,8.2,111,2003,"Action, Crime, Thriller",1162452,2003-09-29,Quentin Tarantino
 34,tt2278388,2021-07-27,2021-07-27,,The Grand Budapest Hotel,https://www.imdb.com/title/tt2278388/,movie,8.1,99,2014,"Adventure, Comedy, Crime",861537,2014-02-06,Wes Anderson
 35,tt2267998,2021-07-27,2021-07-27,,Gone Girl,https://www.imdb.com/title/tt2267998/,movie,8.1,149,2014,"Drama, Mystery, Thriller",1034010,2014-09-26,David Fincher
 36,tt0019254,2021-07-27,2021-07-27,,La passion de Jeanne d'Arc,https://www.imdb.com/title/tt0019254/,movie,8.1,110,1928,"Biography, Drama, History",58795,1928-04-21,Carl Theodor Dreyer
-37,tt0118715,2021-07-27,2021-07-27,,The Big Lebowski,https://www.imdb.com/title/tt0118715/,movie,8.1,117,1998,"Comedy, Crime",840732,1998-01-18,"Joel Coen, Ethan Coen"
+37,tt0118715,2021-07-27,2021-07-27,,The Big Lebowski,https://www.imdb.com/title/tt0118715/,movie,8.1,117,1998,"Comedy, Crime",840732,1998-01-18,"Ethan Coen, Joel Coen"
 38,tt2024544,2021-07-27,2021-07-27,,12 Years a Slave,https://www.imdb.com/title/tt2024544/,movie,8.1,134,2013,"Biography, Drama, History",726862,2013-08-30,Steve McQueen
 39,tt1392190,2021-07-27,2021-07-27,,Mad Max: Fury Road,https://www.imdb.com/title/tt1392190/,movie,8.1,120,2015,"Action, Adventure, Sci-Fi, Thriller",1052231,2015-05-07,George Miller
 40,tt0097165,2021-07-27,2021-07-27,,Dead Poets Society,https://www.imdb.com/title/tt0097165/,movie,8.1,128,1989,"Comedy, Drama",524587,1989-06-02,Peter Weir
@@ -43,7 +43,7 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 42,tt0116231,2021-07-27,2021-07-27,,Eskiya,https://www.imdb.com/title/tt0116231/,movie,8.1,128,1996,"Crime, Drama, Thriller",71427,1996-11-29,Yavuz Turgul
 43,tt1028532,2021-07-27,2021-07-27,,Hachi: A Dog's Tale,https://www.imdb.com/title/tt1028532/,movie,8.1,93,2009,"Biography, Drama, Family",301948,2009-06-13,Lasse Hallström
 44,tt0395169,2021-07-27,2021-07-27,,Hotel Rwanda,https://www.imdb.com/title/tt0395169/,movie,8.1,121,2004,"Biography, Drama, History, War",366438,2004-09-11,Terry George
-45,tt0198781,2021-07-27,2021-07-27,,"Monsters, Inc.",https://www.imdb.com/title/tt0198781/,movie,8.1,92,2001,"Animation, Adventure, Comedy, Family, Fantasy",952746,2001-10-28,"David Silverman, Pete Docter, Lee Unkrich"
+45,tt0198781,2021-07-27,2021-07-27,,"Monsters, Inc.",https://www.imdb.com/title/tt0198781/,movie,8.1,92,2001,"Animation, Adventure, Comedy, Family, Fantasy",952746,2001-10-28,"Pete Docter, David Silverman, Lee Unkrich"
 46,tt1979320,2021-07-27,2021-07-27,,Rush,https://www.imdb.com/title/tt1979320/,movie,8.1,123,2013,"Action, Biography, Drama, Sport",501145,2013-09-02,Ron Howard
 47,tt0758758,2021-07-27,2021-07-27,,Into the Wild,https://www.imdb.com/title/tt0758758/,movie,8.1,148,2007,"Adventure, Biography, Drama",644809,2007-09-01,Sean Penn
 48,tt0381681,2021-07-27,2021-07-27,,Before Sunset,https://www.imdb.com/title/tt0381681/,movie,8.1,80,2004,"Drama, Romance",280241,2004-02-10,Richard Linklater
@@ -278,19 +278,19 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 277,tt2245084,2021-07-27,2021-07-27,,Big Hero 6,https://www.imdb.com/title/tt2245084/,movie,7.8,102,2014,"Animation, Action, Adventure, Comedy, Drama, Family, Fantasy, Sci-Fi",487490,2014-10-23,"Chris Williams, Don Hall"
 278,tt1979376,2021-07-27,2021-07-27,,Toy Story 4,https://www.imdb.com/title/tt1979376/,movie,7.7,100,2019,"Animation, Adventure, Comedy, Family, Fantasy",270138,2019-06-11,Josh Cooley
 279,tt0096438,2021-07-27,2021-07-27,,Who Framed Roger Rabbit,https://www.imdb.com/title/tt0096438/,movie,7.7,104,1988,"Adventure, Comedy, Crime, Family, Fantasy, Mystery",211785,1988-06-21,Robert Zemeckis
-280,tt3521164,2021-07-27,2021-07-27,,Moana,https://www.imdb.com/title/tt3521164/,movie,7.6,107,2016,"Animation, Adventure, Comedy, Family, Fantasy, Musical",362687,2016-11-14,"Don Hall, Ron Clements, Chris Williams, John Musker"
+280,tt3521164,2021-07-27,2021-07-27,,Moana,https://www.imdb.com/title/tt3521164/,movie,7.6,107,2016,"Animation, Adventure, Comedy, Family, Fantasy, Musical",362687,2016-11-14,"Don Hall, Ron Clements, John Musker, Chris Williams"
 281,tt9806192,2021-07-27,2021-07-27,,J'ai perdu mon corps,https://www.imdb.com/title/tt9806192/,movie,7.5,81,2019,"Animation, Drama, Fantasy, Romance",35576,2019-05-17,Jérémy Clapin
 282,tt1323594,2021-07-27,2021-07-27,,Despicable Me,https://www.imdb.com/title/tt1323594/,movie,7.6,95,2010,"Animation, Adventure, Comedy, Crime, Family, Sci-Fi",570004,2010-06-20,"Chris Renaud, Pierre Coffin"
 283,tt0120762,2021-07-27,2021-07-27,,Mulan,https://www.imdb.com/title/tt0120762/,movie,7.6,87,1998,"Animation, Adventure, Comedy, Family, Fantasy, Musical, War",306530,1998-06-05,"Tony Bancroft, Barry Cook"
 284,tt0070608,2021-07-27,2021-07-27,,Robin Hood,https://www.imdb.com/title/tt0070608/,movie,7.5,83,1973,"Animation, Adventure, Comedy, Family, Musical, Romance",135306,1973-11-08,"Wolfgang Reitherman, David Hand"
 285,tt0061852,2021-07-27,2021-07-27,,The Jungle Book,https://www.imdb.com/title/tt0061852/,movie,7.6,78,1967,"Animation, Adventure, Comedy, Family, Musical",193869,1967-10-18,Wolfgang Reitherman
-286,tt0029583,2021-07-27,2021-07-27,,Snow White and the Seven Dwarfs,https://www.imdb.com/title/tt0029583/,movie,7.6,83,1937,"Animation, Adventure, Family, Fantasy, Musical, Romance",210607,1937-12-21,"William Cottrell, Ben Sharpsteen, David Hand, Perce Pearce, Wilfred Jackson, Larry Morey"
+286,tt0029583,2021-07-27,2021-07-27,,Snow White and the Seven Dwarfs,https://www.imdb.com/title/tt0029583/,movie,7.6,83,1937,"Animation, Adventure, Family, Fantasy, Musical, Romance",210607,1937-12-21,"William Cottrell, David Hand, Ben Sharpsteen, Perce Pearce, Wilfred Jackson, Larry Morey"
 287,tt12801262,2021-07-27,2021-07-27,,Luca,https://www.imdb.com/title/tt12801262/,movie,7.4,95,2021,"Animation, Adventure, Comedy, Drama, Family, Fantasy",182502,2021-06-17,Enrico Casarosa
 288,tt0268380,2021-07-27,2021-07-27,,Ice Age,https://www.imdb.com/title/tt0268380/,movie,7.5,81,2002,"Animation, Adventure, Comedy, Family",504915,2002-03-12,"Chris Wedge, Carlos Saldanha"
 289,tt0120855,2021-07-27,2021-07-27,,Tarzan,https://www.imdb.com/title/tt0120855/,movie,7.3,88,1999,"Animation, Adventure, Comedy, Drama, Family, Music",240426,1999-06-12,"Kevin Lima, Chris Buck"
-290,tt0055254,2021-07-27,2021-07-27,,One Hundred and One Dalmatians,https://www.imdb.com/title/tt0055254/,movie,7.3,79,1961,"Animation, Adventure, Comedy, Family",177602,1961-01-25,"Wolfgang Reitherman, Hamilton Luske, Clyde Geronimi"
-291,tt0034492,2021-07-27,2021-07-27,,Bambi,https://www.imdb.com/title/tt0034492/,movie,7.3,69,1942,"Animation, Adventure, Drama, Family",150641,1942-08-09,"Samuel Armstrong, Paul Satterfield, Graham Heid, James Algar, David Hand, Clyde Geronimi, Arthur Davis, Bill Roberts, Norman Wright"
-292,tt0120623,2021-07-27,2021-07-27,,A Bug's Life,https://www.imdb.com/title/tt0120623/,movie,7.2,95,1998,"Animation, Adventure, Comedy, Family",307347,1998-11-14,"John Lasseter, Andrew Stanton"
+290,tt0055254,2021-07-27,2021-07-27,,One Hundred and One Dalmatians,https://www.imdb.com/title/tt0055254/,movie,7.3,79,1961,"Animation, Adventure, Comedy, Family",177602,1961-01-25,"Hamilton Luske, Wolfgang Reitherman, Clyde Geronimi"
+291,tt0034492,2021-07-27,2021-07-27,,Bambi,https://www.imdb.com/title/tt0034492/,movie,7.3,69,1942,"Animation, Adventure, Drama, Family",150641,1942-08-09,"Samuel Armstrong, Paul Satterfield, Graham Heid, James Algar, Clyde Geronimi, David Hand, Arthur Davis, Bill Roberts, Norman Wright"
+292,tt0120623,2021-07-27,2021-07-27,,A Bug's Life,https://www.imdb.com/title/tt0120623/,movie,7.2,95,1998,"Animation, Adventure, Comedy, Family",307347,1998-11-14,"Andrew Stanton, John Lasseter"
 293,tt0837562,2021-07-27,2021-07-27,,Hotel Transylvania,https://www.imdb.com/title/tt0837562/,movie,7.0,91,2012,"Animation, Adventure, Comedy, Family, Fantasy, Horror, Romance",272480,2012-09-08,Genndy Tartakovsky
 294,tt0116583,2021-07-27,2021-07-27,,The Hunchback of Notre Dame,https://www.imdb.com/title/tt0116583/,movie,7.0,91,1996,"Animation, Drama, Family, Musical, Romance",167348,1996-06-19,"Kirk Wise, Gary Trousdale"
 295,tt0138749,2021-07-27,2021-07-27,,The Road to El Dorado,https://www.imdb.com/title/tt0138749/,movie,6.9,89,2000,"Animation, Adventure, Comedy, Family, Fantasy, Musical",104225,2000-03-31,"Don Paul, Bibo Bergeron, Jeffrey Katzenberg"
@@ -320,7 +320,7 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 319,tt9675274,2021-08-07,2021-08-07,,Cinayet Süsü,https://www.imdb.com/title/tt9675274/,movie,6.7,112,2019,"Comedy, Crime, Mystery",18803,2019-10-25,Ali Atay
 320,tt3110958,2021-08-07,2021-08-07,,Now You See Me 2,https://www.imdb.com/title/tt3110958/,movie,6.4,129,2016,"Action, Adventure, Comedy, Crime, Mystery, Thriller",311008,2016-06-02,Jon M. Chu
 321,tt6644200,2021-08-07,2021-08-07,,A Quiet Place,https://www.imdb.com/title/tt6644200/,movie,7.5,90,2018,"Drama, Horror, Sci-Fi",564528,2018-03-09,John Krasinski
-322,tt5109280,2021-08-07,2021-08-07,,Raya and the Last Dragon,https://www.imdb.com/title/tt5109280/,movie,7.3,107,2021,"Animation, Action, Adventure, Comedy, Drama, Family, Fantasy",164808,2021-03-03,"Paul Briggs, Carlos López Estrada, Don Hall, John Ripa"
+322,tt5109280,2021-08-07,2021-08-07,,Raya and the Last Dragon,https://www.imdb.com/title/tt5109280/,movie,7.3,107,2021,"Animation, Action, Adventure, Comedy, Drama, Family, Fantasy",164808,2021-03-03,"Paul Briggs, Don Hall, Carlos López Estrada, John Ripa"
 323,tt8772262,2021-08-07,2021-08-07,,Midsommar,https://www.imdb.com/title/tt8772262/,movie,7.1,148,2019,"Drama, Horror, Mystery, Thriller",373364,2019-06-24,Ari Aster
 324,tt10155688,2021-08-07,2021-08-07,,Mare of Easttown,https://www.imdb.com/title/tt10155688/,tvMiniSeries,8.4,60,2021,"Crime, Drama, Mystery",175709,2021-04-18,
 325,tt9849210,2021-08-10,2021-08-10,,Biohackers,https://www.imdb.com/title/tt9849210/,tvSeries,6.8,44,2020,"Drama, Sci-Fi, Thriller",11002,2020-08-20,
@@ -445,7 +445,7 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 444,tt1453405,2022-02-21,2022-02-21,,Monsters University,https://www.imdb.com/title/tt1453405/,movie,7.2,104,2013,"Animation, Adventure, Comedy, Family, Fantasy, Sci-Fi",379412,2013-06-05,Dan Scanlon
 445,tt1001526,2022-02-21,2022-02-21,,Megamind,https://www.imdb.com/title/tt1001526/,movie,7.3,95,2010,"Animation, Action, Comedy, Crime, Family, Mystery, Sci-Fi, Thriller",284473,2010-10-28,Tom McGrath
 446,tt1490017,2022-02-21,2022-02-21,,The Lego Movie,https://www.imdb.com/title/tt1490017/,movie,7.7,100,2014,"Animation, Action, Adventure, Comedy, Family, Fantasy, Sci-Fi",379261,2014-02-01,"Christopher Miller, Phil Lord"
-447,tt0120363,2022-02-21,2022-02-21,,Toy Story 2,https://www.imdb.com/title/tt0120363/,movie,7.9,92,1999,"Animation, Adventure, Comedy, Family, Fantasy",606182,1999-11-13,"John Lasseter, Ash Brannon, Lee Unkrich"
+447,tt0120363,2022-02-21,2022-02-21,,Toy Story 2,https://www.imdb.com/title/tt0120363/,movie,7.9,92,1999,"Animation, Adventure, Comedy, Family, Fantasy",606182,1999-11-13,"John Lasseter, Lee Unkrich, Ash Brannon"
 448,tt0317219,2022-02-21,2022-02-21,,Cars,https://www.imdb.com/title/tt0317219/,movie,7.2,117,2006,"Animation, Adventure, Comedy, Family, Sport",451608,2006-03-14,"John Lasseter, Joe Ranft"
 449,tt0351283,2022-02-21,2022-02-21,,Madagascar,https://www.imdb.com/title/tt0351283/,movie,6.9,86,2005,"Animation, Adventure, Comedy, Family",425586,2005-05-25,"Tom McGrath, Eric Darnell"
 450,tt1690953,2022-02-21,2022-02-21,,Despicable Me 2,https://www.imdb.com/title/tt1690953/,movie,7.3,98,2013,"Animation, Adventure, Comedy, Crime, Family, Sci-Fi",416711,2013-06-16,"Chris Renaud, Pierre Coffin"
@@ -704,10 +704,10 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 703,tt0877057,2022-10-04,2022-10-04,,Death Note: Desu nôto,https://www.imdb.com/title/tt0877057/,tvSeries,8.9,23,2006,"Animation, Crime, Drama, Fantasy, Mystery, Thriller",358769,2006-10-03,
 704,tt6517102,2022-10-04,2022-10-04,,Castlevania,https://www.imdb.com/title/tt6517102/,tvSeries,8.3,23,2017,"Animation, Action, Adventure, Drama, Fantasy, Horror",75530,2017-06-07,
 705,tt10231312,2022-10-04,2022-10-04,,Inside Job,https://www.imdb.com/title/tt10231312/,tvSeries,7.7,30,2021,"Animation, Adventure, Comedy, Fantasy, Sci-Fi",27797,2021-10-22,
-706,tt1217209,2022-10-04,2022-10-04,,Brave,https://www.imdb.com/title/tt1217209/,movie,7.1,93,2012,"Animation, Action, Adventure, Comedy, Drama, Family, Fantasy, Mystery",431311,2012-06-10,"Steve Purcell, Mark Andrews, Brenda Chapman"
-707,tt0120794,2022-10-04,2022-10-04,,The Prince of Egypt,https://www.imdb.com/title/tt0120794/,movie,7.2,99,1998,"Animation, Adventure, Drama, Family, Fantasy, Musical",141413,1998-12-16,"Brenda Chapman, Steve Hickner, Simon Wells"
+706,tt1217209,2022-10-04,2022-10-04,,Brave,https://www.imdb.com/title/tt1217209/,movie,7.1,93,2012,"Animation, Action, Adventure, Comedy, Drama, Family, Fantasy, Mystery",431311,2012-06-10,"Mark Andrews, Steve Purcell, Brenda Chapman"
+707,tt0120794,2022-10-04,2022-10-04,,The Prince of Egypt,https://www.imdb.com/title/tt0120794/,movie,7.2,99,1998,"Animation, Adventure, Drama, Family, Fantasy, Musical",141413,1998-12-16,"Steve Hickner, Brenda Chapman, Simon Wells"
 708,tt3061046,2022-10-04,2022-10-04,,Steven Universe,https://www.imdb.com/title/tt3061046/,tvSeries,8.2,11,2013,"Animation, Short, Action, Adventure, Comedy, Drama, Family, Fantasy, Musical, Sci-Fi, Thriller",37978,2013-07-27,
-709,tt0275847,2022-10-04,2022-10-04,,Lilo & Stitch,https://www.imdb.com/title/tt0275847/,movie,7.3,85,2002,"Animation, Adventure, Comedy, Drama, Family, Fantasy, Sci-Fi",205144,2002-06-16,"Dean DeBlois, Chris Sanders"
+709,tt0275847,2022-10-04,2022-10-04,,Lilo & Stitch,https://www.imdb.com/title/tt0275847/,movie,7.3,85,2002,"Animation, Adventure, Comedy, Drama, Family, Fantasy, Sci-Fi",205144,2002-06-16,"Chris Sanders, Dean DeBlois"
 710,tt8101850,2022-10-04,2022-10-04,,Undone,https://www.imdb.com/title/tt8101850/,tvSeries,8.2,23,2019,"Animation, Drama, Fantasy, Mystery",22577,2019-09-12,
 711,tt0760437,2022-10-04,2022-10-04,,Ben 10,https://www.imdb.com/title/tt0760437/,tvSeries,7.5,22,2005,"Animation, Action, Adventure, Family, Sci-Fi",25362,2005-11-27,
 712,tt6920310,2022-10-04,2022-10-04,,Görünen Adam,https://www.imdb.com/title/tt6920310/,tvMiniSeries,6.8,15,2017,"Adventure, Comedy, Fantasy, Sci-Fi",1677,2017-05-15,
@@ -733,7 +733,7 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 732,tt3339966,2022-10-14,2022-10-14,,Unbreakable Kimmy Schmidt,https://www.imdb.com/title/tt3339966/,tvSeries,7.6,30,2015,Comedy,76873,2015-03-06,
 733,tt4671274,2022-10-28,2022-10-28,,Rippu Van Winkuru no hanayome,https://www.imdb.com/title/tt4671274/,movie,7.1,179,2016,"Drama, Mystery, Romance",2216,2016-03-08,Shunji Iwai
 734,tt1172049,2022-10-31,2022-10-31,,Demolition,https://www.imdb.com/title/tt1172049/,movie,7.0,101,2015,"Comedy, Drama",107085,2015-09-10,Jean-Marc Vallée
-735,tt15782570,2022-11-09,2022-11-09,,You Can Live Forever,https://www.imdb.com/title/tt15782570/,movie,6.9,96,2022,"Drama, Romance",2132,2022-06-11,"Mark Slutsky, Sarah Watts"
+735,tt15782570,2022-11-09,2022-11-09,,You Can Live Forever,https://www.imdb.com/title/tt15782570/,movie,6.9,96,2022,"Drama, Romance",2132,2022-06-11,"Sarah Watts, Mark Slutsky"
 736,tt8291284,2022-11-10,2022-11-10,,The Peripheral,https://www.imdb.com/title/tt8291284/,tvSeries,7.6,,2022,"Drama, Mystery, Sci-Fi, Thriller",75002,2022-10-21,
 737,tt0898266,2022-11-10,2022-11-10,,The Big Bang Theory,https://www.imdb.com/title/tt0898266/,tvSeries,8.2,22,2007,"Comedy, Romance",844168,2006-05-01,
 738,tt7326320,2022-11-24,2022-11-24,,More Beautiful for Having Been Broken,https://www.imdb.com/title/tt7326320/,movie,5.9,111,2019,Drama,1283,2019-06-30,Nicole Conn
@@ -840,7 +840,7 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 839,tt7660850,2023-01-09,2023-01-09,,Succession,https://www.imdb.com/title/tt7660850/,tvSeries,8.9,60,2018,"Comedy, Drama",240331,2018-04-27,
 840,tt0121955,2023-01-09,2023-01-09,,South Park,https://www.imdb.com/title/tt0121955/,tvSeries,8.7,22,1997,"Animation, Comedy",395938,1997-08-13,
 841,tt0113799,2023-01-10,2023-01-10,,Memorîzu,https://www.imdb.com/title/tt0113799/,movie,7.5,113,1995,"Animation, Sci-Fi, Thriller",20420,1995-12-23,"Katsuhiro Ôtomo, Tensai Okamura, Kôji Morimoto"
-842,tt0275277,2023-01-10,2023-01-10,,Cowboy Bebop: Tengoku no tobira,https://www.imdb.com/title/tt0275277/,movie,7.8,115,2001,"Animation, Action, Crime, Drama, Sci-Fi",51594,2001-09-01,"Shin'ichirô Watanabe, Hiroyuki Okiura, Yoshiyuki Takei, Tensai Okamura, Mary Elizabeth McGlynn"
+842,tt0275277,2023-01-10,2023-01-10,,Cowboy Bebop: Tengoku no tobira,https://www.imdb.com/title/tt0275277/,movie,7.8,115,2001,"Animation, Action, Crime, Drama, Sci-Fi",51594,2001-09-01,"Hiroyuki Okiura, Shin'ichirô Watanabe, Yoshiyuki Takei, Tensai Okamura, Mary Elizabeth McGlynn"
 843,tt14208870,2023-01-11,2023-01-11,,The Fabelmans,https://www.imdb.com/title/tt14208870/,movie,7.5,151,2022,Drama,104599,2022-09-10,Steven Spielberg
 844,tt3915174,2023-01-11,2023-01-11,,Puss in Boots: The Last Wish,https://www.imdb.com/title/tt3915174/,movie,7.8,102,2022,"Animation, Adventure, Comedy, Family",157337,2022-12-07,"Januel Mercado, Joel Crawford"
 845,tt13315156,2023-01-11,2023-01-11,,First Kill,https://www.imdb.com/title/tt13315156/,tvSeries,6.5,60,2022,"Drama, Horror, Mystery, Romance",28762,2022-06-10,
@@ -869,7 +869,7 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 868,tt1389137,2023-01-21,2023-01-21,,We Bought a Zoo,https://www.imdb.com/title/tt1389137/,movie,7.1,124,2011,"Comedy, Drama, Family",149167,2011-11-26,Cameron Crowe
 869,tt0878804,2023-01-22,2023-01-22,,The Blind Side,https://www.imdb.com/title/tt0878804/,movie,7.6,129,2009,"Biography, Drama, Sport",352655,2009-11-17,John Lee Hancock
 870,tt3498424,2023-01-26,2023-01-26,,Féminin/Féminin,https://www.imdb.com/title/tt3498424/,tvSeries,8.4,,2014,Drama,293,2014-01-14,
-871,tt8176578,2023-01-26,2023-01-26,,Si shi qing chun,https://www.imdb.com/title/tt8176578/,movie,6.6,74,2018,"Animation, Drama, Romance",8297,2018-07-06,"Xiaoxing Yi, Yoshitaka Takeuchi, Haoling Li"
+871,tt8176578,2023-01-26,2023-01-26,,Si shi qing chun,https://www.imdb.com/title/tt8176578/,movie,6.6,74,2018,"Animation, Drama, Romance",8297,2018-07-06,"Xiaoxing Yi, Haoling Li, Yoshitaka Takeuchi"
 872,tt22667880,2023-01-31,2023-01-31,,"The Boy, the Mole, the Fox and the Horse",https://www.imdb.com/title/tt22667880/,short,7.8,32,2022,"Animation, Short, Adventure, Comedy, Drama, Family, Fantasy",14809,2022-09-23,"Charlie Mackesy, Peter Baynton"
 873,tt15789038,2023-01-31,2023-01-31,,Elemental,https://www.imdb.com/title/tt15789038/,movie,7.0,101,2023,"Animation, Adventure, Comedy, Drama, Family, Fantasy, Sci-Fi",85499,2023-05-27,Peter Sohn
 874,tt14153790,2023-02-12,2023-02-12,,Velma,https://www.imdb.com/title/tt14153790/,tvSeries,1.6,,2023,"Animation, Adventure, Comedy, Crime, Mystery",75136,2023-01-05,
@@ -878,13 +878,13 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 877,tt0455275,2023-02-12,2023-02-12,,Prison Break,https://www.imdb.com/title/tt0455275/,tvSeries,8.3,44,2005,"Action, Crime, Drama, Mystery, Thriller",564542,2005-08-29,
 878,tt0082406,2023-02-17,2023-02-17,,The Fox and the Hound,https://www.imdb.com/title/tt0082406/,movie,7.2,83,1981,"Animation, Adventure, Drama, Family",99156,1981-07-10,"Art Stevens, Wolfgang Reitherman, David Hand, Ted Berman, Richard Rich"
 879,tt0048280,2023-02-17,2023-02-17,,Lady and the Tramp,https://www.imdb.com/title/tt0048280/,movie,7.3,76,1955,"Animation, Adventure, Comedy, Family, Musical, Romance",144364,1955-06-16,"Clyde Geronimi, Wilfred Jackson, Hamilton Luske, Jack Cutting"
-880,tt0057546,2023-02-17,2023-02-17,,The Sword in the Stone,https://www.imdb.com/title/tt0057546/,movie,7.1,79,1963,"Animation, Adventure, Comedy, Family, Fantasy, Musical",103923,1963-12-12,"Wolfgang Reitherman, David Hand, Clyde Geronimi"
-881,tt0046183,2023-02-17,2023-02-17,,Peter Pan,https://www.imdb.com/title/tt0046183/,movie,7.3,77,1953,"Animation, Adventure, Family, Fantasy, Musical",149238,1953-02-05,"Jack Kinney, Clyde Geronimi, Wilfred Jackson, Hamilton Luske"
-882,tt0043274,2023-02-17,2023-02-17,,Alice in Wonderland,https://www.imdb.com/title/tt0043274/,movie,7.3,75,1951,"Animation, Adventure, Comedy, Family, Fantasy, Musical",150105,1951-07-26,"Jack Kinney, Clyde Geronimi, Wilfred Jackson, Hamilton Luske"
+880,tt0057546,2023-02-17,2023-02-17,,The Sword in the Stone,https://www.imdb.com/title/tt0057546/,movie,7.1,79,1963,"Animation, Adventure, Comedy, Family, Fantasy, Musical",103923,1963-12-12,"Wolfgang Reitherman, Clyde Geronimi, David Hand"
+881,tt0046183,2023-02-17,2023-02-17,,Peter Pan,https://www.imdb.com/title/tt0046183/,movie,7.3,77,1953,"Animation, Adventure, Family, Fantasy, Musical",149238,1953-02-05,"Clyde Geronimi, Jack Kinney, Wilfred Jackson, Hamilton Luske"
+882,tt0043274,2023-02-17,2023-02-17,,Alice in Wonderland,https://www.imdb.com/title/tt0043274/,movie,7.3,75,1951,"Animation, Adventure, Comedy, Family, Fantasy, Musical",150105,1951-07-26,"Clyde Geronimi, Jack Kinney, Wilfred Jackson, Hamilton Luske"
 883,tt0053285,2023-02-17,2023-02-17,,Sleeping Beauty,https://www.imdb.com/title/tt0053285/,movie,7.2,75,1959,"Animation, Adventure, Family, Fantasy, Musical, Romance",157213,1959-01-29,"Les Clark, Wolfgang Reitherman, Clyde Geronimi, Eric Larson, Hamilton Luske"
 884,tt0479952,2023-02-26,2023-02-26,,Madagascar: Escape 2 Africa,https://www.imdb.com/title/tt0479952/,movie,6.6,89,2008,"Animation, Adventure, Comedy, Family",241132,2008-10-30,"Tom McGrath, Eric Darnell"
 885,tt0438097,2023-02-26,2023-02-26,,Ice Age: The Meltdown,https://www.imdb.com/title/tt0438097/,movie,6.8,91,2006,"Animation, Adventure, Comedy, Family",290664,2006-03-29,Carlos Saldanha
-886,tt1216475,2023-02-26,2023-02-26,,Cars 2,https://www.imdb.com/title/tt1216475/,movie,6.2,106,2011,"Animation, Adventure, Comedy, Crime, Family, Mystery, Sci-Fi, Sport",208407,2011-06-18,"John Lasseter, Bradford Lewis"
+886,tt1216475,2023-02-26,2023-02-26,,Cars 2,https://www.imdb.com/title/tt1216475/,movie,6.2,106,2011,"Animation, Adventure, Comedy, Crime, Family, Mystery, Sci-Fi, Sport",208407,2011-06-18,"Bradford Lewis, John Lasseter"
 887,tt0892791,2023-02-26,2023-02-26,,Shrek Forever After,https://www.imdb.com/title/tt0892791/,movie,6.3,95,2010,"Animation, Adventure, Comedy, Family, Fantasy, Romance",218994,2010-04-21,Mike Mitchell
 888,tt3606752,2023-02-26,2023-02-26,,Cars 3,https://www.imdb.com/title/tt3606752/,movie,6.7,102,2017,"Animation, Adventure, Comedy, Family, Sport",114442,2017-06-10,Brian Fee
 889,tt1277953,2023-02-26,2023-02-26,,Madagascar 3: Europe's Most Wanted,https://www.imdb.com/title/tt1277953/,movie,6.8,95,2012,"Animation, Adventure, Comedy, Family",192799,2012-05-18,"Conrad Vernon, Tom McGrath, Eric Darnell"
@@ -904,12 +904,12 @@ Position,Const,Created,Modified,Description,Title,URL,Title Type,IMDb Rating,Run
 903,tt0042332,2023-02-26,2023-02-26,,Cinderella,https://www.imdb.com/title/tt0042332/,movie,7.3,74,1950,"Animation, Family, Fantasy, Musical, Romance",169932,1950-02-15,"Hamilton Luske, Clyde Geronimi, Wilfred Jackson"
 904,tt4729430,2023-02-26,2023-02-26,,Klaus,https://www.imdb.com/title/tt4729430/,movie,8.2,96,2019,"Animation, Adventure, Comedy, Family, Fantasy",172628,2019-11-08,"Carlos Martínez López, Sergio Pablos"
 905,tt7146812,2023-02-26,2023-02-26,,Onward,https://www.imdb.com/title/tt7146812/,movie,7.4,102,2020,"Animation, Action, Adventure, Comedy, Drama, Family, Fantasy, Sci-Fi",163168,2020-02-21,Dan Scanlon
-906,tt0032910,2023-02-26,2023-02-26,,Pinocchio,https://www.imdb.com/title/tt0032910/,movie,7.5,88,1940,"Animation, Adventure, Comedy, Family, Fantasy, Musical",155814,1940-02-07,"Jack Kinney, Ben Sharpsteen, Hamilton Luske, Wilfred Jackson, T. Hee, Norman Ferguson, Bill Roberts"
+906,tt0032910,2023-02-26,2023-02-26,,Pinocchio,https://www.imdb.com/title/tt0032910/,movie,7.5,88,1940,"Animation, Adventure, Comedy, Family, Fantasy, Musical",155814,1940-02-07,"Jack Kinney, Ben Sharpsteen, Hamilton Luske, Wilfred Jackson, T. Hee, Bill Roberts, Norman Ferguson"
 907,tt0780521,2023-02-26,2023-02-26,,The Princess and the Frog,https://www.imdb.com/title/tt0780521/,movie,7.1,97,2009,"Animation, Adventure, Comedy, Family, Fantasy, Musical, Romance",160272,2009-11-15,"Ron Clements, John Musker"
 908,tt0097814,2023-02-26,2023-02-26,,Majo no takkyûbin,https://www.imdb.com/title/tt0097814/,movie,7.8,103,1989,"Animation, Family, Fantasy",156949,1989-07-29,Hayao Miyazaki
-909,tt0033563,2023-02-26,2023-02-26,,Dumbo,https://www.imdb.com/title/tt0033563/,movie,7.2,64,1941,"Animation, Adventure, Drama, Family, Fantasy, Musical",138953,1941-10-23,"Jack Kinney, Ben Sharpsteen, Samuel Armstrong, Wilfred Jackson, John Elliotte, Norman Ferguson, Bill Roberts"
+909,tt0033563,2023-02-26,2023-02-26,,Dumbo,https://www.imdb.com/title/tt0033563/,movie,7.2,64,1941,"Animation, Adventure, Drama, Family, Fantasy, Musical",138953,1941-10-23,"Samuel Armstrong, Jack Kinney, Ben Sharpsteen, Wilfred Jackson, John Elliotte, Bill Roberts, Norman Ferguson"
 910,tt3469046,2023-02-26,2023-02-26,,Despicable Me 3,https://www.imdb.com/title/tt3469046/,movie,6.2,89,2017,"Animation, Adventure, Comedy, Crime, Family, Sci-Fi",147154,2017-06-14,"Eric Guillon, Pierre Coffin, Kyle Balda"
-911,tt0118617,2023-02-26,2023-02-26,,Anastasia,https://www.imdb.com/title/tt0118617/,movie,7.1,94,1997,"Animation, Adventure, Drama, Family, Fantasy, Musical, Mystery, Romance",132197,1997-11-14,"Don Bluth, Gary Goldman"
+911,tt0118617,2023-02-26,2023-02-26,,Anastasia,https://www.imdb.com/title/tt0118617/,movie,7.1,94,1997,"Animation, Adventure, Drama, Family, Fantasy, Musical, Mystery, Romance",132197,1997-11-14,"Gary Goldman, Don Bluth"
 912,tt0213338,2023-02-26,2023-02-26,,Kaubôi bibappu: Cowboy Bebop,https://www.imdb.com/title/tt0213338/,tvSeries,8.9,24,1998,"Animation, Action, Adventure, Comedy, Drama, Sci-Fi",131946,1998-04-03,
 913,tt1985966,2023-02-26,2023-02-26,,Cloudy with a Chance of Meatballs 2,https://www.imdb.com/title/tt1985966/,movie,6.3,95,2013,"Animation, Adventure, Comedy, Family, Fantasy, Sci-Fi",111421,2013-09-26,"Cody Cameron, Kris Pearn"
 914,tt1568921,2023-02-26,2023-02-26,,Karigurashi no Arietti,https://www.imdb.com/title/tt1568921/,movie,7.6,94,2010,"Animation, Adventure, Drama, Family, Fantasy",99640,2010-07-17,Hiromasa Yonebayashi
