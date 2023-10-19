@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 import csv
 import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
-    QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction
+    QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
+    QTableWidget, QHeaderView, QAbstractItemView, QTableWidgetItem
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QCursor, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
@@ -99,6 +100,39 @@ class PreferencesDialog(QDialog):
             # Update the ratings_file_input text with the ratings.csv file path
             self.ratings_file_input.setText(ratings_file_path)
 
+# Custom QDialog class for the Favorites dialog
+class MyFavoritesDialog(QDialog):
+    def __init__(self, favorites_data):
+        super().__init__()
+        self.setWindowTitle("Favorites")
+
+        layout = QVBoxLayout()
+
+        # Set the window size to a reasonable size so that the table is visible
+        self.resize(800, 500)
+
+        # If there are too many favorites, show them in a table
+        if favorites_data:
+            table = QTableWidget()
+            table.setRowCount(len(favorites_data))
+            table.setColumnCount(2)
+            table.setHorizontalHeaderLabels(["Title", "URL"])
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+            for row in range(len(favorites_data)):
+                for column in range(2):
+                    table.setItem(row, column, QTableWidgetItem(favorites_data[row][column]))
+
+            layout.addWidget(table)
+
+        else:
+            no_favorites_label = QLabel("You have no favorited movies/series.")
+            layout.addWidget(no_favorites_label)
+
+        self.setLayout(layout)
+
 class ModernApp(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
@@ -109,14 +143,14 @@ class ModernApp(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
-        main_layout = QVBoxLayout()
-        central_widget.setLayout(main_layout)
+        self.main_layout = QVBoxLayout()
+        central_widget.setLayout(self.main_layout)
 
         # Create a top-level layout for the main content
         content_layout = QVBoxLayout()
-        main_layout.addLayout(content_layout)
+        self.main_layout.addLayout(content_layout)
 
-        # Create a menu toolbar with an "Options" menu (which has "User Preferences" and "Theme" submenus), "Help" menu, and "About" menu
+        # Create a menu toolbar
         menu_bar = self.menuBar()
         options_menu = menu_bar.addMenu("Options")
 
@@ -133,6 +167,11 @@ class ModernApp(QMainWindow):
         user_preferences_action = QAction("User Preferences", self)
         user_preferences_action.triggered.connect(self.create_preferences_file)
         options_menu.addAction(user_preferences_action)
+
+        # Create a "Favorites" action in the "Options" menu
+        favorites_action = QAction("Favorites", self)
+        favorites_action.triggered.connect(self.favorites)
+        options_menu.addAction(favorites_action)
 
         # Create a "Theme" submenu in the "Options" menu
         theme_menu = QMenu("Theme", self)
@@ -182,12 +221,12 @@ class ModernApp(QMainWindow):
                 self.list_links.append(list_link)
                 list_combo.addItem(list_name)
 
-        main_layout.addWidget(list_combo)
+        self.main_layout.addWidget(list_combo)
 
         # Create a new QLabel for displaying the movie/series poster
         self.poster_label = QLabel()
         self.poster_label.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(self.poster_label)
+        self.main_layout.addWidget(self.poster_label)
 
         # Create a QLabel for displaying movie/series details
         self.result_label = QLabel("Movie Recommendation Will Appear Here")
@@ -196,11 +235,11 @@ class ModernApp(QMainWindow):
         self.result_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
         self.result_label.setTextFormat(Qt.RichText)
 
-        main_layout.addWidget(self.result_label)
+        self.main_layout.addWidget(self.result_label)
 
         find_movie_button = QPushButton("Find A Movie!")
         find_movie_button.clicked.connect(self.find_random_movie)
-        main_layout.addWidget(find_movie_button)
+        self.main_layout.addWidget(find_movie_button)
 
         self.list_combo = list_combo
 
@@ -387,6 +426,37 @@ class ModernApp(QMainWindow):
                     # Set the pixmap to the poster_label
                     self.poster_label.setPixmap(pixmap)
 
+                    # Create a star icon at the top left corner on the movie poster
+                    star_icon = QIcon("star.svg")
+                    star_icon_renderer = QSvgRenderer("star.svg")
+                    self.star_icon_pixmap = QPixmap(20, 20)
+                    self.star_icon_pixmap.fill(Qt.transparent)
+                    self.star_icon_painter = QPainter(self.star_icon_pixmap)
+                    star_icon_renderer.render(self.star_icon_painter)
+                    self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                    self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
+                    self.star_icon_painter.end()
+
+                    # Change the color of the star icon to white if the movie/series is not in the favorites.csv file, and to yellow if it is
+                    if self.check_favorites(random_item['Title']):
+                        self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                        self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 212, 59))
+                        self.star_icon_painter.end()
+                    else:
+                        self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                        self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
+                        self.star_icon_painter.end()
+
+                    self.star_icon_label = QLabel(self.poster_label)
+                    self.star_icon_label.setPixmap(self.star_icon_pixmap)
+                    self.star_icon_label.move(10, 10)
+                    self.star_icon_label.show()
+
+                    # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
+                    self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Title'], random_item['URL'])
+
+
+
 
             else:
                 print("\nFailed to retrieve the list. Check the URL and try again.")
@@ -466,6 +536,109 @@ class ModernApp(QMainWindow):
 
             return user_page_link, watchlist_link
 
+    # Save the movie/series' title and URL to a CSV file name "favorites.csv"
+    def save_favorite(self, title, url):
+        # Define the destination file path where you want to save the CSV file
+        favorites_csv = 'favorites.csv'
+
+        # Initialize a list to store the favorites data
+        favorites_data = []
+
+        # Check if the file exists
+        if os.path.isfile(favorites_csv):
+            # If the file exists, load its data
+            with open(favorites_csv, 'r', encoding='utf-8') as file:
+                csv_reader = csv.reader(file)
+                # Skip the header row (if present)
+                next(csv_reader, None)
+                # Read the CSV data into a list of dictionaries
+                for row in csv_reader:
+                    if len(row) == 2:
+                        csv_title, csv_url = row
+                        favorites_data.append({'Title': csv_title, 'URL': csv_url})
+
+        favorite = self.check_favorites(title)
+
+        # Check if the movie/series is already in the favorites data
+        if favorite:
+            # If it is, remove the movie/series from the favorites data
+            favorites_data.remove(favorite)
+
+            # Write the updated data (including the new addition and removal) to "favorites.csv"
+            with open(favorites_csv, 'w', encoding='utf-8') as file:
+                # Write the header row
+                file.write("Title,URL\n")
+                # Write the updated data
+                for data in favorites_data:
+                    file.write(f"{data['Title']},{data['URL']}\n")
+
+            # Change the color of the star icon to white
+            self.change_star_color("white")
+
+            # Show a success pop-up
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Removed from Favorites")
+            msg.setText("This movie/series has been removed from your favorites.")
+            msg.exec_()
+            return
+
+        # Append the new movie/series' title and URL to the favorites data
+        favorites_data.append({'Title': title, 'URL': url})
+
+        # Write the updated data (including the new addition and removal) to "favorites.csv"
+        with open(favorites_csv, 'w', encoding='utf-8') as file:
+            # Write the header row
+            file.write("Title,URL\n")
+            # Write the updated data
+            for favorite in favorites_data:
+                file.write(f"{favorite['Title']},{favorite['URL']}\n")
+
+        # Change the color of the star icon to yellow
+        self.change_star_color("yellow")
+
+        # Show a success pop-up
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Added to Favorites")
+        msg.setText("This movie/series has been added to your favorites.")
+        msg.exec_()
+
+    # Check if the movie/series is already in the favorites.csv file
+    def check_favorites(self, title):
+        # Define the destination file path where you want to save the CSV file
+        self.favorites_csv = 'favorites.csv'
+
+        # Check if the file exists
+        if not os.path.isfile(self.favorites_csv):
+            print("File does not exist.")
+            return False
+
+        # Check if the movie/series is already in the favorites.csv file
+        with open(self.favorites_csv, mode='r', encoding='utf-8') as file:
+            csv_reader = csv.DictReader(file)
+            for row in csv_reader:
+                if row["Title"] == title:
+                    return row
+
+        return False
+
+    # Change the star icon color
+    def change_star_color(self, color):
+        star_painter = QPainter(self.star_icon_pixmap)
+        if color == "yellow":
+            star_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+            star_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 212, 59))
+            star_painter.end()
+
+        elif color == "white":
+            star_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+            star_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
+            star_painter.end()
+
+        # Update the star icon label with the new pixmap
+        self.star_icon_label.setPixmap(self.star_icon_pixmap)
+
     # Change the theme to light
     def light_theme(self):
         app.setPalette(light_palette)
@@ -501,6 +674,37 @@ class ModernApp(QMainWindow):
                     "<a href='https://www.instagram.com/isonerinan'>Instagram</a><br><br>"
                     "<a href='https://www.twitter.com/isonerinan'>Twitter</a>")
         msg.exec_()
+
+    # Show the favorited movies/series from the favorites.csv file
+    def favorites(self):
+        favorites_csv = 'favorites.csv'
+        favorites_data = []
+
+        # Check if the file exists
+        if not os.path.isfile(favorites_csv):
+            # If the file doesn't exist, show a message that there are no favorites.
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Favorites")
+            msg.setText("You have no favorited movies/series.")
+            msg.exec_()
+            return
+
+        # Read the favorites from the CSV file
+        with open(favorites_csv, mode='r', encoding='utf-8') as file:
+            csv_reader = csv.reader(file)
+            # Skip the header row
+            next(csv_reader, None)
+            for row in csv_reader:
+                if len(row) == 2:
+                    title, url = row
+                    favorites_data.append((title, url))
+
+        # Create and display the favorites dialog
+        favorites_dialog = MyFavoritesDialog(favorites_data)
+        favorites_dialog.exec_()
+
+
 
 if __name__ == '__main__':
     # Create the application
