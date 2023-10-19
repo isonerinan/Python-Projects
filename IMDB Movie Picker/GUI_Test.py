@@ -5,9 +5,11 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 import random
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
+    QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QPainter, QCursor, QIcon
+from PyQt5.QtSvg import QSvgRenderer
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -110,21 +112,53 @@ class ModernApp(QMainWindow):
         main_layout = QVBoxLayout()
         central_widget.setLayout(main_layout)
 
+        # Create a top-level layout for the main content
+        content_layout = QVBoxLayout()
+        main_layout.addLayout(content_layout)
+
+        # Create a menu toolbar with an "Options" menu (which has "User Preferences" and "Theme" submenus), "Help" menu, and "About" menu
+        menu_bar = self.menuBar()
+        options_menu = menu_bar.addMenu("Options")
+
+        help_action = QAction("Help", self)
+        help_action.triggered.connect(self.help)
+
+        about_action = QAction("About", self)
+        about_action.triggered.connect(self.about)
+
+        menu_bar.addAction(help_action)
+        menu_bar.addAction(about_action)
+
+        # Create a "User Preferences" action in the "Options" menu
+        user_preferences_action = QAction("User Preferences", self)
+        user_preferences_action.triggered.connect(self.create_preferences_file)
+        options_menu.addAction(user_preferences_action)
+
+        # Create a "Theme" submenu in the "Options" menu
+        theme_menu = QMenu("Theme", self)
+        options_menu.addMenu(theme_menu)
+
+        # Create a "Light" action in the "Theme" submenu
+        light_theme_action = QAction("Light", self)
+        light_theme_action.triggered.connect(self.light_theme)
+        theme_menu.addAction(light_theme_action)
+
+        # Create a "Dark" action in the "Theme" submenu
+        dark_theme_action = QAction("Dark", self)
+        dark_theme_action.triggered.connect(self.dark_theme)
+        theme_menu.addAction(dark_theme_action)
+
         # Check if the preferences file exists, and create it if not
         self.preferences_file = "user_preferences.txt"
         self.user_page_link = ""
         self.watchlist_link = ""
 
         # Check if the preferences file exists or not empty
-        if not self.check_preferences_file():
-            self.create_preferences_file()
-
-        elif os.stat(self.preferences_file).st_size == 0:
+        if not self.check_preferences_file() or os.stat(self.preferences_file).st_size == 0:
             self.create_preferences_file()
 
         # Check the preferences file and get the necessary links
         self.user_page_link, self.watchlist_link = self.checkPreferences()
-
 
         # Create a combo box to select a list
         list_combo = QComboBox()
@@ -170,12 +204,14 @@ class ModernApp(QMainWindow):
 
         self.list_combo = list_combo
 
+        # self.dark_theme()
+
     def check_preferences_file(self):
         return os.path.isfile(self.preferences_file)
 
     # Create a new preferences file in a form of dictionary
     def create_preferences_file(self):
-        dialog = PreferencesDialog()
+        dialog = PreferencesDialog() # Open the "User Preferences" dialog
         result = dialog.exec_()
         if result == QDialog.Accepted:
             user_page_link = str(dialog.user_page_link_input.text())
@@ -284,8 +320,6 @@ class ModernApp(QMainWindow):
 
     ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
     def watchlist_random(self, url):
-        # URL of the IMDb watchlist export page
-
         # Define the destination file path where you want to save the CSV file
         self.watchlist_csv = 'watchlist.csv'
 
@@ -432,6 +466,48 @@ class ModernApp(QMainWindow):
 
             return user_page_link, watchlist_link
 
+    # Change the theme to light
+    def light_theme(self):
+        self.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.list_combo.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.result_label.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.poster_label.setStyleSheet("background-color: #ffffff; color: #000000;")
+        self.menuBar().setStyleSheet("background-color: #ffffff; color: #000000;")
+
+    # Change the theme to dark
+    def dark_theme(self):
+        self.setStyleSheet("background-color: #000000; color: #ffffff;")
+        self.list_combo.setStyleSheet("background-color: #000000; color: #ffffff;")
+        self.result_label.setStyleSheet("background-color: #000000; color: #ffffff;")
+        self.poster_label.setStyleSheet("background-color: #000000; color: #ffffff;")
+        self.menuBar().setStyleSheet("background-color: #000000; color: #ffffff;")
+
+    # Show the help dialog
+    # Show the help dialog
+    def help(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Help")
+        msg.setText(
+            "This program allows you to randomly select a movie or TV series from your IMDb watchlist or any of your IMDb lists.<br><br>"
+            "For more information on how to use this program, please visit:<br><br>"
+            "<a href='https://github.com/isonerinan/Python-Projects/tree/main/IMDB%20Movie%20Picker'>"
+            "https://github.com/isonerinan/Python-Projects/tree/main/IMDB%20Movie%20Picker</a>")
+        msg.exec_()
+
+    # Show the about dialog
+    def about(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("About")
+        msg.setText("<h1>IMDB Movie Picker</h1>"
+                    "<h3>Version 1.0</h3>"
+                    "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
+                    "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
+                    "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
+                    "<a href='https://www.instagram.com/isonerinan'>Instagram</a><br><br>"
+                    "<a href='https://www.twitter.com/isonerinan'>Twitter</a>")
+        msg.exec_()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
