@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHB
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QCursor, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
+import re
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -213,6 +214,7 @@ class ModernApp(QMainWindow):
             soup = BeautifulSoup(response.content, 'html.parser')
             list_items = soup.find_all('li', class_='ipl-zebra-list__item user-list')
 
+            # Extract the list names and links
             for item in list_items:
                 list_name = item.find('a', class_='list-name').text.strip()
                 self.list_names.append(list_name)
@@ -261,7 +263,7 @@ class ModernApp(QMainWindow):
     def find_random_movie(self):
         selected_index = self.list_combo.currentIndex()
         if selected_index == 0:
-            self.watchlist_random(self.watchlist_link)
+            self.watchlist_random("watchlist", self.watchlist_link)
         else:
             selected_list_link = self.list_links[selected_index - 1]
             self.list_random(selected_list_link)
@@ -281,8 +283,40 @@ class ModernApp(QMainWindow):
             # Extract the movie or TV series details from the list
             movie_details = soup.select('.lister-item-content')
 
+            # Check how many titles are there in the list
+            list_details = soup.select(".lister-total-num-results")
+            number_of_titles_str = list_details[0].text.strip()
+
+            # Use a regular expression to extract the integer
+            match = re.search(r'\d+', number_of_titles_str)
+            if match:
+                # The group(0) will contain the first matched integer
+                number_of_titles = int(match.group(0))
+
+            # Calculate the page count
+            page_count = (number_of_titles // 100) + 1
+
+
+            # Append all pages to movie_details
+            for page in range(2, page_count + 1):
+                # Send an HTTP GET request to fetch the list page
+                response = requests.get(f"{list_url}?page={page}", headers=headers)
+
+                # Check if the request was successful
+                if response.status_code == 200:
+                    # Parse the HTML content of the page
+                    soup = BeautifulSoup(response.content, 'html.parser')
+
+                    # Extract the movie or TV series details from the list
+                    movie_details += soup.select('.lister-item-content')
+
+                else:
+                    print("\nFailed to retrieve the list. Check the URL and try again.")
+                    return
+
             # Check if there are any movie details
             if movie_details:
+                print(len(movie_details))
                 # Randomly select a movie detail from the list
                 random_movie_detail = random.choice(movie_details)
 
@@ -358,9 +392,9 @@ class ModernApp(QMainWindow):
             return
 
     ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
-    def watchlist_random(self, url):
+    def watchlist_random(self, title, url):
         # Define the destination file path where you want to save the CSV file
-        self.watchlist_csv = 'watchlist.csv'
+        self.watchlist_csv = f'watchlist.csv'
 
         # Send an HTTP GET request to the URL0
         response = requests.get(url, headers=headers)
