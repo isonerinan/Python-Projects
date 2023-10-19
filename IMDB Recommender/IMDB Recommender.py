@@ -238,8 +238,30 @@ class ModernApp(QMainWindow):
         self.result_label.setOpenExternalLinks(True)
         self.result_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
         self.result_label.setTextFormat(Qt.RichText)
-
         self.main_layout.addWidget(self.result_label)
+
+        # Create a QLineEdit for custom IMDB list input
+        self.custom_list = QLineEdit()
+        self.custom_list.setPlaceholderText("Want to explore a custom list? Paste it here!")
+        self.custom_list.setAlignment(Qt.AlignCenter)
+
+        # Create a QPushButton
+        search_button = QPushButton("Search")
+
+        # Connect the button's clicked signal to the slot
+        search_button.clicked.connect(self.search_button_click)
+
+        # Add both the QLineEdit and the button to a container widget
+        container = QWidget()
+        container_layout = QHBoxLayout()
+        container_layout.addWidget(self.custom_list)
+        container_layout.addWidget(search_button)
+        container.setLayout(container_layout)
+
+        # Add the container to the main layout
+        self.main_layout.addWidget(container)
+
+        self.setLayout(self.main_layout)
 
         find_movie_button = QPushButton("Find A Movie!")
         find_movie_button.clicked.connect(self.find_random_movie)
@@ -247,7 +269,6 @@ class ModernApp(QMainWindow):
 
         self.list_combo = list_combo
 
-        # self.dark_theme()
 
     def check_preferences_file(self):
         return os.path.isfile(self.preferences_file)
@@ -301,8 +322,11 @@ class ModernApp(QMainWindow):
 
             # Append all pages to movie_details
             for page in range(2, page_count + 1):
+                # Use regex to remove referral parameters
+                list_url_without_referral = re.sub(r'[?&]ref_[^&]*', '', list_url)
+
                 # Send an HTTP GET request to fetch the list page
-                response = requests.get(f"{list_url}?page={page}", headers=headers)
+                response = requests.get(f"{list_url_without_referral}?page={page}", headers=headers)
 
                 # Check if the request was successful
                 if response.status_code == 200:
@@ -318,7 +342,6 @@ class ModernApp(QMainWindow):
 
             # Check if there are any movie details
             if movie_details:
-                print(len(movie_details))
                 # Randomly select a movie detail from the list
                 random_movie_detail = random.choice(movie_details)
 
@@ -491,9 +514,6 @@ class ModernApp(QMainWindow):
                     # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
                     self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Title'], random_item['URL'])
 
-
-
-
             else:
                 print("\nFailed to retrieve the list. Check the URL and try again.")
 
@@ -658,6 +678,14 @@ class ModernApp(QMainWindow):
                     return row
 
         return False
+
+    # Search button logic for custom list input
+    def search_button_click(self):
+        # Get the text from the QLineEdit
+        list_link = self.custom_list.text()
+
+        # Call the list_random function with the input
+        self.list_random(list_link)
 
     # Change the star icon color
     def change_star_color(self, color):
