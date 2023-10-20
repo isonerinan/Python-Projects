@@ -30,7 +30,7 @@ The user can favorite the recommended movie/series using the star icon at the up
 
 Make sure they are in the same directory, if not, you have to change the directory in the code accordingly. 
 
-## CSV Files
+## Imports
 ### Importing Your Watchlist
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/d4a0a6e7-4699-4224-9bd1-53f71c6b2843)
 
