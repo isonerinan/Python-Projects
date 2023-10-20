@@ -1,77 +1,67 @@
 # FEATURES
-## Movie/Series Recommendation From A User's Watchlist
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/6937b376-10e2-4464-9891-7dd1814a5434)
+
+## Movie/Series Recommendation From User's Watchlist
 The watchlist must be public and replaced with the existing link. (example: https://www.imdb.com/user/USER_NAME_HERE/watchlist)
 
-## Movie/Series Recommendation From A User's Existing Lists
+## Movie/Series Recommendation From User's Existing Lists
 All the publicly available user lists are shown. In order to personalize, the default link must be replaced. (example: https://www.imdb.com/user/USER_NAME_HERE/lists)
 
-## Movie/Series Recommendation From A Custom IMDB List
+## Movie/Series Recommendation From Custom IMDB List
 The program can take a publicly available user link list as an input and randomly select a movie from that list.
 
 ## Rating History Check
-The program checks if the user have rated the recommended movie before and shows the rating score, and the date of rating.
+The program checks if the user have rated the recommended movie before and shows the rating score, and the date of rating. The web scraping code snippet is in the code, however due to IMDB's robots.txt (https://www.imdb.com/robots.txt) this program cannot web scrape the user ratings page. Therefore you need to download the ratings.csv yourself (See [Importing Your Ratings](#importing-your-ratings) for more).
 
-The web scraping code snippet is in the code, however due to IMDB's robots.txt (https://www.imdb.com/robots.txt) this program cannot web scrape the user ratings page. Therefore you need to download the ratings.csv yourself (See [CSV Files](#important-csv-files) for more).
+## Favorite
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/501363e0-ba8e-4e4b-a5af-80427eed41d5)
+
+The user can favorite the recommended movie/series using the star icon at the upper left corner of the window, and can see their favorited titles from the "Settings" menu.
 
 # HOW TO USE
 ## Downloads
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/3725a159-7791-4101-83a9-bfcec8e55ccd)
-- Download [IMDB Random Movie Picker.py](https://github.com/isonerinan/Python-Projects/blob/main/IMDB%20Movie%20Picker/IMDB%20Random%20Movie%20Picker.py)
 
-- Download [ratings.csv](https://github.com/isonerinan/Python-Projects/blob/main/IMDB%20Movie%20Picker/ratings.csv)
-
-- Download [watchlist.csv](https://github.com/isonerinan/Python-Projects/blob/main/IMDB%20Movie%20Picker/watchlist.csv)
+- Download [IMDB Recommender.py](https://github.com/isonerinan/Python-Projects/blob/27cfd4181afd54c833545aa73f0aec42dcdd4c74/IMDB%20Recommender/IMDB%20Recommender.py)
+- Download [star.svg](https://github.com/isonerinan/Python-Projects/blob/27cfd4181afd54c833545aa73f0aec42dcdd4c74/IMDB%20Recommender/star.svg)
 
 Make sure they are in the same directory, if not, you have to change the directory in the code accordingly. 
 
-## (Important) CSV Files
-Note that the CSV files are empty.
-
-You can:
-- Leave them as is (not recommended because the default is my own watchlist)
-- Replace them with your own
-
-To replace them, first go to your IMDB Watchlist and Ratings pages. (Example: https://www.imdb.com/user/YOUR_USER_NAME/ratings and https://www.imdb.com/user/YOUR_USER_NAME/watchlist)
-
-Download the ratings.csv every time you want to update your ratings history for the program using "Export" button:
-
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/47e54226-9744-4844-9c68-0d9db57e09ee)
-
-Copy the link at the bottom of your Watchlist page:
-
+## CSV Files
+### Importing Your Watchlist
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/d4a0a6e7-4699-4224-9bd1-53f71c6b2843)
 
+- Go to your IMDB Watchlist page
+- Find the export link at the bottom of the page
+- Right click and copy the link
+- Paste it in the User Preferences window of the program
 
-Find the snippet of code below in IMDB Random Movie Picker.py and replace the url with your copied link.
-```
-def watchlist_random():
-    # URL of the IMDb watchlist export page
-    url = 'https://www.imdb.com/list/ls507767575/export'
-```
+### Importing Your Lists
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/bf5ede4b-c663-4c02-9b19-dcacde26e414)
 
-## Adding All of Your public IMDB lists
+- Find the dropdown menu at the top right corner
+- Go to "Your Lists" page and copy the URL
+- Paste it in the User Preferences window of the program
 
-You probably want to replace my lists with your own. To do so, find the code snippet below and change the URL with yours (example: https://www.imdb.com/user/YOUR_USER_NAME/lists).
-```
-## ASK USER TO PICK A LIST
-while True:
+### Importing Your Ratings
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/eeef4e39-df0e-4225-9ec3-a352d8f7ab00)
 
-    # Replace this URL with the IMDb user lists URL
-    url = 'https://www.imdb.com/user/ur135017478/lists'
-```
+- Go to "Your Ratings" page
+- Find the export button in the screenshot
+- Download "ratings.csv"
+- In the User Preferences window, click "Select File" button and locate "ratings.csv"
+- Repeat this process whenever you would like to update your ratings history
+
+### Getting Recommendation From Custom User Lists
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/ce4a477a-45e2-4a37-a863-52fd2ebf71cf)
+
+If, for whatever reason, you decided to give a shot to someone else's taste in movies and found a user list (or maybe your friend shared their list with you?), you can just copy the link (example: https://www.imdb.com/list/ls521086952/) and paste it to the search bar at the bottom of the window and click the "Search" button.
 
 You are now ready to use the program. Have a nice watch!
 
-## Custom User Lists
-
-If, for whatever reason, you decided to give a shot to someone else's taste in movies and found a user list (maybe your friend shared their list with you?) that you would like to try, you can just copy the link (example: https://www.imdb.com/list/ls521086952/) and paste it when prompted:
-
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/46c6493b-d243-4a7e-83de-5504704f4b83)
-
 # Working On
-- Adding GUI
+- Bug fixes
 
 # TODO
-- Add favouriting the recommended movie/series feature
 - Find out if I can bypass IMDB's robots.txt (probably not)
 - Add support for other sites like Letterboxd, maybe?
