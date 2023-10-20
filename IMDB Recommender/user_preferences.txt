@@ -1,2 +1,0 @@
-"User Lists Link": "https://www.imdb.com/user/ur135017478/lists"
-"Watchlist Link": "https://www.imdb.com/list/ls523086325/export"
