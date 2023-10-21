@@ -6,8 +6,8 @@ from bs4 import BeautifulSoup
 import csv
 import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
-    QComboBox, QInputDialog, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
-    QTableWidget, QHeaderView, QAbstractItemView, QTableWidgetItem
+    QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
+    QTableWidget, QHeaderView, QAbstractItemView, QTableWidgetItem, QErrorMessage
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QCursor, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
@@ -50,40 +50,122 @@ class PreferencesDialog(QDialog):
         self.ratings_file_input.clicked.connect(self.select_ratings_file)
 
     def custom_accept(self):
-            user_lists_url = self.user_lists_link_input.text()
-            watchlist_url = self.watchlist_link_input.text()
+        # Check the user inputs and create a flag
+        self.user_lists_link = self.user_lists_link_input.text()
+        self.watchlist_link = self.watchlist_link_input.text()
 
-            if self.check_url(user_lists_url) and self.check_url(watchlist_url):
-                super().accept()  # If URLs are valid, close the dialog
+        input_flag = self.check_input(self.user_lists_link, self.watchlist_link)
+        print(f"Input flag: {input_flag}")
 
-            elif self.check_url(user_lists_url) and not self.check_url(watchlist_url):
-                # Show an error pop-up
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Critical)
-                msg.setWindowTitle("Invalid URL")
-                msg.setText("Please enter a valid Watchlist URL.")
-                msg.exec_()
+        # Check if "user_preferences.txt" file exists
+        if window.check_preferences_file() or os.stat(window.preferences_file).st_size != 0:
+            # Read the user preferences from the text file
+            self.old_user_lists_link, self.old_watchlist_link = window.checkPreferences()
+            print(self.old_user_lists_link, self.old_watchlist_link)
 
-            elif not self.check_url(user_lists_url) and self.check_url(watchlist_url):
-                # Show an error pop-up
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Critical)
-                msg.setWindowTitle("Invalid URL")
-                msg.setText("Please enter a valid User Page URL.")
-                msg.exec_()
+            self.old_user_lists_link, self.old_watchlist_link = self.correct_preferences(self.old_user_lists_link, self.old_watchlist_link)
 
-            else:
-                # Show an error pop-up
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Critical)
-                msg.setWindowTitle("Invalid URLs")
-                msg.setText("Invalid URLs. Please enter valid IMDb URLs.")
-                msg.exec_()
+            preferences_flag = self.check_preferences(self.old_user_lists_link, self.old_watchlist_link)
+            print(f"Preferences flag: {preferences_flag}")
 
-        # Check if the user input is a valid URL
+            # Check if the flags give an error
+            self.result(preferences_flag, input_flag)
+
+    # Check if the user input is a valid URL
     def check_url(self, url):
             # Check if the URL starts with "https://www.imdb.com/"
             return url.startswith("https://www.imdb.com/")
+
+    # Check all the possible combinations of user inputs and flag them
+    def check_input(self, lists_input, watchlist_input):
+        # Check and flag if the user inputs are valid URLs
+        if self.check_url(lists_input) and self.check_url(watchlist_input):
+            return 0
+        elif lists_input == "" and watchlist_input == "":
+            return 1
+        elif self.check_url(lists_input) and watchlist_input == "":
+            return 2
+        elif lists_input == "" and self.check_url(watchlist_input):
+            return 3
+        elif (not self.check_url(lists_input) and lists_input != "") and (not self.check_url(watchlist_input) and watchlist_input != ""):
+            return 4
+        elif (not self.check_url(lists_input) and lists_input != "") and self.check_url(watchlist_input):
+            return 5
+        elif self.check_url(lists_input) and (not self.check_url(watchlist_input) and watchlist_input != ""):
+            return 6
+        elif (not self.check_url(lists_input) and lists_input != "") and watchlist_input == "":
+            return 7
+        elif lists_input == "" and (not self.check_url(watchlist_input) and watchlist_input != ""):
+            return 8
+        else:
+            return 9
+
+    # Check all the possible combinations of preferences file inputs and flag them
+    def check_preferences(self, lists_pref, watchlist_pref):
+        if self.check_url(lists_pref) and self.check_url(watchlist_pref):
+            return 0
+        elif lists_pref == "" and watchlist_pref == "":
+            return 1
+        elif self.check_url(lists_pref) and watchlist_pref == "":
+            return 2
+        elif lists_pref == "" and self.check_url(watchlist_pref):
+            return 3
+
+    # Correct the user preferences file if there is something wrong with it
+    def correct_preferences(self, lists_pref, watchlist_pref):
+        if not self.check_url(lists_pref):
+            lists_pref = ""
+
+        if not self.check_url(watchlist_pref):
+            watchlist_pref = ""
+
+        return lists_pref, watchlist_pref
+
+    # Return error message based on the preferences and input flags
+    def result(self, preferences_flag, input_flag):
+        match (preferences_flag, input_flag):
+            case (0, 4) | (1, 1) | (1, 4) | (2, 4) | (2, 7) | (3, 4) | (3, 8):
+                # Show QMessageBox with the error message
+                error_message = QMessageBox()
+                error_message.setWindowTitle("Error")
+                error_message.setText("Please enter a valid URL for both fields.")
+                error_message.setIcon(QMessageBox.Critical)
+                error_message.exec_()
+
+            case (0, 5) | (0, 7) | (1, 3) | (1, 5) | (2, 5) | (3, 1) | (3, 3) | (3, 5) | (3, 7):
+                # Show QMessageBox with the error message
+                error_message = QMessageBox()
+                error_message.setWindowTitle("Error")
+                error_message.setText("Please enter a valid URL for the \"IMDB User Lists Link\" field.")
+                error_message.setIcon(QMessageBox.Critical)
+                error_message.exec_()
+
+            case (0, 6) | (0, 8) | (1, 2) | (1, 6) | (1, 7) | (1, 8) | (2, 1) | (2, 2) | (2, 6) | (2, 8) | (3, 6):
+                # Show QMessageBox with the error message
+                error_message = QMessageBox()
+                error_message.setWindowTitle("Error")
+                error_message.setText("Please enter a valid URL for the \"Watchlist Export Link\" field.")
+                error_message.setIcon(QMessageBox.Critical)
+                error_message.exec_()
+
+            case (0, 0) | (1, 0) | (2, 0) | (3, 0):
+                self.accept()
+
+            case (0, 1):
+                self.user_lists_link = self.old_user_lists_link
+                self.watchlist_link = self.old_watchlist_link
+                self.accept()
+
+            case (0, 2) | (3, 2):
+                self.watchlist_link = self.old_watchlist_link
+                self.accept()
+
+            case (0, 3) | (2, 3):
+                self.user_lists_link = self.old_user_lists_link
+                self.accept()
+
+
+
 
     # Ask user to select the directory for their ratings.csv file
     def select_ratings_file(self):
@@ -92,11 +174,10 @@ class PreferencesDialog(QDialog):
 
         # Check if the user selected a file
         if ratings_file_path:
-            # Check if the ratings.csv file is in the same directory as the script
-            if not os.path.isfile(ratings_file_path):
+            # Check if the ratings.csv file is in the same directory as the script or executable
+            if not os.path.dirname(os.path.realpath(__file__)) + "ratings.csv" == ratings_file_path:
                 # If not, copy the ratings.csv file to the same directory as the script
                 shutil.copy(ratings_file_path, os.path.dirname(os.path.realpath(__file__)))
-
 
             # Update the ratings_file_input text with the ratings.csv file path
             self.ratings_file_input.setText(ratings_file_path)
@@ -266,7 +347,7 @@ class ModernApp(QMainWindow):
         find_movie_button.clicked.connect(self.find_random_movie)
         self.main_layout.addWidget(find_movie_button)
 
-        self.list_combo = self.list_combo
+        #self.list_combo = self.list_combo
 
 
     def check_preferences_file(self):
@@ -277,10 +358,8 @@ class ModernApp(QMainWindow):
         dialog = PreferencesDialog() # Open the "User Preferences" dialog
         result = dialog.exec_()
         if result == QDialog.Accepted:
-            user_lists_link = str(dialog.user_lists_link_input.text())
-            watchlist_link = str(dialog.watchlist_link_input.text())
             with open(self.preferences_file, "w") as file:
-                file.write(f"\"User Lists Link\": \"{user_lists_link}\"\n\"Watchlist Link\": \"{watchlist_link}\"")
+                file.write(f"\"User Lists Link\": \"{dialog.user_lists_link}\"\n\"Watchlist Link\": \"{dialog.watchlist_link}\"")
 
             # Update the combo box with the new lists
             self.list_combo.clear()
@@ -289,7 +368,7 @@ class ModernApp(QMainWindow):
             self.list_links = []
 
             # Send an HTTP GET request to fetch the IMDb user lists page
-            response = requests.get(user_lists_link, headers=headers)
+            response = requests.get(dialog.user_lists_link, headers=headers)
 
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
@@ -578,9 +657,10 @@ class ModernApp(QMainWindow):
             with open(self.ratings_csv, mode='r', encoding='utf-8') as file:
                 csv_reader = csv.DictReader(file)
                 for row in csv_reader:
-                    self.ratings_csv_data.append(row)
+                    ratings_csv_data.append(row)
+
         except FileNotFoundError:
-            return
+            return f"File not found."
 
         # Check if there's data in the CSV file
         if ratings_csv_data:
@@ -741,8 +821,8 @@ class ModernApp(QMainWindow):
         msg.setText(
             "This program allows you to randomly select a movie or TV series from your IMDb watchlist or any of your IMDb lists.<br><br>"
             "For more information on how to use this program, please visit:<br><br>"
-            "<a href='https://github.com/isonerinan/Python-Projects/tree/main/IMDB%20Movie%20Picker'>"
-            "https://github.com/isonerinan/Python-Projects/tree/main/IMDB%20Movie%20Picker</a>")
+            "<a href='https://github.com/isonerinan/Python-Projects/tree/8d8131e42e8525747c1aaa511f09287187d4f8dc/IMDB%20Recommender'>"
+            "https://github.com/isonerinan/Python-Projects/tree/8d8131e42e8525747c1aaa511f09287187d4f8dc/IMDB%20Recommender</a>")
 
         msg.exec_()
 
