@@ -183,7 +183,7 @@ class PreferencesDialog(QDialog):
             # Check if the ratings.csv file is in the same directory as the script or executable
             if not os.path.dirname(os.path.realpath(__file__)) + "ratings.csv" == ratings_file_path:
                 # If not, copy the ratings.csv file to the same directory as the script
-                shutil.copy(ratings_file_path, os.path.dirname(os.path.realpath(__file__)))
+                shutil.copy(ratings_file_path, "ratings.csv")
 
             # Update the ratings_file_input text with the ratings.csv file path
             self.ratings_file_input.setText(ratings_file_path)
@@ -224,6 +224,7 @@ class MyFavoritesDialog(QDialog):
 class ModernApp(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
+        self.theme = "dark"
         self.initUI()
 
     def initUI(self):
@@ -616,15 +617,22 @@ class ModernApp(QMainWindow):
                     self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
                     self.star_icon_painter.end()
 
-                    # Change the color of the star icon to white if the movie/series is not in the favorites.csv file, and to yellow if it is
+                    # Change the color of the star icon to yellow if it is in the favorites list
                     if self.check_favorites(random_item['Title']):
                         self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
                         self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 212, 59))
                         self.star_icon_painter.end()
+
                     else:
-                        self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-                        self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
-                        self.star_icon_painter.end()
+                        # If not in the favorites list, change the color of the star icon to white or black depending on the theme
+                        if self.theme == "light":
+                            self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                            self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(0, 0, 0))
+                            self.star_icon_painter.end()
+                        else:
+                            self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                            self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
+                            self.star_icon_painter.end()
 
                     self.star_icon_label = QLabel(self.poster_label)
                     self.star_icon_label.setPixmap(self.star_icon_pixmap)
@@ -632,6 +640,7 @@ class ModernApp(QMainWindow):
                     self.star_icon_label.show()
 
                     # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
+                    # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
                     self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Title'], random_item['URL'])
 
             else:
@@ -646,8 +655,7 @@ class ModernApp(QMainWindow):
     def checkRatings(self, title, title_type):
         # URL of the IMDb ratings export page
         # (does not work because of IMDB's robots.txt's web scraping precautions)
-        # So the best way would be to download ratings.csv manually
-        # ratings_url = "https://www.imdb.com/user/ur135017478/ratings/export"
+        # So the best way would be to download ratings.csv manually from the IMDb website
 
         # Define the destination file path where you want to save the CSV file
         self.ratings_csv = 'ratings.csv'
@@ -749,8 +757,11 @@ class ModernApp(QMainWindow):
                 for data in favorites_data:
                     file.write(f"{data['Title']},{data['URL']}\n")
 
-            # Change the color of the star icon to white
-            self.change_star_color("white")
+            # Change the color of the star icon to white/black depending on the theme
+            if self.theme == "light":
+                self.change_star_color("black")
+            else:
+                self.change_star_color("white")
 
             # Show a success pop-up
             msg = QMessageBox()
@@ -815,11 +826,19 @@ class ModernApp(QMainWindow):
             star_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
             star_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 212, 59))
             star_painter.end()
+            self.star_color = "yellow"
 
         elif color == "white":
             star_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
             star_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
             star_painter.end()
+            self.star_color = "white"
+
+        elif color == "black":
+            star_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+            star_painter.fillRect(self.star_icon_pixmap.rect(), QColor(0, 0, 0))
+            star_painter.end()
+            self.star_color = "black"
 
         # Update the star icon label with the new pixmap
         self.star_icon_label.setPixmap(self.star_icon_pixmap)
@@ -827,12 +846,19 @@ class ModernApp(QMainWindow):
     # Change the theme to light
     def light_theme(self):
         app.setPalette(light_palette)
+        self.theme = "light"
+
+        if self.star_color != "yellow":
+            self.change_star_color("black")
 
     # Change the theme to dark
     def dark_theme(self):
         app.setPalette(dark_palette)
+        self.theme == "dark"
 
-    # Show the help dialog
+        if self.star_color != "yellow":
+            self.change_star_color("white")
+
     # Show the help dialog
     def help(self):
         msg = QMessageBox()
