@@ -58,17 +58,23 @@ class PreferencesDialog(QDialog):
         print(f"Input flag: {input_flag}")
 
         # Check if "user_preferences.txt" file exists
-        if window.check_preferences_file() or os.stat(window.preferences_file).st_size != 0:
+        if os.path.isfile("user_preferences.txt"):
             # Read the user preferences from the text file
+            print("Preferences file exists.")
             self.old_user_lists_link, self.old_watchlist_link = window.checkPreferences()
             print(self.old_user_lists_link, self.old_watchlist_link)
 
-            self.old_user_lists_link, self.old_watchlist_link = self.correct_preferences(self.old_user_lists_link, self.old_watchlist_link)
+            self.old_user_lists_link, self.old_watchlist_link= self.correct_preferences(self.old_user_lists_link, self.old_watchlist_link)
 
             preferences_flag = self.check_preferences(self.old_user_lists_link, self.old_watchlist_link)
             print(f"Preferences flag: {preferences_flag}")
 
             # Check if the flags give an error
+            self.result(preferences_flag, input_flag)
+
+        else:
+            preferences_flag = 1
+            print(f"Preferences flag: {preferences_flag}")
             self.result(preferences_flag, input_flag)
 
     # Check if the user input is a valid URL
@@ -276,6 +282,12 @@ class ModernApp(QMainWindow):
         self.user_lists_link = ""
         self.watchlist_link = ""
 
+        # Create a combo box to select a list
+        self.list_combo = QComboBox()
+        self.list_combo.addItem("Watchlist")  # Add a default option
+        self.list_names = []
+        self.list_links = []
+
         # Check if the preferences file exists or not empty
         if not self.check_preferences_file() or os.stat(self.preferences_file).st_size == 0:
             self.create_preferences_file()
@@ -283,27 +295,22 @@ class ModernApp(QMainWindow):
         # Check the preferences file and get the necessary links
         self.user_lists_link, self.watchlist_link = self.checkPreferences()
 
-        # Create a combo box to select a list
-        self.list_combo = QComboBox()
-        self.list_combo.addItem("Watchlist")  # Add a default option
-        self.list_names = []
-        self.list_links = []
+        if not (self.user_lists_link == "" and self.watchlist_link == ""):
+            # Send an HTTP GET request to fetch the IMDb user lists page
+            response = requests.get(self.user_lists_link, headers=headers)
 
-        # Send an HTTP GET request to fetch the IMDb user lists page
-        response = requests.get(self.user_lists_link, headers=headers)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
+                list_items = soup.find_all('li', class_='ipl-zebra-list__item user-list')
 
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            list_items = soup.find_all('li', class_='ipl-zebra-list__item user-list')
-
-            # Extract the list names and links
-            for item in list_items:
-                list_name = item.find('a', class_='list-name').text.strip()
-                self.list_names.append(list_name)
-                href = item.find('a', class_='list-name')['href']
-                list_link = f'https://www.imdb.com{href}'
-                self.list_links.append(list_link)
-                self.list_combo.addItem(list_name)
+                # Extract the list names and links
+                for item in list_items:
+                    list_name = item.find('a', class_='list-name').text.strip()
+                    self.list_names.append(list_name)
+                    href = item.find('a', class_='list-name')['href']
+                    list_link = f'https://www.imdb.com{href}'
+                    self.list_links.append(list_link)
+                    self.list_combo.addItem(list_name)
 
         self.main_layout.addWidget(self.list_combo)
 
@@ -357,9 +364,11 @@ class ModernApp(QMainWindow):
     def create_preferences_file(self):
         dialog = PreferencesDialog() # Open the "User Preferences" dialog
         result = dialog.exec_()
+
         if result == QDialog.Accepted:
             with open(self.preferences_file, "w") as file:
-                file.write(f"\"User Lists Link\": \"{dialog.user_lists_link}\"\n\"Watchlist Link\": \"{dialog.watchlist_link}\"")
+                file.write(f"\"User Lists Link\": \"{dialog.user_lists_link}\"\n"
+                           f"\"Watchlist Link\": \"{dialog.watchlist_link}\"")
 
             # Update the combo box with the new lists
             self.list_combo.clear()
@@ -367,21 +376,32 @@ class ModernApp(QMainWindow):
             self.list_names = []
             self.list_links = []
 
-            # Send an HTTP GET request to fetch the IMDb user lists page
-            response = requests.get(dialog.user_lists_link, headers=headers)
 
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
-                list_items = soup.find_all('li', class_='ipl-zebra-list__item user-list')
+            if dialog.user_lists_link.startswith("https://www.imdb.com/"):
+                # Send an HTTP GET request to fetch the IMDb user lists page
+                response = requests.get(dialog.user_lists_link, headers=headers)
 
-                # Extract the list names and links
-                for item in list_items:
-                    list_name = item.find('a', class_='list-name').text.strip()
-                    self.list_names.append(list_name)
-                    href = item.find('a', class_='list-name')['href']
-                    list_link = f'https://www.imdb.com{href}'
-                    self.list_links.append(list_link)
-                    self.list_combo.addItem(list_name)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    list_items = soup.find_all('li', class_='ipl-zebra-list__item user-list')
+
+                    # Extract the list names and links
+                    for item in list_items:
+                        list_name = item.find('a', class_='list-name').text.strip()
+                        self.list_names.append(list_name)
+                        href = item.find('a', class_='list-name')['href']
+                        list_link = f'https://www.imdb.com{href}'
+                        self.list_links.append(list_link)
+                        self.list_combo.addItem(list_name)
+
+            else:
+                # Qmessagebox to show error
+                error_message = QMessageBox()
+                error_message.setWindowTitle("Error")
+                error_message.setText("Please enter a valid URL for the \"IMDB User Lists Link\" field.")
+                error_message.setIcon(QMessageBox.Critical)
+                error_message.exec_()
+
 
     def find_random_movie(self):
         selected_index = self.list_combo.currentIndex()
