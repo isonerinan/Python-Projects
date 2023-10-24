@@ -63,6 +63,8 @@ If, for whatever reason, you decided to give a shot to someone else's taste in m
 You are now ready to use the program. Have a nice watch!
 
 # Working On
+- Executable file so that you don't have to install Python and the required libraries
+- Statistics!
 - Bug fixes
 
 # TODO

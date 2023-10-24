@@ -221,6 +221,234 @@ class MyFavoritesDialog(QDialog):
 
         self.setLayout(layout)
 
+# Custom QDialog class for the Statistics dialog
+class StatisticsWindow(QDialog):
+    def __init__(self, ratings_data):
+        super().__init__()
+        self.setWindowTitle("Statistics")
+
+        # Set the window size to a reasonable size
+        self.resize(700, 400)
+
+        layout = QVBoxLayout()
+
+        # Your favorite director/creator based on the average rating you have given to their movies/series
+        favorite_director_label = QLabel("Your Favorite Director/Creator:")
+        favorite_director_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(favorite_director_label)
+
+        # Get the favorite director/creator
+        favorite_directors = self.get_favorite_director(ratings_data)
+
+        # Create a QVBoxLayout to add QLabel widgets
+        director_labels_layout = QVBoxLayout()
+
+        # Iterate through the favorite directors and add them to QLabel widgets
+        for director, info in favorite_directors:
+            director_label = QLabel(f"{director}: {info[0]:.2f}/10 ({info[1]} titles)")
+            director_label.setAlignment(Qt.AlignCenter)
+            director_labels_layout.addWidget(director_label)
+
+        # Create a QWidget to hold the QLabel widgets
+        director_labels_widget = QWidget()
+        director_labels_widget.setLayout(director_labels_layout)
+
+        # Add the director_labels_widget to your main layout
+        layout.addWidget(director_labels_widget)
+
+        # Your favorite genre based on the average rating you have given to movies/series of that genre
+        favorite_genre_label = QLabel("Your Favorite Genre:")
+        favorite_genre_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(favorite_genre_label)
+
+        # Get the favorite genre
+        favorite_genres = self.get_favorite_genre(ratings_data)
+
+        # Create a QVBoxLayout to add QLabel widgets
+        genre_labels_layout = QVBoxLayout()
+
+        # Iterate through the favorite directors and add them to QLabel widgets
+        for genre, avg_rating in favorite_genres:
+            genre_label = QLabel(f"{genre}: {avg_rating:.2f}")
+            genre_label.setAlignment(Qt.AlignCenter)
+            genre_labels_layout.addWidget(genre_label)
+
+        # Create a QWidget to hold the QLabel widgets
+        genre_labels_widget = QWidget()
+        genre_labels_widget.setLayout(genre_labels_layout)
+
+        # Add the director_labels_widget to your main layout
+        layout.addWidget(genre_labels_widget)
+
+        # Your favorite TV series based on the average rating you have given to its episodes
+        favorite_tv_series_label = QLabel("Your Favorite TV Series:")
+        favorite_tv_series_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(favorite_tv_series_label)
+
+        # Get the favorite TV series
+        favorite_tv_series = self.get_favorite_tv_series(ratings_data)
+
+        # Create a QVBoxLayout to add QLabel widgets
+        tv_labels_layout = QVBoxLayout()
+
+        # Iterate through the favorite directors and add them to QLabel widgets
+        for tv, avg_rating in favorite_tv_series:
+            tv_label = QLabel(f"{tv}: {avg_rating:.2f}")
+            tv_label.setAlignment(Qt.AlignCenter)
+            tv_labels_layout.addWidget(tv_label)
+
+        # Create a QWidget to hold the QLabel widgets
+        tv_labels_widget = QWidget()
+        tv_labels_widget.setLayout(tv_labels_layout)
+
+        # Add the director_labels_widget to your main layout
+        layout.addWidget(tv_labels_widget)
+
+        # Add more labels or widgets for other statistics
+
+        self.setLayout(layout)
+
+    def get_favorite_director(self, ratings_data):
+        director_ratings = {}
+        director_title_counts = {}
+
+        # Loop through the ratings_data list
+        for item in ratings_data:
+            # Check if the title type is "movie"
+            if item['Title Type'] == "movie":
+                # Extract director and rating
+                director = item['Directors']
+                rating = float(item['Your Rating'])
+
+                # Check if the director is already in the dictionary
+                if director in director_ratings:
+                    # Add the rating to the existing director
+                    director_ratings[director] += rating
+                    director_title_counts[director] += 1
+                else:
+                    # Add the director to the dictionary
+                    director_ratings[director] = rating
+                    director_title_counts[director] = 1
+
+        # Check if there are any ratings
+        if director_ratings:
+            # Calculate the average rating for each director
+            director_average_ratings = {
+                director: director_ratings[director] / director_title_counts[director]
+                for director in director_ratings
+            }
+
+            # Sort the directors by average rating in descending order
+            sorted_directors_by_avg_rating = sorted(director_average_ratings.items(), key=lambda x: x[1], reverse=True)
+
+            # Create a dictionary to store directors' data with both average rating and title count
+            directors_data = {}
+            for director, avg_rating in sorted_directors_by_avg_rating:
+                directors_data[director] = (avg_rating, director_title_counts.get(director, 0))
+
+            # Sort the directors by both average rating and title count
+            sorted_directors = sorted(directors_data.items(), key=lambda x: (x[1][0], x[1][1]), reverse=True)
+
+            # Return the top 5 favorite directors and their average ratings
+            top_5_favorites = sorted_directors[:5]
+            print(sorted_directors)
+
+            return top_5_favorites
+        else:
+            return "N/A"  # Return "N/A" and 0.0 for average rating when there are no ratings
+
+    # Get the favorite genre based on the average rating you have given to movies/series of that genre
+    def get_favorite_genre(self, ratings_data):
+        genre_ratings = {}
+        genre_title_counts = {}
+
+        # Loop through the ratings_data list
+        for item in ratings_data:
+            # Check if the title type is "movie"
+            if item['Title Type'] == "movie":
+                # Extract genre and rating
+                genre = item['Genres']
+                rating = float(item['Your Rating'])
+
+                # Check if the genre is already in the dictionary
+                if genre in genre_ratings:
+                    # Add the rating to the existing genre
+                    genre_ratings[genre] += rating
+                    genre_title_counts[genre] += 1
+                else:
+                    # Add the genre to the dictionary
+                    genre_ratings[genre] = rating
+                    genre_title_counts[genre] = 1
+
+        # Check if there are any ratings
+        if genre_ratings:
+            # Calculate the average rating for each genre
+            genre_average_ratings = {
+                genre: genre_ratings[genre] / genre_title_counts[genre]
+                for genre in genre_ratings
+            }
+
+            # Sort the genres by average rating and title count in descending order
+            sorted_series = sorted(genre_average_ratings.items(), key=lambda x: (x[1], x[0]), reverse=True)
+
+            # Return the top 5 favorite genres and their average ratings
+            top_5_favorites = sorted_series[:5]
+
+            return top_5_favorites
+        else:
+            return "N/A"  # Return "N/A" and 0.0 for average rating when there are no ratings
+
+    # Get the favorite TV series based on the average rating you have given to its episodes
+    def get_favorite_tv_series(self, ratings_data):
+        tv_series_names = {}
+        tv_episode_ratings = {}
+        tv_series_episode_counts = {}
+
+        # Loop through the ratings_data list
+        for item in ratings_data:
+            # Check if the title type is "tvEpisode"
+            if item['Title Type'] == "tvEpisode":
+                # Split the title into series name and episode name
+                title_parts = item['Title'].split(':')
+                if len(title_parts) >= 2:
+                    series_name = title_parts[0].strip()
+
+                    # Check if the series is already in the dictionary
+                    if series_name in tv_series_names:
+                        # Add the rating to the existing series
+                        tv_episode_ratings[series_name] += float(item['Your Rating'])
+                        tv_series_episode_counts[series_name] += 1
+                    else:
+                        # Add the series to the dictionary
+                        tv_series_names[series_name] = None
+                        tv_episode_ratings[series_name] = float(item['Your Rating'])
+                        tv_series_episode_counts[series_name] = 1
+
+        # Calculate the average rating for each TV series
+        tv_series_average_ratings = {
+            series: tv_episode_ratings[series] / tv_series_episode_counts[series]
+            for series in tv_series_names
+        }
+
+        # Check if there are any TV series with ratings
+        if tv_series_average_ratings:
+            # Calculate the average rating for each TV series
+            tv_series_average_ratings = {
+                series: tv_episode_ratings[series] / tv_series_episode_counts[series]
+                for series in tv_series_names
+            }
+
+            # Sort the TV series by average rating and episode count in descending order
+            sorted_series = sorted(tv_series_average_ratings.items(), key=lambda x: (x[1], x[0]), reverse=True)
+
+            # Return the top 5 favorite TV series and their average ratings
+            top_5_favorites = sorted_series[:5]
+
+            return top_5_favorites
+        else:
+            return "N/A"  # Return "N/A" and 0.0 for average rating when there are no TV series with ratings
+
+
 class ModernApp(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
@@ -245,12 +473,16 @@ class ModernApp(QMainWindow):
         menu_bar = self.menuBar()
         options_menu = menu_bar.addMenu("Options")
 
+        statistics_action = QAction("Your Statistics", self)
+        statistics_action.triggered.connect(self.statistics)
+
         help_action = QAction("Help", self)
         help_action.triggered.connect(self.help)
 
         about_action = QAction("About", self)
         about_action.triggered.connect(self.about)
 
+        menu_bar.addAction(statistics_action)
         menu_bar.addAction(help_action)
         menu_bar.addAction(about_action)
 
@@ -858,6 +1090,32 @@ class ModernApp(QMainWindow):
 
         if self.star_color != "yellow":
             self.change_star_color("white")
+
+    # Show the statistics dialog
+    def statistics(self):
+        # Check if ratings.csv exists
+        self.ratings_csv = "ratings.csv"
+
+        try:
+            # Read the CSV file and store its data in a list of dictionaries
+            ratings_csv_data = []
+            with open(self.ratings_csv, mode='r', encoding='utf-8') as file:
+                csv_reader = csv.DictReader(file)
+                for row in csv_reader:
+                    ratings_csv_data.append(row)
+
+        except FileNotFoundError:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setWindowTitle("Statistics")
+            msg.setText("You have not rated any movies/series yet.")
+            msg.exec_()
+            return
+
+        statistics_window = StatisticsWindow(ratings_csv_data)
+        statistics_window.exec_()
+
+
 
     # Show the help dialog
     def help(self):
