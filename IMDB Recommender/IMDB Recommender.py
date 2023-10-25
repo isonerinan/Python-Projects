@@ -1,3 +1,4 @@
+import math
 import shutil
 import sys
 import os
@@ -233,7 +234,7 @@ class StatisticsWindow(QDialog):
         layout = QVBoxLayout()
 
         # Your favorite director/creator based on the average rating you have given to their movies/series
-        favorite_director_label = QLabel("<b>Your Favorite Movie Directors:</b>")
+        favorite_director_label = QLabel("<h3>Your Favorite Movie Directors</h3>")
         favorite_director_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(favorite_director_label)
 
@@ -245,14 +246,14 @@ class StatisticsWindow(QDialog):
 
         # Iterate through the favorite directors and add them to QLabel widgets
         for director, info in favorite_directors[:5]:
-            director_label = QLabel(f"{director}: {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
+            director_label = QLabel(f"<b>{director}:</b> {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
             director_label.setAlignment(Qt.AlignCenter)
             director_labels_layout.addWidget(director_label)
 
         # Add "See All" button
         director_see_all = QPushButton("See All")
         # Connect the button click to see_all_directors function
-        director_see_all.clicked.connect(lambda: self.see_all_directors(ratings_data))
+        director_see_all.clicked.connect(lambda: self.see_all_directors(ratings_data, favorite_directors))
         director_labels_layout.addWidget(director_see_all)
 
         # Create a QWidget to hold the QLabel widgets
@@ -263,7 +264,7 @@ class StatisticsWindow(QDialog):
         layout.addWidget(director_labels_widget)
 
         # Your favorite genre based on the average rating you have given to movies/series of that genre
-        favorite_genre_label = QLabel("<b>Your Favorite Genres:</b>")
+        favorite_genre_label = QLabel("<h3>Your Favorite Genres</h3>")
         favorite_genre_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(favorite_genre_label)
 
@@ -275,14 +276,14 @@ class StatisticsWindow(QDialog):
 
         # Iterate through the favorite directors and add them to QLabel widgets
         for genre, info in favorite_genres[:5]:
-            genre_label = QLabel(f"{genre}: {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
+            genre_label = QLabel(f"<b>{genre}:</b> {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
             genre_label.setAlignment(Qt.AlignCenter)
             genre_labels_layout.addWidget(genre_label)
 
         # Add "See All" button
         genre_see_all = QPushButton("See All")
         # Connect the button click to see_all_genres function
-        genre_see_all.clicked.connect(lambda: self.see_all_genres(ratings_data))
+        genre_see_all.clicked.connect(lambda: self.see_all_genres(ratings_data, favorite_genres))
         genre_labels_layout.addWidget(genre_see_all)
 
         # Create a QWidget to hold the QLabel widgets
@@ -293,7 +294,7 @@ class StatisticsWindow(QDialog):
         layout.addWidget(genre_labels_widget)
 
         # Your favorite TV series based on the average rating you have given to its episodes
-        favorite_tv_series_label = QLabel("<b>Your Favorite TV Shows:</b>")
+        favorite_tv_series_label = QLabel("<h3>Your Favorite TV Shows</h3>")
         favorite_tv_series_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(favorite_tv_series_label)
 
@@ -305,14 +306,14 @@ class StatisticsWindow(QDialog):
 
         # Iterate through the favorite directors and add them to QLabel widgets
         for tv, info in favorite_tv_series[:5]:
-            tv_label = QLabel(f"{tv}: {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
+            tv_label = QLabel(f"<b>{tv}:</b> {info[0]}/10 ({info[1]:.2f}/10 average episode rating in {info[2]} episodes) with {info[3]:.2f} ❤️")
             tv_label.setAlignment(Qt.AlignCenter)
             tv_labels_layout.addWidget(tv_label)
 
         # Add "See All" button
         tv_see_all = QPushButton("See All")
         # Connect the button click to see_all_tv_series function
-        tv_see_all.clicked.connect(lambda: self.see_all_tv_series(ratings_data))
+        tv_see_all.clicked.connect(lambda: self.see_all_tv_series(ratings_data, favorite_tv_series))
         tv_labels_layout.addWidget(tv_see_all)
 
         # Create a QWidget to hold the QLabel widgets
@@ -369,10 +370,7 @@ class StatisticsWindow(QDialog):
         else:
             return "N/A"  # Return "N/A" and 0.0 for average rating when there are no ratings
 
-    def see_all_directors(self, ratings_data):
-        # Get the favorite director
-        favorite_directors = self.get_favorite_director(ratings_data)
-
+    def see_all_directors(self, ratings_data, favorite_directors):
         # Create a new QDialog to show all the directors
         dialog = QDialog()
         dialog.setWindowTitle("All Directors")
@@ -458,10 +456,7 @@ class StatisticsWindow(QDialog):
         else:
             return "N/A"  # Return "N/A" and 0.0 for average rating when there are no ratings
 
-    def see_all_genres(self, ratings_data):
-        # Get the favorite genre
-        favorite_genres = self.get_favorite_genre(ratings_data)
-
+    def see_all_genres(self, ratings_data, favorite_genres):
         # Create a new QDialog to show all the genres
         dialog = QDialog()
         dialog.setWindowTitle("All Genres")
@@ -503,90 +498,151 @@ class StatisticsWindow(QDialog):
 
     # Get the favorite TV series based on the average rating you have given to its episodes
     def get_favorite_tv_series(self, ratings_data):
-        tv_series_names = {}
-        tv_episode_ratings = {}
-        tv_series_episode_counts = {}
+        tv_series_data = {}
 
         # Loop through the ratings_data list
         for item in ratings_data:
+
+            # Check if the title type is "tvSeries"
+            if item['Title Type'] == "tvSeries":
+                series_name = item['Title']
+                rating = float(item['Your Rating'])
+
+                if series_name not in tv_series_data:
+                    tv_series_data[series_name] = {
+                        'Your Rating': 0,
+                        'Average Episode Rating': 0.0,
+                        'Love Formula': 0.0,
+                        'Episode Count': 0  # Initialize episode count
+                    }
+
+                # Update TV series rating
+                tv_series_data[series_name]['Your Rating'] = rating
+                tv_series_data[series_name]['Average Episode Rating'] += 0.0
+                tv_series_data[series_name]['Episode Count'] += 0
+
             # Check if the title type is "tvEpisode"
-            if item['Title Type'] == "tvEpisode":
+            elif item['Title Type'] == "tvEpisode":
                 # Split the title into series name and episode name
-                title_parts = item['Title'].split(':')
-                if len(title_parts) >= 2:
-                    series_name = title_parts[0].strip()
+                # There are four possibilities:
+                # "Series Name: Episode Name",
+                # "Series Name: 'Episode Name: Episode Part'",
+                # "'IP Name: Series Name': Episode Name",
+                # "'IP Name: Series Name': 'Episode Name: Episode Part'"
+                title_split = item['Title'].split(":")
 
-                    # Check if the series is already in the dictionary
-                    if series_name in tv_series_names:
-                        # Add the rating to the existing series
-                        tv_episode_ratings[series_name] += float(item['Your Rating'])
-                        tv_series_episode_counts[series_name] += 1
-                    else:
-                        # Add the series to the dictionary
-                        tv_series_names[series_name] = None
-                        tv_episode_ratings[series_name] = float(item['Your Rating'])
-                        tv_series_episode_counts[series_name] = 1
+                # Determine how many colons are in the title and act accordingly
+                num_colons = len(title_split)
 
-        # Calculate the average rating for each TV series
-        tv_series_average_ratings = {
-            series: tv_episode_ratings[series] / tv_series_episode_counts[series]
-            for series in tv_series_names
-        }
+                if num_colons == 2:
+                    # Format: "Series Name: Episode Name"
+                    series_name = title_split[0]
+                elif num_colons == 3:
+                    # Format: "Series Name: 'Episode Name: Episode Part'" or "'IP Name: Series Name': Episode Name"
+                    # Check the URL to determine which format it is
+                    title_url = item['URL']
 
-        # Calculate the love_formula for each TV series
-        tv_series_love_formulas = {
-            series: (avg_rating, tv_series_episode_counts[series],
-                       ((avg_rating ** 5) * (tv_series_episode_counts[series] ** 1.3)) / 1000)
-            for series, avg_rating in tv_series_average_ratings.items()
-        }
+                    # Get the HTML content of the title URL
+                    title_html = requests.get(title_url, headers=headers).text
 
-        # Check if there are any TV series with ratings
-        if tv_series_average_ratings:
-            # Calculate the average rating for each TV series
-            tv_series_average_ratings = {
-                series: tv_episode_ratings[series] / tv_series_episode_counts[series]
-                for series in tv_series_names
-            }
+                    # Create a BeautifulSoup object from the HTML content
+                    title_soup = BeautifulSoup(title_html, 'html.parser')
 
-            # Sort the TV series by love_formula in descending order
-            sorted_series = sorted(tv_series_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
+                    # Get the title from the HTML content
+                    series_name = title_soup.find("div", class_="kBNRhP").a.text
+                    print(series_name)
 
-            return sorted_series
-        else:
-            return "N/A"  # Return "N/A" and 0.0 for average rating when there are no TV series with ratings
+                elif num_colons == 4:
+                    # Format: "'IP Name: Series Name': 'Episode Name: Episode Part'"
+                    series_name = title_split[0] + ":" + title_split[1]
+                else:
+                    # Handle unexpected formats
+                    continue  # Skip this item
 
-    def see_all_tv_series(self, ratings_data):
-        # Get the favorite TV series
-        favorite_tv_series = self.get_favorite_tv_series(ratings_data)
+                if series_name not in tv_series_data:
+                    tv_series_data[series_name] = {
+                        'Your Rating': 0,
+                        'Average Episode Rating': 0.0,
+                        'Love Formula': 0.0,
+                        'Episode Count': 0  # Initialize episode count
+                    }
 
+                # Update episode rating
+                tv_series_data[series_name]['Your Rating'] += 0
+                tv_series_data[series_name]['Average Episode Rating'] += float(item['Your Rating'])
+                tv_series_data[series_name]['Episode Count'] += 1
+
+        # Calculate average episode ratings and love formulas
+        for series_name, data in tv_series_data.items():
+            if data['Episode Count'] > 0:
+                data['Average Episode Rating'] /= data['Episode Count']
+
+            if data['Episode Count'] != 0 and data['Your Rating'] != 0:
+                love_formula = (
+                        # Geometric mean of user's rating for the series and average episode rating
+                        # Weighted by the number of episodes rated by the user
+                        math.sqrt((data['Average Episode Rating'] ** 5) *
+                                  (data['Your Rating'] ** 5)) *
+                        (data['Episode Count'] ** 1.3) / 1000
+                )
+
+            elif data['Episode Count'] != 0 and data['Your Rating'] == 0:
+                love_formula = (
+                        (data['Average Episode Rating'] ** 5) *
+                        (data['Episode Count'] ** 1.3) / 1000
+                )
+
+            elif data['Episode Count'] == 0 and data['Your Rating'] != 0:
+                love_formula = (
+                        (data['Your Rating'] ** 5) / 1000
+                )
+
+            data['Love Formula'] = love_formula
+
+        # Sort the TV series by love formula in descending order
+        sorted_series = sorted(
+            tv_series_data.items(),
+            key=lambda x: x[1]['Love Formula'],
+            reverse=True
+        )
+
+        # Return the sorted data in the desired format
+        formatted_data = [(series_name, (data['Your Rating'], data['Average Episode Rating'], data['Episode Count'], data['Love Formula'])) for
+                          series_name, data in sorted_series]
+
+        return formatted_data if formatted_data else "N/A"
+
+    def see_all_tv_series(self, ratings_data, favorite_tv_series):
         # Create a new QDialog to show all the TV series
         dialog = QDialog()
         dialog.setWindowTitle("All TV Shows")
 
         # Set the window size to a reasonable size so that the table is visible
-        dialog.resize(800, 500)
+        dialog.resize(1000, 550)
 
         layout = QVBoxLayout()
 
         # If there are too many TV series, show them in a table
         if favorite_tv_series:
-            table = SortableTable(len(favorite_tv_series), 4)
-            table.setHorizontalHeaderLabels(["TV Show", "Average Rating", "Episode Count", "Your Love For Them"])
+            table = SortableTable(len(favorite_tv_series), 5)
+            table.setHorizontalHeaderLabels(["TV Show", "Series Rating", "Average Episode Rating", "Episodes Rated By You", "Your Love For Them"])
             table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
             table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
             for row, (series, info) in enumerate(favorite_tv_series):
                 # Convert data to strings
                 series_str = str(series)
-                avg_rating_str = f"{info[0]:.2f}"
-                episode_count_str = str(info[1])
-                your_love_str = f"{info[2]:.4f}"
+                series_rating_str = f"{int(info[0])}"
+                avg_rating_str = f"{info[1]:.2f}"
+                episode_count_str = str(info[2])
+                your_love_str = f"{info[3]:.4f}"
 
                 # Create QTableWidgetItem objects from the strings
                 table.setItem(row, 0, QTableWidgetItem(series_str))
-                table.setItem(row, 1, QTableWidgetItem(avg_rating_str))
-                table.setItem(row, 2, QTableWidgetItem(episode_count_str))
-                table.setItem(row, 3, QTableWidgetItem(your_love_str))
+                table.setItem(row, 1, QTableWidgetItem(series_rating_str))
+                table.setItem(row, 2, QTableWidgetItem(avg_rating_str))
+                table.setItem(row, 3, QTableWidgetItem(episode_count_str))
+                table.setItem(row, 4, QTableWidgetItem(your_love_str))
 
             layout.addWidget(table)
 
