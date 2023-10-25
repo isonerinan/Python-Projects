@@ -14,12 +14,14 @@ The program can take a publicly available user link list as an input and randoml
 The program checks if the user have rated the recommended movie before and shows the rating score, and the date of rating. The web scraping code snippet is in the code, however due to IMDB's robots.txt (https://www.imdb.com/robots.txt) this program cannot web scrape the user ratings page. Therefore you need to download the ratings.csv yourself (See [Importing Your Ratings](#importing-your-ratings) for more).
 
 ## Favorite
-![img.png](img.png)
+![img](https://github.com/isonerinan/Python-Projects/assets/38159563/0d971724-309b-4a7a-b04f-57a83ed61d37)
+
 
 The user can favorite the recommended movie/series using the star icon at the upper left corner of the window, and can see their favorited titles from the "Settings" menu.
 
 ## Dark / Light Mode
-![img_1.png](img_1.png)
+![img_1](https://github.com/isonerinan/Python-Projects/assets/38159563/12624afc-1bea-4f47-a352-86b271dee044)
+
 
 # HOW TO USE
 ## Downloads
