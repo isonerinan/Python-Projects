@@ -274,10 +274,16 @@ class StatisticsWindow(QDialog):
         genre_labels_layout = QVBoxLayout()
 
         # Iterate through the favorite directors and add them to QLabel widgets
-        for genre, avg_rating in favorite_genres:
-            genre_label = QLabel(f"{genre}: {avg_rating:.2f}")
+        for genre, info in favorite_genres[:5]:
+            genre_label = QLabel(f"{genre}: {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
             genre_label.setAlignment(Qt.AlignCenter)
             genre_labels_layout.addWidget(genre_label)
+
+        # Add "See All" button
+        genre_see_all = QPushButton("See All")
+        # Connect the button click to see_all_genres function
+        genre_see_all.clicked.connect(lambda: self.see_all_genres(ratings_data))
+        genre_labels_layout.addWidget(genre_see_all)
 
         # Create a QWidget to hold the QLabel widgets
         genre_labels_widget = QWidget()
@@ -298,10 +304,16 @@ class StatisticsWindow(QDialog):
         tv_labels_layout = QVBoxLayout()
 
         # Iterate through the favorite directors and add them to QLabel widgets
-        for tv, avg_rating in favorite_tv_series:
-            tv_label = QLabel(f"{tv}: {avg_rating:.2f}")
+        for tv, info in favorite_tv_series[:5]:
+            tv_label = QLabel(f"{tv}: {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
             tv_label.setAlignment(Qt.AlignCenter)
             tv_labels_layout.addWidget(tv_label)
+
+        # Add "See All" button
+        tv_see_all = QPushButton("See All")
+        # Connect the button click to see_all_tv_series function
+        tv_see_all.clicked.connect(lambda: self.see_all_tv_series(ratings_data))
+        tv_labels_layout.addWidget(tv_see_all)
 
         # Create a QWidget to hold the QLabel widgets
         tv_labels_widget = QWidget()
@@ -388,13 +400,13 @@ class StatisticsWindow(QDialog):
                 table.setItem(row, 0, QTableWidgetItem(director_str))
                 table.setItem(row, 1, QTableWidgetItem(avg_rating_str))
                 table.setItem(row, 2, QTableWidgetItem(title_count_str))
-                table.setItem(row, 3, QTableWidgetItem(your_love_str + " ❤️"))
+                table.setItem(row, 3, QTableWidgetItem(your_love_str))
 
             layout.addWidget(table)
 
 
         else:
-            no_directors_label = QLabel("You have no favorited directors.")
+            no_directors_label = QLabel("You have no favorite directors.")
             layout.addWidget(no_directors_label)
 
         dialog.setLayout(layout)
@@ -432,15 +444,62 @@ class StatisticsWindow(QDialog):
                 for genre in genre_ratings
             }
 
-            # Sort the genres by average rating and title count in descending order
-            sorted_series = sorted(genre_average_ratings.items(), key=lambda x: (x[1], x[0]), reverse=True)
+            # Calculate the love_formula for each genre
+            genre_love_formulas = {
+                genre: (avg_rating, genre_title_counts[genre],
+                           ((avg_rating ** 5) * (genre_title_counts[genre] ** 1.3)) / 1000)
+                for genre, avg_rating in genre_average_ratings.items()
+            }
 
-            # Return the top 5 favorite genres and their average ratings
-            top_5_favorites = sorted_series[:5]
+            # Sort the genres by the love_formula in descending order
+            sorted_genres = sorted(genre_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
 
-            return top_5_favorites
+            return sorted_genres
         else:
             return "N/A"  # Return "N/A" and 0.0 for average rating when there are no ratings
+
+    def see_all_genres(self, ratings_data):
+        # Get the favorite genre
+        favorite_genres = self.get_favorite_genre(ratings_data)
+
+        # Create a new QDialog to show all the genres
+        dialog = QDialog()
+        dialog.setWindowTitle("All Genres")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(800, 500)
+
+        layout = QVBoxLayout()
+
+        # If there are too many genres, show them in a table
+        if favorite_genres:
+            table = SortableTable(len(favorite_genres), 4)
+            table.setHorizontalHeaderLabels(["Genre", "Average Rating", "Title Count", "Your Love For Them"])
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+            for row, (genre, info) in enumerate(favorite_genres):
+                # Convert data to strings
+                genre_str = str(genre)
+                avg_rating_str = f"{info[0]:.2f}"
+                title_count_str = str(info[1])
+                your_love_str = f"{info[2]:.4f}"
+
+                # Create QTableWidgetItem objects from the strings
+                table.setItem(row, 0, QTableWidgetItem(genre_str))
+                table.setItem(row, 1, QTableWidgetItem(avg_rating_str))
+                table.setItem(row, 2, QTableWidgetItem(title_count_str))
+                table.setItem(row, 3, QTableWidgetItem(your_love_str))
+
+            layout.addWidget(table)
+
+        else:
+            no_genres_label = QLabel("You have no favorite genres.")
+            layout.addWidget(no_genres_label)
+
+        dialog.setLayout(layout)
+        # Connect the sorting function to the header labels
+        dialog.exec_()
 
     # Get the favorite TV series based on the average rating you have given to its episodes
     def get_favorite_tv_series(self, ratings_data):
@@ -474,6 +533,13 @@ class StatisticsWindow(QDialog):
             for series in tv_series_names
         }
 
+        # Calculate the love_formula for each TV series
+        tv_series_love_formulas = {
+            series: (avg_rating, tv_series_episode_counts[series],
+                       ((avg_rating ** 5) * (tv_series_episode_counts[series] ** 1.3)) / 1000)
+            for series, avg_rating in tv_series_average_ratings.items()
+        }
+
         # Check if there are any TV series with ratings
         if tv_series_average_ratings:
             # Calculate the average rating for each TV series
@@ -482,15 +548,55 @@ class StatisticsWindow(QDialog):
                 for series in tv_series_names
             }
 
-            # Sort the TV series by average rating and episode count in descending order
-            sorted_series = sorted(tv_series_average_ratings.items(), key=lambda x: (x[1], x[0]), reverse=True)
+            # Sort the TV series by love_formula in descending order
+            sorted_series = sorted(tv_series_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
 
-            # Return the top 5 favorite TV series and their average ratings
-            top_5_favorites = sorted_series[:5]
-
-            return top_5_favorites
+            return sorted_series
         else:
             return "N/A"  # Return "N/A" and 0.0 for average rating when there are no TV series with ratings
+
+    def see_all_tv_series(self, ratings_data):
+        # Get the favorite TV series
+        favorite_tv_series = self.get_favorite_tv_series(ratings_data)
+
+        # Create a new QDialog to show all the TV series
+        dialog = QDialog()
+        dialog.setWindowTitle("All TV Shows")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(800, 500)
+
+        layout = QVBoxLayout()
+
+        # If there are too many TV series, show them in a table
+        if favorite_tv_series:
+            table = SortableTable(len(favorite_tv_series), 4)
+            table.setHorizontalHeaderLabels(["TV Show", "Average Rating", "Episode Count", "Your Love For Them"])
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+            for row, (series, info) in enumerate(favorite_tv_series):
+                # Convert data to strings
+                series_str = str(series)
+                avg_rating_str = f"{info[0]:.2f}"
+                episode_count_str = str(info[1])
+                your_love_str = f"{info[2]:.4f}"
+
+                # Create QTableWidgetItem objects from the strings
+                table.setItem(row, 0, QTableWidgetItem(series_str))
+                table.setItem(row, 1, QTableWidgetItem(avg_rating_str))
+                table.setItem(row, 2, QTableWidgetItem(episode_count_str))
+                table.setItem(row, 3, QTableWidgetItem(your_love_str))
+
+            layout.addWidget(table)
+
+        else:
+            no_tv_series_label = QLabel("You have no favorite TV shows.")
+            layout.addWidget(no_tv_series_label)
+
+        dialog.setLayout(layout)
+        # Connect the sorting function to the header labels
+        dialog.exec_()
 
 class SortableTable(QTableWidget):
     def __init__(self, rows, cols):
