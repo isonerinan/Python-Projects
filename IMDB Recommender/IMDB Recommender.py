@@ -588,7 +588,7 @@ class StatisticsWindow(QDialog):
 
             elif data['Episode Count'] != 0 and data['Your Rating'] == 0:
                 love_formula = (
-                        (data['Average Episode Rating'] ** 5) *
+                        (data['Average Episode Rating'] ** 2.5) *
                         (data['Episode Count'] ** 1.3) / 1000
                 )
 
