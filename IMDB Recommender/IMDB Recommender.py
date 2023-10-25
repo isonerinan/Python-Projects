@@ -233,7 +233,7 @@ class StatisticsWindow(QDialog):
         layout = QVBoxLayout()
 
         # Your favorite director/creator based on the average rating you have given to their movies/series
-        favorite_director_label = QLabel("Your Favorite Director/Creator:")
+        favorite_director_label = QLabel("<b>Your Favorite Movie Directors:</b>")
         favorite_director_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(favorite_director_label)
 
@@ -244,10 +244,16 @@ class StatisticsWindow(QDialog):
         director_labels_layout = QVBoxLayout()
 
         # Iterate through the favorite directors and add them to QLabel widgets
-        for director, info in favorite_directors:
-            director_label = QLabel(f"{director}: {info[0]:.2f}/10 ({info[1]} titles)")
+        for director, info in favorite_directors[:5]:
+            director_label = QLabel(f"{director}: {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
             director_label.setAlignment(Qt.AlignCenter)
             director_labels_layout.addWidget(director_label)
+
+        # Add "See All" button
+        director_see_all = QPushButton("See All")
+        # Connect the button click to see_all_directors function
+        director_see_all.clicked.connect(lambda: self.see_all_directors(ratings_data))
+        director_labels_layout.addWidget(director_see_all)
 
         # Create a QWidget to hold the QLabel widgets
         director_labels_widget = QWidget()
@@ -257,7 +263,7 @@ class StatisticsWindow(QDialog):
         layout.addWidget(director_labels_widget)
 
         # Your favorite genre based on the average rating you have given to movies/series of that genre
-        favorite_genre_label = QLabel("Your Favorite Genre:")
+        favorite_genre_label = QLabel("<b>Your Favorite Genres:</b>")
         favorite_genre_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(favorite_genre_label)
 
@@ -281,7 +287,7 @@ class StatisticsWindow(QDialog):
         layout.addWidget(genre_labels_widget)
 
         # Your favorite TV series based on the average rating you have given to its episodes
-        favorite_tv_series_label = QLabel("Your Favorite TV Series:")
+        favorite_tv_series_label = QLabel("<b>Your Favorite TV Shows:</b>")
         favorite_tv_series_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(favorite_tv_series_label)
 
@@ -338,24 +344,62 @@ class StatisticsWindow(QDialog):
                 for director in director_ratings
             }
 
-            # Sort the directors by average rating in descending order
-            sorted_directors_by_avg_rating = sorted(director_average_ratings.items(), key=lambda x: x[1], reverse=True)
+            # Calculate the love_formula for each director
+            director_love_formulas = {
+                director: (avg_rating, director_title_counts[director], ((avg_rating ** 5) * (director_title_counts[director] ** 1.3)) / 1000)
+                for director, avg_rating in director_average_ratings.items()
+            }
 
-            # Create a dictionary to store directors' data with both average rating and title count
-            directors_data = {}
-            for director, avg_rating in sorted_directors_by_avg_rating:
-                directors_data[director] = (avg_rating, director_title_counts.get(director, 0))
+            # Sort the directors by the love_formula in descending order
+            sorted_directors = sorted(director_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
 
-            # Sort the directors by both average rating and title count
-            sorted_directors = sorted(directors_data.items(), key=lambda x: (x[1][0], x[1][1]), reverse=True)
-
-            # Return the top 5 favorite directors and their average ratings
-            top_5_favorites = sorted_directors[:5]
-            print(sorted_directors)
-
-            return top_5_favorites
+            return sorted_directors
         else:
             return "N/A"  # Return "N/A" and 0.0 for average rating when there are no ratings
+
+    def see_all_directors(self, ratings_data):
+        # Get the favorite director
+        favorite_directors = self.get_favorite_director(ratings_data)
+
+        # Create a new QDialog to show all the directors
+        dialog = QDialog()
+        dialog.setWindowTitle("All Directors")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(800, 500)
+
+        layout = QVBoxLayout()
+
+        # If there are too many directors, show them in a table
+        if favorite_directors:
+            table = SortableTable(len(favorite_directors), 4)
+            table.setHorizontalHeaderLabels(["Director", "Average Rating", "Title Count", "Your Love For Them"])
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+            for row, (director, info) in enumerate(favorite_directors):
+                # Convert data to strings
+                director_str = str(director)
+                avg_rating_str = f"{info[0]:.2f}"
+                title_count_str = str(info[1])
+                your_love_str = f"{info[2]:.4f}"
+
+                # Create QTableWidgetItem objects from the strings
+                table.setItem(row, 0, QTableWidgetItem(director_str))
+                table.setItem(row, 1, QTableWidgetItem(avg_rating_str))
+                table.setItem(row, 2, QTableWidgetItem(title_count_str))
+                table.setItem(row, 3, QTableWidgetItem(your_love_str + " ❤️"))
+
+            layout.addWidget(table)
+
+
+        else:
+            no_directors_label = QLabel("You have no favorited directors.")
+            layout.addWidget(no_directors_label)
+
+        dialog.setLayout(layout)
+        # Connect the sorting function to the header labels
+        dialog.exec_()
 
     # Get the favorite genre based on the average rating you have given to movies/series of that genre
     def get_favorite_genre(self, ratings_data):
@@ -447,6 +491,33 @@ class StatisticsWindow(QDialog):
             return top_5_favorites
         else:
             return "N/A"  # Return "N/A" and 0.0 for average rating when there are no TV series with ratings
+
+class SortableTable(QTableWidget):
+    def __init__(self, rows, cols):
+        super().__init__(rows, cols)
+        self.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.setHorizontalHeaderLabels([""])
+        self.horizontalHeader().setSortIndicatorShown(True)
+        self.horizontalHeader().sortIndicatorChanged.connect(self.sort_table)
+        self.sorting_order = Qt.DescendingOrder  # Default sorting order
+
+    def sort_table(self, logicalIndex):
+        items = [(
+                 self.item(row, logicalIndex).text(), [self.item(row, col).text() for col in range(self.columnCount())],
+                 row) for row in range(self.rowCount())]
+
+        if self.sorting_order == Qt.AscendingOrder:
+            items.sort(key=lambda x: (float(x[0]) if x[0].replace(".", "", 1).isdigit() else x[0], x[1]))
+        else:
+            items.sort(key=lambda x: (float(x[0]) if x[0].replace(".", "", 1).isdigit() else x[0], x[1]), reverse=True)
+
+        for row, (_, row_data, original_row) in enumerate(items):
+            for col, value in enumerate(row_data):
+                new_item = QTableWidgetItem(value)
+                self.setItem(row, col, new_item)
+
+        self.sorting_order = Qt.AscendingOrder if self.sorting_order == Qt.DescendingOrder else Qt.DescendingOrder
 
 
 class ModernApp(QMainWindow):
