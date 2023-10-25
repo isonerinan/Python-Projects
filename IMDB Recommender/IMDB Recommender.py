@@ -686,6 +686,20 @@ class ModernApp(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.theme = "dark"
+        self.star_color = "white"
+        # Create a star icon at the top left corner on the movie poster
+        star_icon = QIcon("star.svg")
+        star_icon_renderer = QSvgRenderer("star.svg")
+        self.star_icon_pixmap = QPixmap(20, 20)
+        self.star_icon_pixmap.fill(Qt.transparent)
+        self.star_icon_painter = QPainter(self.star_icon_pixmap)
+        star_icon_renderer.render(self.star_icon_painter)
+        self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
+        self.star_icon_painter.end()
+        self.star_icon_label = QLabel()
+        self.star_icon_label.setPixmap(self.star_icon_pixmap)
+
         self.initUI()
 
     def initUI(self):
@@ -1084,20 +1098,18 @@ class ModernApp(QMainWindow):
 
                     # Change the color of the star icon to yellow if it is in the favorites list
                     if self.check_favorites(random_item['Title']):
-                        self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-                        self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 212, 59))
-                        self.star_icon_painter.end()
+                        self.star_color = "yellow"
+                        self.change_star_color(self.star_color)
 
                     else:
                         # If not in the favorites list, change the color of the star icon to white or black depending on the theme
                         if self.theme == "light":
-                            self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-                            self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(0, 0, 0))
-                            self.star_icon_painter.end()
+                            self.star_color = "black"
+                            self.change_star_color(self.star_color)
+
                         else:
-                            self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-                            self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
-                            self.star_icon_painter.end()
+                            self.star_color = "white"
+                            self.change_star_color(self.star_color)
 
                     self.star_icon_label = QLabel(self.poster_label)
                     self.star_icon_label.setPixmap(self.star_icon_pixmap)
@@ -1224,9 +1236,11 @@ class ModernApp(QMainWindow):
 
             # Change the color of the star icon to white/black depending on the theme
             if self.theme == "light":
-                self.change_star_color("black")
+                self.star_color = "black"
+                self.change_star_color(self.star_color)
             else:
-                self.change_star_color("white")
+                self.star_color = "white"
+                self.change_star_color(self.star_color)
 
             # Show a success pop-up
             msg = QMessageBox()
@@ -1312,17 +1326,19 @@ class ModernApp(QMainWindow):
     def light_theme(self):
         app.setPalette(light_palette)
         self.theme = "light"
+        self.star_color = "black"
 
         if self.star_color != "yellow":
-            self.change_star_color("black")
+            self.change_star_color(self.star_color)
 
     # Change the theme to dark
     def dark_theme(self):
         app.setPalette(dark_palette)
         self.theme == "dark"
+        self.star_color = "white"
 
         if self.star_color != "yellow":
-            self.change_star_color("white")
+            self.change_star_color(self.star_color)
 
     # Show the statistics dialog
     def statistics(self):
