@@ -64,9 +64,10 @@ You are now ready to use the program. Have a nice watch!
 
 # Working On
 - Executable file so that you don't have to install Python and the required libraries
-- Statistics!
+- More statistics!
 - Bug fixes
 
 # TODO
+- Version control
 - Find out if I can bypass IMDB's robots.txt (probably not)
 - Add support for other sites like Letterboxd, maybe?

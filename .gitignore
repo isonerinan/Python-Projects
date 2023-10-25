@@ -1,3 +1,4 @@
 Spotify Test/
-IMDB Recommender/img.png
-IMDB Recommender/img_1.png
+IMDB Recommender/*.png
+IMDB Recommender/*.txt
+IMDB Recommender/*.csv
