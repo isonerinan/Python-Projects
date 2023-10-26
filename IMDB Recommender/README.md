@@ -13,15 +13,33 @@ The program can take a publicly available user link list as an input and randoml
 ## Rating History Check
 The program checks if the user have rated the recommended movie before and shows the rating score, and the date of rating. The web scraping code snippet is in the code, however due to IMDB's robots.txt (https://www.imdb.com/robots.txt) this program cannot web scrape the user ratings page. Therefore you need to download the ratings.csv yourself (See [Importing Your Ratings](#importing-your-ratings) for more).
 
-## Favorite
-![img](https://github.com/isonerinan/Python-Projects/assets/38159563/0d971724-309b-4a7a-b04f-57a83ed61d37)
-
+## Favorites
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/06a0e9bb-93bf-4b08-91ca-bcfcabcb6448)
 
 The user can favorite the recommended movie/series using the star icon at the upper left corner of the window, and can see their favorited titles from the "Settings" menu.
 
+## Statistics
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/5ed18579-315e-4856-b67c-222430ac78fd)
+
+Using your IMDB ratings (if you have imported your [ratings.csv](#importing-your-ratings) file), the program calculates which directors, genres or TV series are your favorites.
+
+### Favorite Directors
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/dbe14d04-05c4-4263-85cd-72c2282296be)
+
+Your favorite directors are calculated using how many of their movies you have rated, and your average rating for them. It is assumed that you tend to watch more movies from the directors you love more.
+
+### Favorite Genres
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/3569f4a1-0f0a-4703-b7c5-762f725efac6)
+
+Your favorite genres are calculated using how many titles you have rated that belongs to that genre, and your average rating for them. It is assumed that you tend to watch more movies from the genres you love more.
+
+### Favorite TV Series
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/d921a818-bccb-4754-8b21-75bf0e46414f)
+
+Your favorite TV Series are calculated using your rating for the series, your rating for the series' individual episodes, and how many episodes you have rated. It is assumed that you tend to rate more episode from the series you love more.
+
 ## Dark / Light Mode
 ![img_1](https://github.com/isonerinan/Python-Projects/assets/38159563/12624afc-1bea-4f47-a352-86b271dee044)
-
 
 # HOW TO USE
 ## Downloads
@@ -33,6 +51,8 @@ The user can favorite the recommended movie/series using the star icon at the up
 Make sure they are in the same directory, if not, you have to change the directory in the code accordingly. 
 
 ## Imports
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/94601f23-37f9-4dab-ad4f-01eec4a624d7)
+
 ### Importing Your Watchlist
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/d4a0a6e7-4699-4224-9bd1-53f71c6b2843)
 
