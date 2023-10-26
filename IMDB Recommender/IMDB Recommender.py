@@ -200,19 +200,25 @@ class MyFavoritesDialog(QDialog):
         # Set the window size to a reasonable size so that the table is visible
         self.resize(800, 500)
 
-        # If there are too many favorites, show them in a table
+        # If there are any favorites, show them in a table
         if favorites_data:
             table = QTableWidget()
             table.setRowCount(len(favorites_data))
-            table.setColumnCount(2)
-            table.setHorizontalHeaderLabels(["Title", "URL"])
+            table.setColumnCount(3)  # Add an extra column for the delete button
+            table.setHorizontalHeaderLabels(["Title", "URL", "Delete"])
             table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
             table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
-            table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            table.setEditTriggers(QTableWidget.NoEditTriggers)
 
             for row in range(len(favorites_data)):
                 for column in range(2):
                     table.setItem(row, column, QTableWidgetItem(favorites_data[row][column]))
+
+                # Create a delete button for each row
+                delete_button = QPushButton("X")
+                delete_button.clicked.connect(self.delete_row)
+                delete_button.setProperty("row_index", row)  # Store the row index as a property
+                table.setCellWidget(row, 2, delete_button)
 
             layout.addWidget(table)
 
@@ -221,6 +227,38 @@ class MyFavoritesDialog(QDialog):
             layout.addWidget(no_favorites_label)
 
         self.setLayout(layout)
+
+    def delete_row(self):
+        # Get the clicked button and the associated row index
+        sender = self.sender()
+        row_index = sender.property("row_index")
+        print(f"Row index: {row_index}")
+
+        # Read the content of the favorites.csv file into a list
+        with open('favorites.csv', 'r') as file:
+            lines = file.readlines()
+            print(lines)
+
+        if 0 <= row_index < len(lines) - 1:
+            # Remove the identified row from the list
+            lines.pop(row_index + 1)
+            print(lines)
+
+            # Write the updated list back to the favorites.csv file (open mode read and write so that we can update lines again)
+            with open('favorites.csv', 'w') as file:
+                file.writelines(lines)
+
+            # Remove the row from the table
+            table = self.findChild(QTableWidget)
+            if table is not None:
+                table.removeRow(row_index)
+
+            # Update row_index property of the delete buttons
+            for row in range(row_index, table.rowCount()):
+                button = table.cellWidget(row, 2)
+                button.setProperty("row_index", row)
+
+
 
 # Custom QDialog class for the Statistics dialog
 class StatisticsWindow(QDialog):
@@ -830,7 +868,7 @@ class ModernApp(QMainWindow):
 
         self.setLayout(self.main_layout)
 
-        find_movie_button = QPushButton("Find A Movie!")
+        find_movie_button = QPushButton("Find Something to Watch!")
         find_movie_button.clicked.connect(self.find_random_movie)
         self.main_layout.addWidget(find_movie_button)
 
