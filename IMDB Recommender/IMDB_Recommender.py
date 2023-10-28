@@ -1430,7 +1430,7 @@ class ModernApp(QMainWindow):
         list_link = self.custom_list.text()
 
         # Call the list_random function with the input
-        self.list_random(list_link)
+        self.list_random(list_link, self.min_rating, self.selected_genre)
 
     def show_filters(self):
         if self.filters_container.isHidden():
@@ -1543,7 +1543,7 @@ class ModernApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>IMDB Recommender</h1>"
-                    "<h3>Version 2.5</h3>"
+                    "<h3>Version 3.0</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
