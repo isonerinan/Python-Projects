@@ -419,7 +419,7 @@ class StatisticsWindow(QDialog):
         # If there are too many directors, show them in a table
         if favorite_directors:
             table = SortableTable(len(favorite_directors), 4)
-            table.setHorizontalHeaderLabels(["Director", "Average Rating", "Title Count", "Your Love For Them"])
+            table.setHorizontalHeaderLabels(["Director", "Average Rating", "Rated Movies", "Your Love For Them"])
             table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
             table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
@@ -454,21 +454,24 @@ class StatisticsWindow(QDialog):
 
         # Loop through the ratings_data list
         for item in ratings_data:
-            # Check if the title type is "movie"
-            if item['Title Type'] == "movie":
-                # Extract genre and rating
-                genre = item['Genres']
+            # Check if the title type is not "tvEpisode", since the genre of a TV episode is the genre of the TV series
+            if item['Title Type'] != "tvEpisode":
+                # Extract genres and rating
+                genres = item['Genres'].split(", ")
                 rating = float(item['Your Rating'])
 
-                # Check if the genre is already in the dictionary
-                if genre in genre_ratings:
-                    # Add the rating to the existing genre
-                    genre_ratings[genre] += rating
-                    genre_title_counts[genre] += 1
-                else:
-                    # Add the genre to the dictionary
-                    genre_ratings[genre] = rating
-                    genre_title_counts[genre] = 1
+                # Loop through the genres
+                for genre in genres:
+                    # Check if the genre is already in the dictionary
+                    if genre in genre_ratings:
+                        # Add the rating to the existing genre
+                        genre_ratings[genre] += rating
+                        genre_title_counts[genre] += 1
+                    else:
+                        # Add the genre to the dictionary
+                        genre_ratings[genre] = rating
+                        genre_title_counts[genre] = 1
+
 
         # Check if there are any ratings
         if genre_ratings:
