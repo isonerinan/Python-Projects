@@ -11,9 +11,9 @@ After importing, you can choose to get recommendations from any of your public u
 The program can take a publicly available user link list as an input and randomly select a movie from that list. (See [Getting Recommendation From Custom User Lists](#getting-recommendation-from-custom-user-lists))
 
 ## Filtering
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/99e5877c-47ac-468b-a49f-707c4eefa98f)
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/8728f674-72c2-4927-8f53-2aabb4bb0f2e)
 
-You can filter the minimum IMDB rating and desired genre, so that the recommendations will be more relevant.
+You can filter the minimum IMDB rating, maximum runtime and desired genre so that the recommendations will be more relevant.
 
 ## Rating History Check
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/93fc0d1c-d105-4ae9-a7fc-d93e556c4c78)
@@ -28,7 +28,7 @@ The web scraping code snippet is in the code, however due to IMDB's robots.txt (
 You can favorite the recommended movie/series using the star icon at the upper left corner of the window, and can see your favorited titles from the "Settings" menu.
 
 ## Statistics
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/a9174fea-880c-4a64-9263-7b3dcca9a062)
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/5c17f8b7-cc1f-4309-a9cf-8ab8d5966ae1)
 
 Using your IMDB ratings (if you have imported your [ratings.csv](#importing-your-ratings) file), the program calculates which directors, genres or TV series are your favorites.
 
@@ -54,10 +54,9 @@ Your favorite TV Series are calculated using your rating for the series, your ra
 ## Downloads
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/3725a159-7791-4101-83a9-bfcec8e55ccd)
 
-- Download [IMDB Recommender.py](https://github.com/isonerinan/Python-Projects/blob/27cfd4181afd54c833545aa73f0aec42dcdd4c74/IMDB%20Recommender/IMDB%20Recommender.py)
+- Download [IMDB_Recommender_v3.1.zip](https://github.com/isonerinan/Python-Projects/releases/download/v3.1/IMDB_Recommender_v3.1.zip) and extract wherever you like.
 - Download [star.svg](https://github.com/isonerinan/Python-Projects/blob/27cfd4181afd54c833545aa73f0aec42dcdd4c74/IMDB%20Recommender/star.svg)
-
-Make sure they are in the same directory, if not, you have to change the directory in the code accordingly. 
+- Make sure they are in the same directory.
 
 ## Imports
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/94601f23-37f9-4dab-ad4f-01eec4a624d7)
@@ -96,8 +95,6 @@ If, for whatever reason, you decided to give a shot to someone else's taste in m
 You are now ready to use the program. Have a nice watch!
 
 # Working On
-- Executable file so that you don't have to install Python and the required libraries
-- More statistics!
 - Bug fixes
 
 # TODO
