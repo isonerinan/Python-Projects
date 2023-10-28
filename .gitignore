@@ -2,3 +2,6 @@ Spotify Test/
 IMDB Recommender/*.png
 IMDB Recommender/*.txt
 IMDB Recommender/*.csv
+IMDB Recommender/build/
+IMDB Recommender/dist/
+IMDB Recommender/*.gif

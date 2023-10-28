@@ -99,5 +99,7 @@ You are now ready to use the program. Have a nice watch!
 
 # TODO
 - Version control
+- "Currently Watching" tab
+- Gamification (Point System), maybe?
 - Find out if I can bypass IMDB's robots.txt (probably not)
 - Add support for other sites like Letterboxd, maybe?
