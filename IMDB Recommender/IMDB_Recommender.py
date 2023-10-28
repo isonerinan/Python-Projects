@@ -8,11 +8,13 @@ import csv
 import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
-    QTableWidget, QHeaderView, QTableWidgetItem, QSlider
+    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
 import re
+
+from openpyxl.chart import PieChart
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -267,12 +269,12 @@ class StatisticsWindow(QDialog):
         # Set the window size to a reasonable size
         self.resize(700, 400)
 
-        layout = QVBoxLayout()
+        layout = QGridLayout()
 
         # Your favorite director/creator based on the average rating you have given to their movies/series
         favorite_director_label = QLabel("<h3>Your Favorite Movie Directors</h3>")
         favorite_director_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(favorite_director_label)
+        layout.addWidget(favorite_director_label, 0, 0, 1, 2)   # Row 0, Col 0-1
 
         # Get the favorite director/creator
         favorite_directors = self.get_favorite_director(ratings_data)
@@ -297,12 +299,12 @@ class StatisticsWindow(QDialog):
         director_labels_widget.setLayout(director_labels_layout)
 
         # Add the director_labels_widget to your main layout
-        layout.addWidget(director_labels_widget)
+        layout.addWidget(director_labels_widget, 1, 0)  # Row 1, Col 0
 
         # Your favorite genre based on the average rating you have given to movies/series of that genre
         favorite_genre_label = QLabel("<h3>Your Favorite Genres</h3>")
         favorite_genre_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(favorite_genre_label)
+        layout.addWidget(favorite_genre_label, 0, 2, 1, 2)  # Row 0, Col 2-3
 
         # Get the favorite genre
         favorite_genres = self.get_favorite_genre(ratings_data)
@@ -327,12 +329,12 @@ class StatisticsWindow(QDialog):
         genre_labels_widget.setLayout(genre_labels_layout)
 
         # Add the director_labels_widget to your main layout
-        layout.addWidget(genre_labels_widget)
+        layout.addWidget(genre_labels_widget, 1, 2)  # Row 1, Col 2
 
         # Your favorite TV series based on the average rating you have given to its episodes
         favorite_tv_series_label = QLabel("<h3>Your Favorite TV Shows</h3>")
         favorite_tv_series_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(favorite_tv_series_label)
+        layout.addWidget(favorite_tv_series_label, 2, 0, 1, 2)  # Row 2, Col 0-1
 
         # Get the favorite TV series
         favorite_tv_series = self.get_favorite_tv_series(ratings_data)
@@ -357,11 +359,209 @@ class StatisticsWindow(QDialog):
         tv_labels_widget.setLayout(tv_labels_layout)
 
         # Add the director_labels_widget to your main layout
-        layout.addWidget(tv_labels_widget)
+        layout.addWidget(tv_labels_widget, 3, 0)    # Row 3, Col 0
 
-        # Add more labels or widgets for other statistics
+        # Watchlist statistics
+        watchlist_stats_label = QLabel("<h3>Your Watchlist Statistics</h3><br>"
+                                       "<b>Top Title Types</b><br>")
+        watchlist_stats_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(watchlist_stats_label, 2, 2, 1, 2)  # Row 2, Col 2-3
+
+        # Get the watchlist statistics
+        watchlist_type_stats, watchlist_genre_stats = self.get_watchlist_stats()
+
+        # Create a QVBoxLayout to add QLabel widgets
+        watchlist_stats_layout = QVBoxLayout()
+
+        # Iterate through the watchlist statistics and add them to QLabel widgets
+        for stat in watchlist_type_stats[:5]:
+            watchlist_type_stat_label = QLabel(f"<b>{stat[0]}:</b> {stat[1][0]} ({stat[1][1]:.2f}%)")
+            watchlist_type_stat_label.setAlignment(Qt.AlignCenter)
+            watchlist_stats_layout.addWidget(watchlist_type_stat_label)
+
+        watchlist_stats_layout.addWidget(QLabel("<br><center><b>Top Genres</b></center><br>"))
+
+        for stat in watchlist_genre_stats[:5]:
+            watchlist_genre_stat_label = QLabel(f"<b>{stat[0]}:</b> {stat[1][0]} ({stat[1][1]:.2f}%)")
+            watchlist_genre_stat_label.setAlignment(Qt.AlignCenter)
+            watchlist_stats_layout.addWidget(watchlist_genre_stat_label)
+
+
+        # Add "See All" button
+        watchlist_stats_see_all = QPushButton("See All")
+        # Connect the button click to see_all_watchlist_stats function
+        watchlist_stats_see_all.clicked.connect(lambda: self.see_all_watchlist_stats(watchlist_type_stats, watchlist_genre_stats))
+        watchlist_stats_layout.addWidget(watchlist_stats_see_all)
+
+        # Create a QWidget to hold the QLabel widgets
+        watchlist_stats_widget = QWidget()
+        watchlist_stats_widget.setLayout(watchlist_stats_layout)
+
+        # Add the watchlist_stats_widget to your main layout
+        layout.addWidget(watchlist_stats_widget, 3, 2)  # Row 3, Col 2
 
         self.setLayout(layout)
+
+    def get_watchlist_stats(self):
+        # Read the watchlist.csv file into a list
+        with open('watchlist.csv', 'r') as file:
+            watchlist_data = list(csv.DictReader(file))
+
+        # Calculate the number of movies and series in the watchlist
+        movie_count = 0
+        series_count = 0
+        episode_count = 0
+        mini_series_count = 0
+        short_count = 0
+        tv_movie_count = 0
+        tv_special_count = 0
+        video_count = 0
+        video_game_count = 0
+        podcast_count = 0
+        podcast_episode_count = 0
+        tv_miniseries_count = 0
+        tv_short_count = 0
+        documentary_count = 0
+        music_video_count = 0
+
+        for item in watchlist_data:
+            if item['Title Type'] == "movie":
+                movie_count += 1
+            elif item['Title Type'] == "tvSeries":
+                series_count += 1
+            elif item['Title Type'] == "tvEpisode":
+                episode_count += 1
+            elif item['Title Type'] == "tvMiniSeries":
+                mini_series_count += 1
+            elif item['Title Type'] == "short":
+                short_count += 1
+            elif item['Title Type'] == "tvMovie":
+                tv_movie_count += 1
+            elif item['Title Type'] == "tvSpecial":
+                tv_special_count += 1
+            elif item['Title Type'] == "video":
+                video_count += 1
+            elif item['Title Type'] == "videoGame":
+                video_game_count += 1
+            elif item['Title Type'] == "podcastSeries":
+                podcast_count += 1
+            elif item['Title Type'] == "podcastEpisode":
+                podcast_episode_count += 1
+            elif item['Title Type'] == "tvMiniSeries":
+                tv_miniseries_count += 1
+            elif item['Title Type'] == "tvShort":
+                tv_short_count += 1
+            elif item['Title Type'] == "documentary":
+                documentary_count += 1
+            elif item['Title Type'] == "musicVideo":
+                music_video_count += 1
+
+        title_count = len(watchlist_data)
+
+        # Create a dictionary of title types, their counts and percentages to return
+        type_stats = { "Movies": (movie_count, movie_count / title_count * 100),
+                          "Series": (series_count, series_count / title_count * 100),
+                          "Episodes": (episode_count, episode_count / title_count * 100),
+                          "Mini-Series": (mini_series_count, mini_series_count / title_count * 100),
+                          "Short Films": (short_count, short_count / title_count * 100),
+                          "TV Movies": (tv_movie_count, tv_movie_count / title_count * 100),
+                          "TV Specials": (tv_special_count, tv_special_count / title_count * 100),
+                          "Videos": (video_count, video_count / title_count * 100),
+                          "Video Games": (video_game_count, video_game_count / title_count * 100),
+                          "Podcasts": (podcast_count, podcast_count / title_count * 100),
+                          "Podcast Episodes": (podcast_episode_count, podcast_episode_count / title_count * 100),
+                          "TV Mini-Series": (tv_miniseries_count, tv_miniseries_count / title_count * 100),
+                          "TV Shorts": (tv_short_count, tv_short_count / title_count * 100),
+                          "Documentaries": (documentary_count, documentary_count / title_count * 100),
+                          "Music Videos": (music_video_count, music_video_count / title_count * 100)}
+
+        # Sort the title types by the percentage in descending order
+        sorted_types = sorted(type_stats.items(), key=lambda x: x[1][1], reverse=True)
+
+        # Get the count of each individual genre in the watchlist
+        genre_count = {}
+        for item in watchlist_data:
+            if item['Title Type'] == "movie" or item['Title Type'] == "tvSeries" or item['Title Type'] == "tvEpisode" or \
+                    item['Title Type'] == "tvMiniSeries" or item['Title Type'] == "short" or item[
+                'Title Type'] == "tvMovie" or item['Title Type'] == "tvSpecial" or item['Title Type'] == "video" or \
+                    item['Title Type'] == "videoGame" or item['Title Type'] == "podcastSeries" or item[
+                'Title Type'] == "podcastEpisode" or item['Title Type'] == "tvMiniSeries" or item[
+                'Title Type'] == "tvShort" or item['Title Type'] == "documentary" or item['Title Type'] == "musicVideo":
+
+                genres = item['Genres'].split(", ")
+
+                for genre in genres:
+                    if genre in genre_count:
+                        genre_count[genre] += 1
+                    else:
+                        genre_count[genre] = 1
+
+                # Create a dictionary of genres, their counts and percentages to return
+                genre_stats = {genre: (genre_count[genre], genre_count[genre] / title_count * 100) for genre in genre_count}
+
+                # Sort the genres by the percentage in descending order
+                sorted_genres = sorted(genre_stats.items(), key=lambda x: x[1][1], reverse=True)
+
+        return sorted_types, sorted_genres
+
+    def see_all_watchlist_stats(self, type_stats, genre_stats):
+        # Create a new QDialog to show all the watchlist statistics
+        dialog = QDialog()
+        dialog.setWindowTitle("Watchlist Statistics")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(800, 500)
+
+        layout = QVBoxLayout()
+
+        # If there are any watchlist statistics, show them in two tables in a QHBoxLayout
+        if type_stats and genre_stats:
+            # Create a QHBoxLayout to add the two tables
+            tables_layout = QHBoxLayout()
+
+            # Create a QTableWidget to show the title type statistics
+            type_table = QTableWidget()
+            type_table.setRowCount(len(type_stats))
+            type_table.setColumnCount(2)
+            type_table.setHorizontalHeaderLabels(["Title Type", "Count"])
+            type_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            type_table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            type_table.setEditTriggers(QTableWidget.NoEditTriggers)
+
+            # Iterate through the title type statistics and add them to the table
+            for row, stat in enumerate(type_stats):
+                type_table.setItem(row, 0, QTableWidgetItem(stat[0]))
+                type_table.setItem(row, 1, QTableWidgetItem(f"{stat[1][0]} ({stat[1][1]:.2f}%)"))
+
+            # Add the table to the QHBoxLayout
+            tables_layout.addWidget(type_table)
+
+            # Create a QTableWidget to show the genre statistics
+            genre_table = QTableWidget()
+            genre_table.setRowCount(len(genre_stats))
+            genre_table.setColumnCount(2)
+            genre_table.setHorizontalHeaderLabels(["Genre", "Count"])
+            genre_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            genre_table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            genre_table.setEditTriggers(QTableWidget.NoEditTriggers)
+
+            # Iterate through the genre statistics and add them to the table
+            for row, stat in enumerate(genre_stats):
+                genre_table.setItem(row, 0, QTableWidgetItem(stat[0]))
+                genre_table.setItem(row, 1, QTableWidgetItem(f"{stat[1][0]} ({stat[1][1]:.2f}%)"))
+
+            # Add the table to the QHBoxLayout
+            tables_layout.addWidget(genre_table)
+
+            # Add the QHBoxLayout to the QVBoxLayout
+            layout.addLayout(tables_layout)
+
+        else:
+            no_stats_label = QLabel("You have no titles in your watchlist.")
+            layout.addWidget(no_stats_label)
+
+        dialog.setLayout(layout)
+        dialog.exec_()
 
     def get_favorite_director(self, ratings_data):
         director_ratings = {}
@@ -471,7 +671,6 @@ class StatisticsWindow(QDialog):
                         # Add the genre to the dictionary
                         genre_ratings[genre] = rating
                         genre_title_counts[genre] = 1
-
 
         # Check if there are any ratings
         if genre_ratings:
@@ -740,6 +939,7 @@ class ModernApp(QMainWindow):
         self.star_icon_label.setPixmap(self.star_icon_pixmap)
 
         self.min_rating = 0.0
+        self.max_runtime = 0
         self.selected_genre = "All Genres"
 
         self.initUI()
@@ -848,17 +1048,32 @@ class ModernApp(QMainWindow):
 
         # Create a QSlider for selecting minimum IMDB rating
         self.rating_slider = QSlider(Qt.Horizontal)
-        self.rating_slider.setMinimum(1)
+        self.rating_slider.setMinimum(0)
         self.rating_slider.setMaximum(20)  # To allow 0.5 increments, use 20 instead of 10
-        self.rating_slider.setValue(10)  # Default to 5.0
+        self.rating_slider.setValue(0)  # Default to 0.0
         self.rating_slider.setTickInterval(1)
         self.rating_slider.setTickPosition(QSlider.TicksAbove)
 
+        # Create a QSlider for selecting maximum runtime
+        self.runtime_slider = QSlider(Qt.Horizontal)
+        self.runtime_slider.setMinimum(0)
+        self.runtime_slider.setMaximum(180)  # Maximum runtime is 180 minutes
+        self.runtime_slider.setValue(0)  # Default to 0
+        self.runtime_slider.setTickInterval(1)
+        self.runtime_slider.setTickPosition(QSlider.TicksAbove)
+
+
         # Create a QLabel to display the selected rating
-        self.rating_label = QLabel("Minimum Rating: 5.0")
+        self.rating_label = QLabel("Minimum Rating: 0.0")
+
+        # Create a QLabel to display the selected runtime
+        self.runtime_label = QLabel("Maximum Runtime: 0")
 
         # Update the label when the slider value changes
         self.rating_slider.valueChanged.connect(self.update_rating_label)
+
+        # Update the label when the slider value changes
+        self.runtime_slider.valueChanged.connect(self.update_runtime_label)
 
         # Create a QComboBox for selecting genres
         self.genre_combo = QComboBox()
@@ -880,6 +1095,8 @@ class ModernApp(QMainWindow):
         filter_layout = QVBoxLayout()
         filter_layout.addWidget(self.rating_label)
         filter_layout.addWidget(self.rating_slider)
+        filter_layout.addWidget(self.runtime_label)
+        filter_layout.addWidget(self.runtime_slider)
         filter_layout.addWidget(self.genre_combo)
         filter_layout.addWidget(apply_filters_button)
         self.filters_container.setLayout(filter_layout)
@@ -975,12 +1192,12 @@ class ModernApp(QMainWindow):
 
         selected_index = self.list_combo.currentIndex()
         if selected_index == 0:
-            self.watchlist_random(self.watchlist_link, self.min_rating, self.selected_genre)
+            self.watchlist_random(self.watchlist_link, self.min_rating, self.selected_genre, self.max_runtime)
         else:
             selected_list_link = self.list_links[selected_index - 1]
-            self.list_random(selected_list_link, self.min_rating, self.selected_genre)
+            self.list_random(selected_list_link, self.min_rating, self.selected_genre, self.max_runtime)
 
-    def list_random(self, list_url, min_rating, selected_genre):
+    def list_random(self, list_url, min_rating, selected_genre, max_runtime):
 
         # Send an HTTP GET request to fetch the list page
         response = requests.get(list_url, headers=headers)
@@ -1034,7 +1251,17 @@ class ModernApp(QMainWindow):
                 for movie_detail in movie_details:
                     imdb_rating = float(movie_detail.find('span', class_='ipl-rating-star__rating').text.strip())
                     genres = movie_detail.find('span', class_='genre').text.strip()
-                    if imdb_rating >= min_rating and (selected_genre == "All Genres" or selected_genre in genres):
+                    runtime = movie_detail.find('span', class_='runtime').text.strip()
+
+                    # Check if runtime has decimal separator
+                    if "." in runtime or "," in runtime:
+                        runtime = runtime.replace(",", "")
+                        runtime = runtime.replace(".", "")
+
+                    runtime = runtime.split(" ")[0]
+
+                    print(movie_detail, runtime)
+                    if imdb_rating >= min_rating and (selected_genre == "All Genres" or selected_genre in genres) and (max_runtime == 0 or int(runtime) <= max_runtime):
                         filtered_movie_details.append(movie_detail)
 
                 # Check if there are any filtered movie details
@@ -1153,7 +1380,7 @@ class ModernApp(QMainWindow):
             return
 
     ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
-    def watchlist_random(self, url, min_rating, selected_genre):
+    def watchlist_random(self, url, min_rating, selected_genre, max_runtime):
         # Define the destination file path where you want to save the CSV file
         self.watchlist_csv = f'watchlist.csv'
 
@@ -1182,11 +1409,14 @@ class ModernApp(QMainWindow):
 
         # Check if there's data in the CSV file
         if csv_data:
-            # Filter the CSV data by minimum rating and selected genre
+            # Filter the CSV data by minimum rating, maximum runtime and selected genre
             csv_data = [item for item in csv_data if 'IMDb Rating' in item and item['IMDb Rating'] and float(item['IMDb Rating']) >= min_rating]
 
             if selected_genre != "All Genres":
                 csv_data = [item for item in csv_data if selected_genre in item['Genres']]
+
+            if max_runtime != 0:
+                csv_data = [item for item in csv_data if 'Runtime (mins)' in item and item['Runtime (mins)'] and int(item['Runtime (mins)']) <= max_runtime]
 
             # Check if there's data in the CSV file after filtering
             if csv_data:
@@ -1244,7 +1474,7 @@ class ModernApp(QMainWindow):
                                 self.star_color = "black"
                                 self.change_star_color(self.star_color)
 
-                            else:
+                            elif self.theme == "dark":
                                 self.star_color = "white"
                                 self.change_star_color(self.star_color)
 
@@ -1273,6 +1503,11 @@ class ModernApp(QMainWindow):
                     print("\nFailed to retrieve the list. Check the URL and try again.")
 
             else:
+                # If there are no filtered movie details, show an error message
+                self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
+
+                # Reset the poster_label
+                self.poster_label.clear()
                 print("The CSV file is empty.")
                 return
 
@@ -1384,10 +1619,10 @@ class ModernApp(QMainWindow):
                     file.write(f"{data['Title']},{data['URL']}\n")
 
             # Change the color of the star icon to white/black depending on the theme
-            if self.theme == "light":
+            if self.theme == "light" and self.star_color == "yellow":
                 self.star_color = "black"
                 self.change_star_color(self.star_color)
-            else:
+            elif self.theme == "dark" and self.star_color == "yellow":
                 self.star_color = "white"
                 self.change_star_color(self.star_color)
 
@@ -1405,7 +1640,8 @@ class ModernApp(QMainWindow):
                 file.write(f"{favorite['Title']},{favorite['URL']}\n")
 
         # Change the color of the star icon to yellow
-        self.change_star_color("yellow")
+        self.star_color = "yellow"
+        self.change_star_color(self.star_color)
 
 
     # Check if the movie/series is already in the favorites.csv file
@@ -1445,12 +1681,13 @@ class ModernApp(QMainWindow):
         # Retrieve selected minimum rating and genre
         self.min_rating = self.rating_slider.value() / 2.0
         self.selected_genre = self.genre_combo.currentText()
+        self.max_runtime = self.runtime_slider.value()
 
         # Use min_rating and selected_genre to filter recommendations
         # Perform your filtering logic here
 
         # Example: Display the applied filters
-        self.result_label.setText(f"Applied Filters: Minimum Rating: {self.min_rating}, Genre: {self.selected_genre}")
+        self.result_label.setText(f"Applied Filters: Minimum Rating: {self.min_rating}, Genre: {self.selected_genre}, Maximum Runtime: {self.max_runtime}")
 
         # Hide the filters container after applying filters
         self.filters_container.hide()
@@ -1458,6 +1695,13 @@ class ModernApp(QMainWindow):
     # Update the rating label when the slider value changes
     def update_rating_label(self):
         self.rating_label.setText(f"Minimum Rating: {self.rating_slider.value() / 2.0}")
+
+    # Update the runtime label when the slider value changes
+    def update_runtime_label(self):
+        if self.runtime_slider.value() == 0:
+            self.runtime_label.setText(f"Maximum Runtime: No Limit")
+        else:
+            self.runtime_label.setText(f"Maximum Runtime: {self.runtime_slider.value()}")
 
     # Change the star icon color
     def change_star_color(self, color):
@@ -1487,18 +1731,18 @@ class ModernApp(QMainWindow):
     def light_theme(self):
         app.setPalette(light_palette)
         self.theme = "light"
-        self.star_color = "black"
 
-        if self.star_color != "yellow":
+        if self.star_color != "yellow" or self.star_color == "white":
+            self.star_color = "black"
             self.change_star_color(self.star_color)
 
     # Change the theme to dark
     def dark_theme(self):
         app.setPalette(dark_palette)
         self.theme == "dark"
-        self.star_color = "white"
 
-        if self.star_color != "yellow":
+        if self.star_color != "yellow" or self.star_color == "black":
+            self.star_color = "white"
             self.change_star_color(self.star_color)
 
     # Show the statistics dialog
@@ -1546,7 +1790,7 @@ class ModernApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>IMDB Recommender</h1>"
-                    "<h3>Version 3.0</h3>"
+                    "<h3>Version 3.1</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
