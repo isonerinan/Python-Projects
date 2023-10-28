@@ -8,9 +8,9 @@ import csv
 import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
-    QTableWidget, QHeaderView, QAbstractItemView, QTableWidgetItem, QErrorMessage
+    QTableWidget, QHeaderView, QTableWidgetItem, QSlider
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QPainter, QCursor, QIcon, QPalette, QColor
+from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
 import re
 
@@ -257,8 +257,6 @@ class MyFavoritesDialog(QDialog):
             for row in range(row_index, table.rowCount()):
                 button = table.cellWidget(row, 2)
                 button.setProperty("row_index", row)
-
-
 
 # Custom QDialog class for the Statistics dialog
 class StatisticsWindow(QDialog):
@@ -738,6 +736,9 @@ class ModernApp(QMainWindow):
         self.star_icon_label = QLabel()
         self.star_icon_label.setPixmap(self.star_icon_pixmap)
 
+        self.min_rating = 0.0
+        self.selected_genre = "All Genres"
+
         self.initUI()
 
     def initUI(self):
@@ -832,6 +833,54 @@ class ModernApp(QMainWindow):
 
         self.main_layout.addWidget(self.list_combo)
 
+        # Create a "Filters" button
+        filters_button = QPushButton("Filters", self)
+        filters_button.clicked.connect(self.show_filters)
+        self.main_layout.addWidget(filters_button)
+
+        # Create a container widget to hold filter widgets
+        self.filters_container = QWidget()
+        self.filters_container.hide()
+        self.main_layout.addWidget(self.filters_container)
+
+        # Create a QSlider for selecting minimum IMDB rating
+        self.rating_slider = QSlider(Qt.Horizontal)
+        self.rating_slider.setMinimum(1)
+        self.rating_slider.setMaximum(20)  # To allow 0.5 increments, use 20 instead of 10
+        self.rating_slider.setValue(10)  # Default to 5.0
+        self.rating_slider.setTickInterval(1)
+        self.rating_slider.setTickPosition(QSlider.TicksAbove)
+
+        # Create a QLabel to display the selected rating
+        self.rating_label = QLabel("Minimum Rating: 5.0")
+
+        # Update the label when the slider value changes
+        self.rating_slider.valueChanged.connect(self.update_rating_label)
+
+        # Create a QComboBox for selecting genres
+        self.genre_combo = QComboBox()
+        self.genre_combo.addItem("All Genres")  # Add a default option
+        # Add genre options to the combo box
+        self.genre_combo.addItems(["Action", "Adult", "Adventure", "Animation",
+                                   "Biography", "Comedy", "Crime", "Documentary",
+                                   "Drama", "Family", "Fantasy", "Film Noir",
+                                   "Game Show", "History", "Horror", "Musical",
+                                   "Music", "Mystery", "News", "Reality-TV",
+                                   "Romance", "Sci-Fi", "Short", "Sport",
+                                   "Talk-Show", "Thriller", "War", "Western"])
+
+        # Create a "Apply Filters" button
+        apply_filters_button = QPushButton("Apply Filters")
+        apply_filters_button.clicked.connect(self.apply_filters)
+
+        # Create a layout for filter widgets
+        filter_layout = QVBoxLayout()
+        filter_layout.addWidget(self.rating_label)
+        filter_layout.addWidget(self.rating_slider)
+        filter_layout.addWidget(self.genre_combo)
+        filter_layout.addWidget(apply_filters_button)
+        self.filters_container.setLayout(filter_layout)
+
         # Create a new QLabel for displaying the movie/series poster
         self.poster_label = QLabel()
         self.poster_label.setAlignment(Qt.AlignCenter)
@@ -871,9 +920,6 @@ class ModernApp(QMainWindow):
         find_movie_button = QPushButton("Find Something to Watch!")
         find_movie_button.clicked.connect(self.find_random_movie)
         self.main_layout.addWidget(find_movie_button)
-
-        #self.list_combo = self.list_combo
-
 
     def check_preferences_file(self):
         return os.path.isfile(self.preferences_file)
@@ -922,16 +968,16 @@ class ModernApp(QMainWindow):
 
 
     def find_random_movie(self):
+        print(self.min_rating, self.selected_genre)
+
         selected_index = self.list_combo.currentIndex()
         if selected_index == 0:
-            self.watchlist_random("watchlist", self.watchlist_link)
+            self.watchlist_random(self.watchlist_link, self.min_rating, self.selected_genre)
         else:
             selected_list_link = self.list_links[selected_index - 1]
-            self.list_random(selected_list_link)
+            self.list_random(selected_list_link, self.min_rating, self.selected_genre)
 
-    def list_random(self, list_link):
-        # Define the URL of your IMDb list
-        list_url = list_link
+    def list_random(self, list_url, min_rating, selected_genre):
 
         # Send an HTTP GET request to fetch the list page
         response = requests.get(list_url, headers=headers)
@@ -980,73 +1026,122 @@ class ModernApp(QMainWindow):
 
             # Check if there are any movie details
             if movie_details:
-                # Randomly select a movie detail from the list
-                random_movie_detail = random.choice(movie_details)
+                # Filter movie details based on min_rating and selected_genre
+                filtered_movie_details = []
+                for movie_detail in movie_details:
+                    imdb_rating = float(movie_detail.find('span', class_='ipl-rating-star__rating').text.strip())
+                    genres = movie_detail.find('span', class_='genre').text.strip()
+                    if imdb_rating >= min_rating and (selected_genre == "All Genres" or selected_genre in genres):
+                        filtered_movie_details.append(movie_detail)
 
-                # Extract the desired information
-                title = random_movie_detail.find('h3', class_='lister-item-header').find('a').text.strip()
-                url = 'https://www.imdb.com' + random_movie_detail.find('h3', class_='lister-item-header').find('a')['href']
+                # Check if there are any filtered movie details
+                if filtered_movie_details:
+                    # Randomly select a movie detail from the list
+                    random_movie_detail = random.choice(filtered_movie_details)
 
-                title_type = ""
-                directors = ""
+                    # Extract the desired information
+                    title = random_movie_detail.find('h3', class_='lister-item-header').find('a').text.strip()
+                    url = 'https://www.imdb.com' + random_movie_detail.find('h3', class_='lister-item-header').find('a')['href']
 
-                # To get the title type and the poster, we need to scrape the movie's/series' own page
-                # Send an HTTP GET request to fetch the list page
-                second_response = requests.get(url, headers=headers)
+                    title_type = ""
+                    directors = ""
 
-                # Check if the request was successful
-                if second_response.status_code == 200:
-                    # Parse the HTML content of the page
-                    second_soup = BeautifulSoup(second_response.content, 'html.parser')
+                    # To get the title type and the poster, we need to scrape the movie's/series' own page
+                    # Send an HTTP GET request to fetch the list page
+                    second_response = requests.get(url, headers=headers)
 
-                    # Extract the movie or TV series details from the list
-                    type_details = second_soup.select("div.iwmAVw")
-                    if type_details:
-                        title_type = type_details[0].select_one('li.ipc-inline-list__item[role="presentation"]').text.strip()
+                    # Check if the request was successful
+                    if second_response.status_code == 200:
+                        # Parse the HTML content of the page
+                        second_soup = BeautifulSoup(second_response.content, 'html.parser')
 
-                    if title_type.isdigit():
-                        title_type = "Movie"
+                        # Extract the movie or TV series details from the list
+                        type_details = second_soup.select("div.iwmAVw")
+                        if type_details:
+                            title_type = type_details[0].select_one('li.ipc-inline-list__item[role="presentation"]').text.strip()
 
-                    director_details = second_soup.select("div.sc-dffc6c81-3")
+                        if title_type.isdigit():
+                            title_type = "Movie"
 
-                    if director_details:
-                        directors = director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
+                        director_details = second_soup.select("div.sc-dffc6c81-3")
 
-                    # Get the movie poster URL from the IMDb page
-                    poster_image = second_soup.find('img', class_='ipc-image')
+                        if director_details:
+                            directors = director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
 
-                    if poster_image:
-                        poster_url = poster_image['src']
+                        # Get the movie poster URL from the IMDb page
+                        poster_image = second_soup.find('img', class_='ipc-image')
 
-                        # Create a pixmap from the poster image URL
-                        pixmap = QPixmap()
-                        pixmap.loadFromData(requests.get(poster_url).content)
+                        if poster_image:
+                            poster_url = poster_image['src']
 
-                        # Set the pixmap to the poster_label
-                        self.poster_label.setPixmap(pixmap)
+                            # Create a pixmap from the poster image URL
+                            pixmap = QPixmap()
+                            pixmap.loadFromData(requests.get(poster_url).content)
 
+                            # Set the pixmap to the poster_label
+                            self.poster_label.setPixmap(pixmap)
+
+                            # Create a star icon at the top left corner on the movie poster
+                            star_icon = QIcon("star.svg")
+                            star_icon_renderer = QSvgRenderer("star.svg")
+                            self.star_icon_pixmap = QPixmap(20, 20)
+                            self.star_icon_pixmap.fill(Qt.transparent)
+                            self.star_icon_painter = QPainter(self.star_icon_pixmap)
+                            star_icon_renderer.render(self.star_icon_painter)
+                            self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                            self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
+                            self.star_icon_painter.end()
+
+                            # Change the color of the star icon to yellow if it is in the favorites list
+                            if self.check_favorites(title):
+                                self.star_color = "yellow"
+                                self.change_star_color(self.star_color)
+
+                            else:
+                                # If not in the favorites list, change the color of the star icon to white or black depending on the theme
+                                if self.theme == "light":
+                                    self.star_color = "black"
+                                    self.change_star_color(self.star_color)
+
+                                else:
+                                    self.star_color = "white"
+                                    self.change_star_color(self.star_color)
+
+                            self.star_icon_label = QLabel(self.poster_label)
+                            self.star_icon_label.setPixmap(self.star_icon_pixmap)
+                            self.star_icon_label.move(10, 10)
+                            self.star_icon_label.show()
+
+                            # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
+                            # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
+                            self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(title, url)
+
+                    else:
+                        print("\nFailed to retrieve the list. Check the URL and try again.")
+
+                    imdb_rating = random_movie_detail.find('span', class_='ipl-rating-star__rating').text.strip()
+                    runtime = random_movie_detail.find('span', class_='runtime').text.strip()
+                    year = random_movie_detail.find('span', class_='lister-item-year').text.strip()
+                    genres = random_movie_detail.find('span', class_='genre').text.strip()
+                    user_rating = self.checkRatings(title, title_type)
+
+                    # Update self.result_label with the movie recommendation
+                    self.result_label.setText(f"<div style=\"font-size: 18px;\">"
+                                              f"<a href=\"{url}\"><h1>{title}</h1></a><br>"
+                                              f"<b>Title Type:</b> {title_type}<br>"
+                                              f"<b>IMDb Rating:</b> {imdb_rating}<br>"
+                                              f"<b>Runtime:</b> {runtime}<br>"
+                                              f"<b>Year:</b> {year}<br>"
+                                              f"<b>Genres:</b> {genres}<br>"
+                                              f"<b>Director/Creator:</b> {directors}<br><br></div>"
+                                              f"{user_rating}")
 
                 else:
-                    print("\nFailed to retrieve the list. Check the URL and try again.")
+                    # If there are no filtered movie details, show an error message
+                    self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
 
-                imdb_rating = random_movie_detail.find('span', class_='ipl-rating-star__rating').text.strip()
-                runtime = random_movie_detail.find('span', class_='runtime').text.strip()
-                year = random_movie_detail.find('span', class_='lister-item-year').text.strip()
-                genres = random_movie_detail.find('span', class_='genre').text.strip()
-                user_rating = self.checkRatings(title, title_type)
-
-                # Update self.result_label with the movie recommendation
-                self.result_label.setText(f"<div style=\"font-size: 18px;\">"
-                                          f"<a href=\"{url}\"><h1>{title}</h1></a><br>"
-                                          f"<b>Title Type:</b> {title_type}<br>"
-                                          f"<b>IMDb Rating:</b> {imdb_rating}<br>"
-                                          f"<b>Runtime:</b> {runtime}<br>"
-                                          f"<b>Year:</b> {year}<br>"
-                                          f"<b>Genres:</b> {genres}<br>"
-                                          f"<b>Director/Creator:</b> {directors}<br><br></div>"
-                                          f"{user_rating}")
-
-
+                    # Reset the poster_label
+                    self.poster_label.clear()
 
             else:
                 print("\nNo movie details found on the list page. Check the HTML structure or the URL.")
@@ -1055,7 +1150,7 @@ class ModernApp(QMainWindow):
             return
 
     ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
-    def watchlist_random(self, title, url):
+    def watchlist_random(self, url, min_rating, selected_genre):
         # Define the destination file path where you want to save the CSV file
         self.watchlist_csv = f'watchlist.csv'
 
@@ -1084,86 +1179,99 @@ class ModernApp(QMainWindow):
 
         # Check if there's data in the CSV file
         if csv_data:
-            # Randomly select a row from the CSV data
-            random_item = random.choice(csv_data)
+            # Filter the CSV data by minimum rating and selected genre
+            csv_data = [item for item in csv_data if 'IMDb Rating' in item and item['IMDb Rating'] and float(item['IMDb Rating']) >= min_rating]
 
-            # Check if the user has rated the movie/series before
-            user_rating = self.checkRatings(random_item['Title'], random_item['Title Type'])
+            if selected_genre != "All Genres":
+                csv_data = [item for item in csv_data if selected_genre in item['Genres']]
 
-            # Extract and print the desired columns
-            self.result_label.setText(f"<div style=\"font-size: 18px;\">"
-                                      f"<a href=\"{random_item['URL']}\"><h1>{random_item['Title']}</h1></a><br>"
-                                      f"<b>Title Type:</b> {random_item['Title Type']}<br>"
-                                      f"<b>IMDb Rating:</b> {random_item['IMDb Rating']}<br>"
-                                      f"<b>Runtime:</b> {random_item['Runtime (mins)']}<br>"
-                                      f"<b>Year:</b> {random_item['Year']}<br>"
-                                      f"<b>Genres:</b> {random_item['Genres']}<br>"
-                                      f"<b>Director/Creator:</b> {random_item['Directors']}<br><br></div>"
-                                      f"{user_rating}")
+            # Check if there's data in the CSV file after filtering
+            if csv_data:
+                # Randomly select a row from the CSV data
+                random_item = random.choice(csv_data)
 
-            # To get the title type and the poster, we need to scrape the movie's/series' own page
-            # Send an HTTP GET request to fetch the list page
-            second_response = requests.get(random_item['URL'], headers=headers)
+                # Check if the user has rated the movie/series before
+                user_rating = self.checkRatings(random_item['Title'], random_item['Title Type'])
 
-            # Check if the request was successful
-            if second_response.status_code == 200:
-                # Parse the HTML content of the page
-                second_soup = BeautifulSoup(second_response.content, 'html.parser')
+                # To get the title type and the poster, we need to scrape the movie's/series' own page
+                # Send an HTTP GET request to fetch the list page
+                second_response = requests.get(random_item['URL'], headers=headers)
 
-                # Get the movie poster URL from the IMDb page
-                poster_image = second_soup.find('img', class_='ipc-image')
+                # Check if the request was successful
+                if second_response.status_code == 200:
+                    # Parse the HTML content of the page
+                    second_soup = BeautifulSoup(second_response.content, 'html.parser')
 
-                if poster_image:
-                    poster_url = poster_image['src']
+                    director_details = second_soup.select("div.sc-dffc6c81-3")
+                    if director_details:
+                        directors = random_item['Directors'] if random_item['Directors'] != "" else director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
 
-                    # Create a pixmap from the poster image URL
-                    pixmap = QPixmap()
-                    pixmap.loadFromData(requests.get(poster_url).content)
+                    # Get the movie poster URL from the IMDb page
+                    poster_image = second_soup.find('img', class_='ipc-image')
 
-                    # Set the pixmap to the poster_label
-                    self.poster_label.setPixmap(pixmap)
+                    if poster_image:
+                        poster_url = poster_image['src']
 
-                    # Create a star icon at the top left corner on the movie poster
-                    star_icon = QIcon("star.svg")
-                    star_icon_renderer = QSvgRenderer("star.svg")
-                    self.star_icon_pixmap = QPixmap(20, 20)
-                    self.star_icon_pixmap.fill(Qt.transparent)
-                    self.star_icon_painter = QPainter(self.star_icon_pixmap)
-                    star_icon_renderer.render(self.star_icon_painter)
-                    self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-                    self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
-                    self.star_icon_painter.end()
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
 
-                    # Change the color of the star icon to yellow if it is in the favorites list
-                    if self.check_favorites(random_item['Title']):
-                        self.star_color = "yellow"
-                        self.change_star_color(self.star_color)
+                        # Set the pixmap to the poster_label
+                        self.poster_label.setPixmap(pixmap)
 
-                    else:
-                        # If not in the favorites list, change the color of the star icon to white or black depending on the theme
-                        if self.theme == "light":
-                            self.star_color = "black"
+                        # Create a star icon at the top left corner on the movie poster
+                        star_icon = QIcon("star.svg")
+                        star_icon_renderer = QSvgRenderer("star.svg")
+                        self.star_icon_pixmap = QPixmap(20, 20)
+                        self.star_icon_pixmap.fill(Qt.transparent)
+                        self.star_icon_painter = QPainter(self.star_icon_pixmap)
+                        star_icon_renderer.render(self.star_icon_painter)
+                        self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                        self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
+                        self.star_icon_painter.end()
+
+                        # Change the color of the star icon to yellow if it is in the favorites list
+                        if self.check_favorites(random_item['Title']):
+                            self.star_color = "yellow"
                             self.change_star_color(self.star_color)
 
                         else:
-                            self.star_color = "white"
-                            self.change_star_color(self.star_color)
+                            # If not in the favorites list, change the color of the star icon to white or black depending on the theme
+                            if self.theme == "light":
+                                self.star_color = "black"
+                                self.change_star_color(self.star_color)
 
-                    self.star_icon_label = QLabel(self.poster_label)
-                    self.star_icon_label.setPixmap(self.star_icon_pixmap)
-                    self.star_icon_label.move(10, 10)
-                    self.star_icon_label.show()
+                            else:
+                                self.star_color = "white"
+                                self.change_star_color(self.star_color)
 
-                    # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
-                    # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
-                    self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Title'], random_item['URL'])
+                        self.star_icon_label = QLabel(self.poster_label)
+                        self.star_icon_label.setPixmap(self.star_icon_pixmap)
+                        self.star_icon_label.move(10, 10)
+                        self.star_icon_label.show()
+
+                        # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
+                        # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
+                        self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Title'], random_item['URL'])
+
+                    # Extract and print the desired columns
+                    self.result_label.setText(f"<div style=\"font-size: 18px;\">"
+                                              f"<a href=\"{random_item['URL']}\"><h1>{random_item['Title']}</h1></a><br>"
+                                              f"<b>Title Type:</b> {random_item['Title Type']}<br>"
+                                              f"<b>IMDb Rating:</b> {random_item['IMDb Rating']}<br>"
+                                              f"<b>Runtime:</b> {random_item['Runtime (mins)']}<br>"
+                                              f"<b>Year:</b> {random_item['Year']}<br>"
+                                              f"<b>Genres:</b> {random_item['Genres']}<br>"
+                                              # Use csv to get the directors, if empty, use the scraped data
+                                              f"<b>Director/Creator:</b> {directors}<br><br></div>"
+                                              f"{user_rating}")
+
+                else:
+                    print("\nFailed to retrieve the list. Check the URL and try again.")
 
             else:
-                print("\nFailed to retrieve the list. Check the URL and try again.")
-
-        else:
-            print("The CSV file is empty.")
-            return
+                print("The CSV file is empty.")
+                return
 
 
     ## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
@@ -1280,12 +1388,6 @@ class ModernApp(QMainWindow):
                 self.star_color = "white"
                 self.change_star_color(self.star_color)
 
-            # Show a success pop-up
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Information)
-            msg.setWindowTitle("Removed from Favorites")
-            msg.setText("This movie/series has been removed from your favorites.")
-            msg.exec_()
             return
 
         # Append the new movie/series' title and URL to the favorites data
@@ -1302,12 +1404,6 @@ class ModernApp(QMainWindow):
         # Change the color of the star icon to yellow
         self.change_star_color("yellow")
 
-        # Show a success pop-up
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Information)
-        msg.setWindowTitle("Added to Favorites")
-        msg.setText("This movie/series has been added to your favorites.")
-        msg.exec_()
 
     # Check if the movie/series is already in the favorites.csv file
     def check_favorites(self, title):
@@ -1335,6 +1431,30 @@ class ModernApp(QMainWindow):
 
         # Call the list_random function with the input
         self.list_random(list_link)
+
+    def show_filters(self):
+        if self.filters_container.isHidden():
+            self.filters_container.show()
+        else:
+            self.filters_container.hide()
+
+    def apply_filters(self):
+        # Retrieve selected minimum rating and genre
+        self.min_rating = self.rating_slider.value() / 2.0
+        self.selected_genre = self.genre_combo.currentText()
+
+        # Use min_rating and selected_genre to filter recommendations
+        # Perform your filtering logic here
+
+        # Example: Display the applied filters
+        self.result_label.setText(f"Applied Filters: Minimum Rating: {self.min_rating}, Genre: {self.selected_genre}")
+
+        # Hide the filters container after applying filters
+        self.filters_container.hide()
+
+    # Update the rating label when the slider value changes
+    def update_rating_label(self):
+        self.rating_label.setText(f"Minimum Rating: {self.rating_slider.value() / 2.0}")
 
     # Change the star icon color
     def change_star_color(self, color):
