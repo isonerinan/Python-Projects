@@ -1,25 +1,34 @@
 # FEATURES
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/6937b376-10e2-4464-9891-7dd1814a5434)
 
-## Movie/Series Recommendation From User's Watchlist
-The watchlist must be public and replaced with the existing link. (example: https://www.imdb.com/user/USER_NAME_HERE/watchlist)
+## Movie/Series Recommendation From Your Watchlist
+Your watchlist must be set public before importing. (See [Importing Your Watchlist](#importing-your-watchlist))
 
-## Movie/Series Recommendation From User's Existing Lists
-All the publicly available user lists are shown. In order to personalize, the default link must be replaced. (example: https://www.imdb.com/user/USER_NAME_HERE/lists)
+## Movie/Series Recommendation From Your Existing Lists
+After importing, you can choose to get recommendations from any of your public user lists. (See [Importing Your Lists](#importing-your-lists))
 
 ## Movie/Series Recommendation From Custom IMDB List
-The program can take a publicly available user link list as an input and randomly select a movie from that list.
+The program can take a publicly available user link list as an input and randomly select a movie from that list. (See [Getting Recommendation From Custom User Lists](#getting-recommendation-from-custom-user-lists))
+
+## Filtering
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/99e5877c-47ac-468b-a49f-707c4eefa98f)
+
+You can filter the minimum IMDB rating and desired genre, so that the recommendations will be more relevant.
 
 ## Rating History Check
-The program checks if the user have rated the recommended movie before and shows the rating score, and the date of rating. The web scraping code snippet is in the code, however due to IMDB's robots.txt (https://www.imdb.com/robots.txt) this program cannot web scrape the user ratings page. Therefore you need to download the ratings.csv yourself (See [Importing Your Ratings](#importing-your-ratings) for more).
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/93fc0d1c-d105-4ae9-a7fc-d93e556c4c78)
+
+The program checks if you have rated the recommended movie before and shows your rating score along with the date of rating.
+
+The web scraping code snippet is in the code, however due to IMDB's robots.txt (https://www.imdb.com/robots.txt) this program cannot web scrape the user ratings page. Therefore you need to download and import the ratings.csv yourself. (See [Importing Your Ratings](#importing-your-ratings))
 
 ## Favorites
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/06a0e9bb-93bf-4b08-91ca-bcfcabcb6448)
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/d7b65c72-5027-4cc6-bd11-20d5519e0956)
 
-The user can favorite the recommended movie/series using the star icon at the upper left corner of the window, and can see their favorited titles from the "Settings" menu.
+You can favorite the recommended movie/series using the star icon at the upper left corner of the window, and can see your favorited titles from the "Settings" menu.
 
 ## Statistics
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/5ed18579-315e-4856-b67c-222430ac78fd)
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/a9174fea-880c-4a64-9263-7b3dcca9a062)
 
 Using your IMDB ratings (if you have imported your [ratings.csv](#importing-your-ratings) file), the program calculates which directors, genres or TV series are your favorites.
 
@@ -29,7 +38,7 @@ Using your IMDB ratings (if you have imported your [ratings.csv](#importing-your
 Your favorite directors are calculated using how many of their movies you have rated, and your average rating for them. It is assumed that you tend to watch more movies from the directors you love more.
 
 ### Favorite Genres
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/3569f4a1-0f0a-4703-b7c5-762f725efac6)
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/153528fa-0604-44d0-afb8-f9c5f7e48815)
 
 Your favorite genres are calculated using how many titles you have rated that belongs to that genre, and your average rating for them. It is assumed that you tend to watch more movies from the genres you love more.
 
@@ -60,6 +69,7 @@ Make sure they are in the same directory, if not, you have to change the directo
 - Find the export link at the bottom of the page
 - Right click and copy the link
 - Paste it in the User Preferences window of the program
+- The link should look like this: https://www.imdb.com/list/lsxxxxxxxxx/export
 
 ### Importing Your Lists
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/bf5ede4b-c663-4c02-9b19-dcacde26e414)
@@ -67,6 +77,7 @@ Make sure they are in the same directory, if not, you have to change the directo
 - Find the dropdown menu at the top right corner
 - Go to "Your Lists" page and copy the URL
 - Paste it in the User Preferences window of the program
+- The link should look like this: https://www.imdb.com/user/urxxxxxxxxx/lists
 
 ### Importing Your Ratings
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/eeef4e39-df0e-4225-9ec3-a352d8f7ab00)
