@@ -14,7 +14,6 @@ from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
 import re
 
-from openpyxl.chart import PieChart
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -1123,7 +1122,9 @@ class ModernApp(QMainWindow):
         search_button = QPushButton("Search")
 
         # Connect the button's clicked signal to the slot
+        search_button.clicked.connect(self.apply_filters)
         search_button.clicked.connect(self.search_button_click)
+
 
         # Add both the QLineEdit and the button to a container widget
         container = QWidget()
@@ -1138,6 +1139,7 @@ class ModernApp(QMainWindow):
         self.setLayout(self.main_layout)
 
         find_movie_button = QPushButton("Find Something to Watch!")
+        find_movie_button.clicked.connect(self.apply_filters)
         find_movie_button.clicked.connect(self.find_random_movie)
         self.main_layout.addWidget(find_movie_button)
 
@@ -1669,7 +1671,7 @@ class ModernApp(QMainWindow):
         list_link = self.custom_list.text()
 
         # Call the list_random function with the input
-        self.list_random(list_link, self.min_rating, self.selected_genre)
+        self.list_random(list_link, self.min_rating, self.selected_genre, self.max_runtime)
 
     def show_filters(self):
         if self.filters_container.isHidden():
