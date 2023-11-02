@@ -13,11 +13,15 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
 import re
-
+import mechanize
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
     'Referer': 'https://www.imdb.com/'}
+
+browser = mechanize.Browser()
+browser.set_handle_robots(False)
+browser.addheaders = [headers]
 
 # Custom QDialog class for the Preferences dialog
 class PreferencesDialog(QDialog):
@@ -290,7 +294,7 @@ class StatisticsWindow(QDialog):
         # Add "See All" button
         director_see_all = QPushButton("See All")
         # Connect the button click to see_all_directors function
-        director_see_all.clicked.connect(lambda: self.see_all_directors(ratings_data, favorite_directors))
+        director_see_all.clicked.connect(lambda: self.see_all_directors( favorite_directors))
         director_labels_layout.addWidget(director_see_all)
 
         # Create a QWidget to hold the QLabel widgets
@@ -299,6 +303,36 @@ class StatisticsWindow(QDialog):
 
         # Add the director_labels_widget to your main layout
         layout.addWidget(director_labels_widget, 1, 0)  # Row 1, Col 0
+
+        # Your favorite actor/actress based on the average rating you have given to their movies/series
+        favorite_actor_label = QLabel("<h3>Your Favorite Actors/Actresses</h3>")
+        favorite_actor_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(favorite_actor_label, 2, 0, 1, 2) # Row 2, Col 0-1
+
+        # Get the favorite actor/actress
+        favorite_actors = self.get_favorite_actor()
+
+        # Create a QVBoxLayout to add QLabel widgets
+        actor_labels_layout = QVBoxLayout()
+
+        # Iterate through the favorite actors and add them to QLabel widgets
+        for actor, info in favorite_actors[:5]:
+            actor_label = QLabel(f"<b>{actor}:</b> {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
+            actor_label.setAlignment(Qt.AlignCenter)
+            actor_labels_layout.addWidget(actor_label)
+
+        # Add "See All" button
+        actor_see_all = QPushButton("See All")
+        # Connect the button click to see_all_actors function
+        actor_see_all.clicked.connect(lambda: self.see_all_actors(favorite_actors))
+        actor_labels_layout.addWidget(actor_see_all)
+
+        # Create a QWidget to hold the QLabel widgets
+        actor_labels_widget = QWidget()
+        actor_labels_widget.setLayout(actor_labels_layout)
+
+        # Add the actor_labels_widget to your main layout
+        layout.addWidget(actor_labels_widget, 3, 0)  # Row 3, Col 0
 
         # Your favorite genre based on the average rating you have given to movies/series of that genre
         favorite_genre_label = QLabel("<h3>Your Favorite Genres</h3>")
@@ -320,20 +354,20 @@ class StatisticsWindow(QDialog):
         # Add "See All" button
         genre_see_all = QPushButton("See All")
         # Connect the button click to see_all_genres function
-        genre_see_all.clicked.connect(lambda: self.see_all_genres(ratings_data, favorite_genres))
+        genre_see_all.clicked.connect(lambda: self.see_all_genres(favorite_genres))
         genre_labels_layout.addWidget(genre_see_all)
 
         # Create a QWidget to hold the QLabel widgets
         genre_labels_widget = QWidget()
         genre_labels_widget.setLayout(genre_labels_layout)
 
-        # Add the director_labels_widget to your main layout
+        # Add the genre_labels_widget to your main layout
         layout.addWidget(genre_labels_widget, 1, 2)  # Row 1, Col 2
 
         # Your favorite TV series based on the average rating you have given to its episodes
         favorite_tv_series_label = QLabel("<h3>Your Favorite TV Shows</h3>")
         favorite_tv_series_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(favorite_tv_series_label, 2, 0, 1, 2)  # Row 2, Col 0-1
+        layout.addWidget(favorite_tv_series_label, 4, 0, 1, 2)  # Row 4, Col 0-1
 
         # Get the favorite TV series
         favorite_tv_series = self.get_favorite_tv_series(ratings_data)
@@ -350,7 +384,7 @@ class StatisticsWindow(QDialog):
         # Add "See All" button
         tv_see_all = QPushButton("See All")
         # Connect the button click to see_all_tv_series function
-        tv_see_all.clicked.connect(lambda: self.see_all_tv_series(ratings_data, favorite_tv_series))
+        tv_see_all.clicked.connect(lambda: self.see_all_tv_series(favorite_tv_series))
         tv_labels_layout.addWidget(tv_see_all)
 
         # Create a QWidget to hold the QLabel widgets
@@ -358,7 +392,7 @@ class StatisticsWindow(QDialog):
         tv_labels_widget.setLayout(tv_labels_layout)
 
         # Add the director_labels_widget to your main layout
-        layout.addWidget(tv_labels_widget, 3, 0)    # Row 3, Col 0
+        layout.addWidget(tv_labels_widget, 5, 0)    # Row 5, Col 0
 
         # Watchlist statistics
         watchlist_stats_label = QLabel("<h3>Your Watchlist Statistics</h3><br>"
@@ -605,7 +639,7 @@ class StatisticsWindow(QDialog):
         else:
             return "N/A"  # Return "N/A" and 0.0 for average rating when there are no ratings
 
-    def see_all_directors(self, ratings_data, favorite_directors):
+    def see_all_directors(self, favorite_directors):
         # Create a new QDialog to show all the directors
         dialog = QDialog()
         dialog.setWindowTitle("All Directors")
@@ -645,6 +679,194 @@ class StatisticsWindow(QDialog):
         dialog.setLayout(layout)
         # Connect the sorting function to the header labels
         dialog.exec_()
+
+    def get_favorite_actor(self):
+        actor_ratings = {}
+        actor_title_counts = {}
+
+        # Get the user lists page from user_preferences.txt
+        lists_link, watchlist_link = window.checkPreferences()
+        ratings_link = lists_link.replace("lists", "ratings")
+
+        # Send an HTTP GET request to fetch the ratings page
+        try:
+            # Open the URL
+            response = browser.open(ratings_link)
+
+            html_content = response.read()
+
+            # Get the HTML content
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # Extract the movie or TV series details from the list
+            movie_details = soup.select('.lister-item-content')
+
+            # Check how many titles are there in the list
+            list_details = soup.select(".lister-list-length")
+            number_of_titles_str = list_details[0].text.strip()
+
+            # Use a regular expression to extract the integer
+            match = re.search(r'\d+', number_of_titles_str)
+
+            if match:
+                # The group(0) will contain the first matched integer
+                number_of_titles = int(match.group(0))
+                print(f"Number of titles: {number_of_titles}")
+
+            # Calculate the page count
+            page_count = (number_of_titles // 100) + 1
+
+            # Append all pages to movie_details
+            for page in range(2, page_count + 1):
+                print(f"Page: {page}")
+                # Find the "NEXT" button at the bottom of the page and extract the link
+                next_button = soup.select_one(".lister-page-next")
+                next_button_link = next_button['href']
+
+                # Update the ratings_link with the next page link
+                ratings_link = f"https://www.imdb.com{next_button_link}"
+
+                try:
+                    # Open the URL
+                    response = browser.open(ratings_link)
+
+                    # Get the response code
+                    response_code = response.code
+
+                    # Get the HTML content
+                    html_content = response.read()
+
+                    soup = BeautifulSoup(html_content, 'html.parser')
+
+                    # Extract the movie or TV series details from the list
+                    movie_details += soup.select('.lister-item-content')
+
+                except mechanize.URLError as e:
+                    print(f"An error occurred: {e}")
+
+
+            # Check if there are any movie details
+            if movie_details:
+                # Loop through the movie details
+                for movie in movie_details:
+                    # Get the title
+                    title_element = movie.select_one(".lister-item-header a")
+                    title = title_element.text.strip()
+
+                    # Extract the title type
+                    isEpisode_element = movie.find("small", class_="text-primary")
+                    if isEpisode_element:
+                        isEpisode = isEpisode_element.text.strip()
+                    else:
+                        isEpisode = ""
+
+                    # Check if the title type is not an episode
+                    if "Episode:" not in isEpisode:
+                        # Extract actors and rating
+                        # Find the <p> element with directors and actors
+                        p_element = movie.select("p.text-muted.text-small a")
+
+                        # Extract the actors from the text of each item in the list
+                        actors = [actor.text.strip() for actor in p_element if "dir" not in actor['href']]
+
+                        # Get the rating and directors from ratings.csv and remove directors from actors
+                        with open('ratings.csv', 'r') as file:
+                            ratings_data = list(csv.DictReader(file))
+
+                            # Loop through the ratings_data list
+                            for item in ratings_data:
+                                # Check if the title type is "movie"
+                                if item['Title Type'] == "movie":
+                                    # Extract title and rating
+                                    rating = int(item['Your Rating'])
+
+                                    # Check if the title is the same as the current title
+                                    if title == item['Title']:
+                                        # Extract directors
+                                        directors = item['Directors'].split(", ")
+
+                                        # Remove directors from actors
+                                        actors = [actor for actor in actors if actor not in directors]
+
+                                        break
+
+                        # Loop through the actors
+                        for actor in actors:
+                            # Check if the actor is already in the dictionary
+                            if actor in actor_ratings:
+                                # Add the rating to the existing actor
+                                actor_ratings[actor] += rating
+                                actor_title_counts[actor] += 1
+                            else:
+                                # Add the actor to the dictionary
+                                actor_ratings[actor] = rating
+                                actor_title_counts[actor] = 1
+
+                # Check if there are any ratings
+                if actor_ratings:
+                    # Calculate the average rating for each actor
+                    actor_average_ratings = {
+                        actor: actor_ratings[actor] / actor_title_counts[actor]
+                        for actor in actor_ratings
+                    }
+
+                    # Calculate the love_formula for each actor
+                    actor_love_formulas = {
+                        actor: (avg_rating, actor_title_counts[actor],
+                                   ((avg_rating ** 5) * (actor_title_counts[actor] ** 1.3)) / 1000)
+                        for actor, avg_rating in actor_average_ratings.items()
+                    }
+
+                    # Sort the actors by the love_formula in descending order
+                    sorted_actors = sorted(actor_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
+
+                    return sorted_actors
+                else:
+                    return "N/A"
+
+        except mechanize.URLError as e:
+            print(f"An error occurred: {e}")
+
+    def see_all_actors(self, favorite_actors):
+        # Create a new QDialog to show all the actors
+        dialog = QDialog()
+        dialog.setWindowTitle("All Actors")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(800, 500)
+
+        layout = QVBoxLayout()
+
+        # If there are too many actors, show them in a table
+        if favorite_actors:
+            table = SortableTable(len(favorite_actors), 4)
+            table.setHorizontalHeaderLabels(["Actor", "Average Rating", "Title Count", "Your Love For Them"])
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+            for row, (actor, info) in enumerate(favorite_actors):
+                # Convert data to strings
+                actor_str = str(actor)
+                avg_rating_str = f"{info[0]:.2f}"
+                title_count_str = str(info[1])
+                your_love_str = f"{info[2]:.4f}"
+
+                # Create QTableWidgetItem objects from the strings
+                table.setItem(row, 0, QTableWidgetItem(actor_str))
+                table.setItem(row, 1, QTableWidgetItem(avg_rating_str))
+                table.setItem(row, 2, QTableWidgetItem(title_count_str))
+                table.setItem(row, 3, QTableWidgetItem(your_love_str))
+
+            layout.addWidget(table)
+
+        else:
+            no_actors_label = QLabel("You have no favorite actors.")
+            layout.addWidget(no_actors_label)
+
+        dialog.setLayout(layout)
+        # Connect the sorting function to the header labels
+        dialog.exec_()
+
 
     # Get the favorite genre based on the average rating you have given to movies/series of that genre
     def get_favorite_genre(self, ratings_data):
@@ -693,7 +915,7 @@ class StatisticsWindow(QDialog):
         else:
             return "N/A"  # Return "N/A" and 0.0 for average rating when there are no ratings
 
-    def see_all_genres(self, ratings_data, favorite_genres):
+    def see_all_genres(self, favorite_genres):
         # Create a new QDialog to show all the genres
         dialog = QDialog()
         dialog.setWindowTitle("All Genres")
@@ -849,7 +1071,7 @@ class StatisticsWindow(QDialog):
 
         return formatted_data if formatted_data else "N/A"
 
-    def see_all_tv_series(self, ratings_data, favorite_tv_series):
+    def see_all_tv_series(self, favorite_tv_series):
         # Create a new QDialog to show all the TV series
         dialog = QDialog()
         dialog.setWindowTitle("All TV Shows")
@@ -1516,30 +1738,10 @@ class ModernApp(QMainWindow):
 
     ## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
     def checkRatings(self, title, title_type):
-        # URL of the IMDb ratings export page
-        # (does not work because of IMDB's robots.txt's web scraping precautions)
-        # So the best way would be to download ratings.csv manually from the IMDb website
+        # The best way would be to download ratings.csv manually from the IMDb website
 
         # Define the destination file path where you want to save the CSV file
         self.ratings_csv = 'ratings.csv'
-
-        """
-        # Send the request using the session
-        ratings_response = session.get(ratings_url)
-
-        # Check if the request was successful
-        if ratings_response.status_code == 200:
-            # Get the content of the response
-            content = response.text
-
-            # Save the content to the destination file
-            with open(self.ratings_csv, 'w', encoding='utf-8') as file:
-                file.write(content)
-        else:
-            print(ratings_response)
-            print("Failed to download the CSV file. Check the URL or make sure your ratings list is public and try again.")
-            return
-        """
 
         # Check if ratings.csv exists
         try:
