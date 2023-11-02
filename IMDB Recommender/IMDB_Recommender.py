@@ -1378,6 +1378,24 @@ class ModernApp(QMainWindow):
                 file.write(f"\"User Lists Link\": \"{dialog.user_lists_link}\"\n"
                            f"\"Watchlist Link\": \"{dialog.watchlist_link}\"")
 
+            # Create watchlist file
+            self.watchlist_csv = f'watchlist.csv'
+
+            # Send an HTTP GET request to the URL0
+            response = requests.get(dialog.watchlist_link, headers=headers)
+
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Get the content of the response
+                content = response.text
+
+                # Save the content to the destination file
+                with open(self.watchlist_csv, 'w', encoding='utf-8') as file:
+                    file.write(content)
+            else:
+                print(
+                    "\nFailed to download the CSV file. Check the URL or make sure your watchlist is public and try again.")
+
             # Update the combo box with the new lists
             self.list_combo.clear()
             self.list_combo.addItem("Watchlist")  # Add a default option
