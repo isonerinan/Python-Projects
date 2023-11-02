@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['IMDB_Recommender.py'],
+    ['IMDB Recommender\\IMDB_Recommender.py'],
     pathex=[],
     binaries=[],
     datas=[],
