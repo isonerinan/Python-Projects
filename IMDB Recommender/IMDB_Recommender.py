@@ -550,7 +550,7 @@ class StatisticsWindow(QDialog):
 
         jokes_list = [f"Looks like you wanna watch an unhealthy amount of {sorted_genres[0][0]} {sorted_types[0][0]}.",
                       f"{random_genre} {random_type}? An interesting combination.",
-                      f"Do you really wanna watch {random_title}? I wouldn't.",]
+                      f"Do you really wanna watch {random_title}? I wouldn't."]
 
         # Make a joke if there are any titles in the watchlist other than movies, series, episodes and mini-series
         if short_count > 0:
@@ -574,23 +574,20 @@ class StatisticsWindow(QDialog):
         if tv_short_count > 0:
             jokes_list.append(f"You have {tv_short_count} TV shorts in your watchlist.<br><br>Let me guess, you are a busy person and you don't have time to watch full episodes, right?")
 
-        # Genres: "Action", "Adult", "Adventure", "Animation",
-        #                                    "Biography", "Comedy", "Crime", "Documentary",
-        #                                    "Drama", "Family", "Fantasy", "Film Noir",
-        #                                    "Game Show", "History", "Horror", "Musical",
-        #                                    "Music", "Mystery", "News", "Reality-TV",
-        #                                    "Romance", "Sci-Fi", "Short", "Sport",
-        #                                    "Talk-Show", "Thriller", "War", "Western"
+
         if 'Adult' in genre_count and genre_count['Adult'] > 0:
             jokes_list.append(f"You have {genre_count['Adult']} adult titles in your watchlist.<br><br>Pervert.")
         if 'Reality-TV' in genre_count and genre_count['Reality-TV'] > 0:
-            jokes_list.append(f"You have {genre_count['Reality-TV']} reality TV shows in your watchlist.<br><br>I hope you know that they are not real.")
+            jokes_list.append(f"You have {genre_count['Reality-TV']} reality TV shows in your watchlist.<br><br>"
+                              f"I hope you know that they are not real.")
         if 'Talk-Show' in genre_count and genre_count['Talk-Show'] > 0:
             jokes_list.append(f"You have {genre_count['Talk-Show']} talk shows in your watchlist.<br><br>Why?")
         if 'News' in genre_count and genre_count['News'] > 0:
-            jokes_list.append(f"You have {genre_count['News']} news shows in your watchlist.<br><br>My brother, you are not missing out on anything, trust me.")
+            jokes_list.append(f"You have {genre_count['News']} news shows in your watchlist.<br><br>"
+                              f"My brother, you are not missing out on anything, trust me.")
         if 'Game-Show' in genre_count and genre_count['Game-Show'] > 0:
-            jokes_list.append(f"You have {genre_count['Game-Show']} game shows in your watchlist.<br><br>I don't know what a game show is, but I am sure it is not a real show.")
+            jokes_list.append(f"You have {genre_count['Game-Show']} game shows in your watchlist.<br><br>"
+                              f"I don't know what a game show is, but I am sure it is not a real show.")
         if 'Film-Noir' in genre_count and genre_count['Film-Noir'] > 0:
             jokes_list.append(f"You have {genre_count['Film-Noir']} film noir titles in your watchlist.<br><br>Not everything is black and white, you know??")
         if 'Musical' in genre_count and genre_count['Musical'] > 0:
@@ -601,7 +598,9 @@ class StatisticsWindow(QDialog):
             jokes_list.append(f"You have {genre_count['Sport']} sports titles in your watchlist.<br><br>Okay, I guess?")
         if 'Drama' in genre_count and genre_count['Drama'] > 0:
             jokes_list.append(f"You have {genre_count['Drama']} drama titles in your watchlist.<br><br>Are you a drama queen?")
-            jokes_list.append(f"You have {genre_count['Drama']} drama titles in your watchlist.<br><br>Having 'drama' as a genre in your IMDb watchlist is like having 'food' as a cuisine in your restaurant menu: everything is a food and every goddamn movie is a drama.")
+            jokes_list.append(f"You have {genre_count['Drama']} drama titles in your watchlist.<br><br>"
+                              f"Having 'drama' as a genre in your IMDb watchlist is like having 'food' as a cuisine in your restaurant menu: "
+                              f"everything is a food and every goddamn movie is a drama.")
 
         window.update_result_label(random.choice(jokes_list))
         app.processEvents()
@@ -675,6 +674,7 @@ class StatisticsWindow(QDialog):
 
         director_ratings = {}
         director_title_counts = {}
+        director_titles = {}
 
         # Loop through the ratings_data list
         for item in ratings_data:
@@ -689,16 +689,13 @@ class StatisticsWindow(QDialog):
                     # Add the rating to the existing director
                     director_ratings[director] += rating
                     director_title_counts[director] += 1
+                    director_titles[director].append(item['Title'])
                 else:
                     # Add the director to the dictionary
                     director_ratings[director] = rating
                     director_title_counts[director] = 1
+                    director_titles[director] = [item['Title']]
 
-        # Select a random director from the dictionary and show it
-        random_director = random.choice(list(director_ratings.keys()))
-        window.update_result_label(f"Do I see {random_director} here? Interesting...")
-        app.processEvents()
-        time.sleep(5)
 
         # Check if there are any ratings
         if director_ratings:
@@ -716,6 +713,82 @@ class StatisticsWindow(QDialog):
 
             # Sort the directors by the love_formula in descending order
             sorted_directors = sorted(director_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
+
+            # Select a random director from the dictionary and show it
+            random_director = random.choice(list(director_ratings.keys()))
+
+            jokes_list = [f"You have rated {len(director_ratings)} directors.<br><br>That's a lot of directors.",
+                          f"I see {random_director} here.<br><br>I wonder if you really like them or you're just pretentious.",
+                          f"{random_director}? That's a weird name.",
+                          f"{random_director}? We've got a cinephile here, folks!",
+                          f"{sorted_directors[0][0]}? I don't know who that is.<br><br>Oops, sorry! They were your favorite director.",
+                          f"Do I see {random_director} here? Interesting...",
+                          f"{random_director}?! Do you even watch cinema?!",
+                          f"Ladies and gentlemen, {random_director}!",
+                          f"Do you ever think that your life would be better if {random_director} directed it?<br><br>Me neither."]
+
+            random_title = random.choice(director_titles[random_director])
+
+            jokes_list.extend([f"Do you love {random_director} because of {random_title}?",
+                               f"Are you really telling me that you love {random_director} who directed the abomination that is {random_title}?",
+                               f"I believe {random_director} is a national treasure and {random_title} is a masterpiece. I am tired of pretending it's not.",
+                               f"{random_director} is a great director, but {random_title} is a terrible movie. I am sorry.",
+                               f"{random_director} is a terrible director, but {random_title} is a great movie. I am not sorry."])
+
+
+            if len(director_titles[random_director]) > 1:
+                random_title_2 = random.choice([title for title in director_titles[random_director] if title != random_title])
+                jokes_list.extend([f"Between {random_title} and {random_title_2}, {random_director} has definitely been kidnapped and replaced by a doppelganger.",
+                                   f"Did you know that {random_director} directed both {random_title} and {random_title_2}?<br><br>This isn't a trick question, it's true.",
+                                   f"You have 5 seconds: which {random_director} movie is better, {random_title} or {random_title_2}?"])
+
+            if len(director_ratings) > 1:
+                random_director_2 = random.choice([director in director_ratings.keys() and director != random_director])
+                jokes_list.extend([f"Did you know that {random_director} and {random_director_2} are siblings?<br><br>No, you did not! Because they are not. Probably...",
+                                   f"Seems like your dream movie would be directed by {random_director} and {random_director_2}.<br><br>That would be an interesting collab.",
+                                   f"Seems like you are a fan of {random_director} and {random_director_2}.<br><br>That's a weird combination, and I love it.",
+                                   f"Your range is amazing. You love {random_director} and {random_director_2}.<br><br>That's like loving salt on pineapple. You have to try it to understand."])
+
+            if random_director == "Christopher Nolan":
+                nolan_list = ["time", "Hans Zimmer", "Michael Caine", "practical effects"]
+                window.update_result_label(f"Seems like you are obsessed with Christopher Nolan as much as Christopher Nolan is obsessed with {random.choice(nolan_list)}.")
+
+            elif random_director == "Quentin Tarantino":
+                tarantino_list = ["feet", "N-word", "Uma Thurman", "violence", "70s"]
+                window.update_result_label(f"Seems like you are obsessed with Quentin Tarantino as much as Quentin Tarantino is obsessed with {random.choice(tarantino_list)}.")
+
+            elif random_director == "Martin Scorsese":
+                scorcese_list = ["gangsters", "Robert De Niro", "Leonardo DiCaprio"]
+                window.update_result_label(f"Seems like you are obsessed with Martin Scorsese as much as Martin Scorsese is obsessed with {random.choice(scorcese_list)}.")
+
+            elif random_director == "Stanley Kubrick":
+                kubrick_list = ["symmetry", "colors", "the number 42", "the moon"]
+                window.update_result_label(f"Seems like you are obsessed with Stanley Kubrick as much as Stanley Kubrick is obsessed with {random.choice(kubrick_list)}.")
+
+            elif random_director == "David Fincher":
+                fincher_list = ["the color green", "Trent Reznor"]
+                window.update_result_label(f"Seems like you are obsessed with David Fincher as much as David Fincher is obsessed with {random.choice(fincher_list)}.")
+
+            elif random_director == "Steven Spielberg":
+                spielberg_list = ["aliens", "John Williams", "the 80s", "dinosaurs", "sharks", "Tom Hanks", "the military"]
+                window.update_result_label(f"Seems like you are obsessed with Steven Spielberg as much as Steven Spielberg is obsessed with {random.choice(spielberg_list)}.")
+
+            elif random_director == "Alfred Hitchcock":
+                hitchcock_list = ["blondes", "suspense"]
+                window.update_result_label(f"Seems like you are obsessed with Alfred Hitchcock as much as Alfred Hitchcock is obsessed with {random.choice(hitchcock_list)}.")
+
+            elif random_director == "Tim Burton":
+                burton_list = ["Johnny Depp", "Helena Bonham Carter", "the color black", "stop motion", "Danny Elfman"]
+                window.update_result_label(f"Seems like you are obsessed with Tim Burton as much as Tim Burton is obsessed with {random.choice(burton_list)}.")
+
+            elif random_director == "Wes Anderson":
+                anderson_list = ["symmetry", "pastel colors", "ensemble casts"]
+                window.update_result_label(f"Seems like you are obsessed with Wes Anderson as much as Wes Anderson is obsessed with {random.choice(anderson_list)}.")
+
+            else:
+                window.update_result_label(random.choice(jokes_list))
+                app.processEvents()
+                time.sleep(5)
 
             return sorted_directors
         else:
@@ -800,7 +873,7 @@ class StatisticsWindow(QDialog):
                 number_of_titles = int(match.group(0))
                 window.update_result_label(f"Oh, boy.<br><br>"
                                            f"Found {number_of_titles} titles in your ratings list. That's AT LEAST {number_of_titles} actors/actresses for me to analyze.<br><br>"
-                                           f"I may be a robot, but I hate you...")
+                                           f"I may be a robot, but come on...")
                 app.processEvents()
                 time.sleep(5)
 
@@ -914,13 +987,15 @@ class StatisticsWindow(QDialog):
                     f"You watched {random_actor} in {actor_title_counts[random_actor]} titles and I don't know what to do with this information...",
                     f"Seems like you have a thing for {random_actor}...",
                     f"Quick, {random_actor} is coming! Act natural!",
-                    f"Fuck, Marry, Kill: {random_actor}, {random_actor_2}, {random_actor_3}<br><br>Waiting for your answer..."
+                    f"Fuck, Marry, Kill: {random_actor}, {random_actor_2}, {random_actor_3}<br><br>Waiting for your answer...",
+                    f"You reaaally like {random_actor}, and you are objectively right!",
+                    f""
                 ]
 
                 if len(actor_titles[random_actor]) > 1:
                     # Select random_title_2 from the actor's titles that is different than random_title
                     random_title_2 = random.choice([title for title in actor_titles[random_actor] if title != random_title])
-                    jokes_list.extend([f"I loved {random_actor} in {random_title}, but I am not sure about {random_title_2}...",
+                    jokes_list.extend([f"I loved {random_actor} in {random_title}, but I am not so sure about {random_title_2}...",
                                       f"Quick question: {random_actor} in {random_title} or {random_title_2}?"])
 
                 # Check if the actor has any formal titles, if not take a random joke from the jokes_list
@@ -944,10 +1019,16 @@ class StatisticsWindow(QDialog):
                         window.update_result_label(f"{random_actor}? Why is a professor acting? Shouldn't they be teaching?")
                     elif random_actor == "Bryan Cranston":
                         window.update_result_label(f"{random_actor}? I am the one who rates!")
+                    elif random_actor == "Bob Odenkirk":
+                        window.update_result_label(f"You watch {random_actor} at Starbucks?<br><br>"
+                                                   f"I don't get it, what's the kick? Why doncha do it at home like the rest of us, with a big flat-screen TV, 50 channels of pay-per-view?"
+                                                   f"In a Starbucks, that's nice!")
                     elif random_actor == "Aaron Paul":
                         window.update_result_label(f"This is my own private {random_actor} and I will not be harassed... Bitch!")
                     elif random_actor == "Dean Norris":
                         window.update_result_label(f"{random_actor}? Sex gifs.")
+                    elif random_actor == "Giancarlo Esposito":
+                        window.update_result_label(f"I found here a \"{random_actor}\", but I think I can call him Gus.")
                     else:
                         window.update_result_label(random.choice(jokes_list))
 
@@ -1216,15 +1297,21 @@ class StatisticsWindow(QDialog):
                       f"I am proud of you, unlike your friends who doesn't like {random_series}.",
                       f"I know you watch {random_series} when you are alone. I am always watching you.",
                       f"I know you wach {random_series} because of the nudity. But I'll keep your secret.",
-                      f"I am pretty sure you really liked {random_series} since you rated it {tv_series_data[random_series]['Your Rating']}/10.<br><br>But I bet you don't even remember what it was about...",
-                      f"I am pretty sure you really liked {random_series} since you rated it {tv_series_data[random_series]['Your Rating']}/10.<br><br>But it might be that you generally rate everything high...",
+                      f"I am pretty sure you really liked {random_series} since you rated it {tv_series_data[random_series]['Your Rating']}/10.<br><br>"
+                      f"But I bet you don't even remember what it was about...",
+
+                      f"I am pretty sure you really liked {random_series} since you rated it {tv_series_data[random_series]['Your Rating']}/10.<br><br>"
+                      f"But it might be that you generally rate everything high...",
+
                       f"Today's kids would think {random_series} is from the history books or something, that's how old you are.",
                       f"Today's kids would think {random_series} is lame.<br><br>I mean it is, but they don't have to know that.",
                       f"If you were a character in {random_series}, you would be the guy walking in the background. You know, the one that no one cares about.",
                       f"I am pretty sure you are the only person in the world who likes {random_series}.",
                       f"I know you watched {random_series} illegally. I am calling the police.",
                       f"If your life was a TV series, it would be {random_series}: boring and uninteresting.",
-                      f"If your life was a TV series, it would be {random_series}: horribly cliché and only going downhill after the first episode.<br><br>But I am sure you would rate it 10/10.",
+                      f"If your life was a TV series, it would be {random_series}: horribly cliché and only going downhill after the first episode.<br><br>"
+                      f"But I am sure you would rate it 10/10.",
+
                       f"If your life was a TV series, it would be {random_series}: a complete waste of time.",
                       f"If {random_series} was a person, I am afraid you would run away with them from your own wedding.",
                       f"If {random_series} was a person, I am sure they would kill you and cry at your funeral, that's how awful {random_series} is. But you still like it."]
@@ -1235,7 +1322,9 @@ class StatisticsWindow(QDialog):
                 f"It's beyond me how you can enjoy BOTH {random_series} and {random_series_2}.",
                 f"Quick question: {random_series} or {random_series_2}?",
                 f"If {random_series} and {random_series_2} had a baby, it would be the worst thing ever.<br><br>You seem to like both, though...",
-                f"Did you know that {random_series} and {random_series_2} were created by the same person?<br><br>Well, they weren't. And if you said yes, you are a liar. Be better..."
+
+                f"Did you know that {random_series} and {random_series_2} were created by the same person?<br><br>"
+                f"Well, they weren't. And if you said yes, you are a liar. Be better..."
             ])
 
         # Check if the title has a number in it
