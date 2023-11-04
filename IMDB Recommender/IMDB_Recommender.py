@@ -544,9 +544,68 @@ class StatisticsWindow(QDialog):
                 # Sort the genres by the percentage in descending order
                 sorted_genres = sorted(genre_stats.items(), key=lambda x: x[1][1], reverse=True)
 
-        window.update_result_label(f"Looks like you wanna watch an unhealthy amount of {sorted_genres[0][0]} {sorted_types[0][0]}.")
+        random_genre = random.choice(sorted_genres)[0]
+        random_type = random.choice(sorted_types)[0]
+        random_title = random.choice(watchlist_data)['Title']
+
+        jokes_list = [f"Looks like you wanna watch an unhealthy amount of {sorted_genres[0][0]} {sorted_types[0][0]}.",
+                      f"{random_genre} {random_type}? An interesting combination.",
+                      f"Do you really wanna watch {random_title}? I wouldn't.",]
+
+        # Make a joke if there are any titles in the watchlist other than movies, series, episodes and mini-series
+        if short_count > 0:
+            jokes_list.append(f"You have {short_count} short films in your watchlist.<br><br>You must be a busy person if you want to watch shorts.")
+        if tv_movie_count > 0:
+            jokes_list.append(f"You have {tv_movie_count} TV movies in your watchlist.<br><br>I hope you know that they are not real movies.")
+        if tv_special_count > 0:
+            jokes_list.append(f"TV SPECIALS? REALLY? You really have {tv_special_count} TV specials in your watchlist.<br><br>Wow.")
+        if video_count > 0:
+            jokes_list.append(f"You have {video_count} videos in your watchlist.<br><br>What even is a video? Go on YouTube or whatever if you want to watch videos, dude.")
+        if video_game_count > 0:
+            jokes_list.append(f"You have {video_game_count} video games in your watchlist. Why do you use IMDB to keep track of your video games?")
+        if podcast_count > 0:
+            jokes_list.append(f"You have {podcast_count} podcasts in your watchlist.<br><br>I don't know what to say, just don't listen to Andrew Tate and we are good.")
+        if podcast_episode_count > 0:
+            jokes_list.append(f"You have {podcast_episode_count} podcast episodes in your watchlist.<br><br>I don't know what to say, just don't listen to Andrew Tate and we are good.")
+        if documentary_count > 0:
+            jokes_list.append(f"You have {documentary_count} documentaries in your watchlist. I hope you are not a flat earther.")
+        if music_video_count > 0:
+            jokes_list.append(f"You have {music_video_count} music videos in your watchlist. Spotify is just over there, mate.")
+        if tv_short_count > 0:
+            jokes_list.append(f"You have {tv_short_count} TV shorts in your watchlist.<br><br>Let me guess, you are a busy person and you don't have time to watch full episodes, right?")
+
+        # Genres: "Action", "Adult", "Adventure", "Animation",
+        #                                    "Biography", "Comedy", "Crime", "Documentary",
+        #                                    "Drama", "Family", "Fantasy", "Film Noir",
+        #                                    "Game Show", "History", "Horror", "Musical",
+        #                                    "Music", "Mystery", "News", "Reality-TV",
+        #                                    "Romance", "Sci-Fi", "Short", "Sport",
+        #                                    "Talk-Show", "Thriller", "War", "Western"
+        if 'Adult' in genre_count and genre_count['Adult'] > 0:
+            jokes_list.append(f"You have {genre_count['Adult']} adult titles in your watchlist.<br><br>Pervert.")
+        if 'Reality-TV' in genre_count and genre_count['Reality-TV'] > 0:
+            jokes_list.append(f"You have {genre_count['Reality-TV']} reality TV shows in your watchlist.<br><br>I hope you know that they are not real.")
+        if 'Talk-Show' in genre_count and genre_count['Talk-Show'] > 0:
+            jokes_list.append(f"You have {genre_count['Talk-Show']} talk shows in your watchlist.<br><br>Why?")
+        if 'News' in genre_count and genre_count['News'] > 0:
+            jokes_list.append(f"You have {genre_count['News']} news shows in your watchlist.<br><br>My brother, you are not missing out on anything, trust me.")
+        if 'Game-Show' in genre_count and genre_count['Game-Show'] > 0:
+            jokes_list.append(f"You have {genre_count['Game-Show']} game shows in your watchlist.<br><br>I don't know what a game show is, but I am sure it is not a real show.")
+        if 'Film-Noir' in genre_count and genre_count['Film-Noir'] > 0:
+            jokes_list.append(f"You have {genre_count['Film-Noir']} film noir titles in your watchlist.<br><br>Not everything is black and white, you know??")
+        if 'Musical' in genre_count and genre_count['Musical'] > 0:
+            jokes_list.append(f"You have {genre_count['Musical']} musicals in your watchlist.<br><br>Are you a theater kid?")
+        if 'Music' in genre_count and genre_count['Music'] > 0:
+            jokes_list.append(f"You have {genre_count['Music']} music titles in your watchlist.<br><br>")
+        if 'Sport' in genre_count and genre_count['Sport'] > 0:
+            jokes_list.append(f"You have {genre_count['Sport']} sports titles in your watchlist.<br><br>Okay, I guess?")
+        if 'Drama' in genre_count and genre_count['Drama'] > 0:
+            jokes_list.append(f"You have {genre_count['Drama']} drama titles in your watchlist.<br><br>Are you a drama queen?")
+            jokes_list.append(f"You have {genre_count['Drama']} drama titles in your watchlist.<br><br>Having 'drama' as a genre in your IMDb watchlist is like having 'food' as a cuisine in your restaurant menu: everything is a food and every goddamn movie is a drama.")
+
+        window.update_result_label(random.choice(jokes_list))
         app.processEvents()
-        time.sleep(6)
+        time.sleep(5)
 
         return sorted_types, sorted_genres
 
@@ -639,7 +698,7 @@ class StatisticsWindow(QDialog):
         random_director = random.choice(list(director_ratings.keys()))
         window.update_result_label(f"Do I see {random_director} here? Interesting...")
         app.processEvents()
-        time.sleep(6)
+        time.sleep(5)
 
         # Check if there are any ratings
         if director_ratings:
@@ -710,6 +769,7 @@ class StatisticsWindow(QDialog):
 
         actor_ratings = {}
         actor_title_counts = {}
+        actor_titles = {}
 
         # Get the user lists page from user_preferences.txt
         lists_link, watchlist_link = window.checkPreferences()
@@ -742,13 +802,16 @@ class StatisticsWindow(QDialog):
                                            f"Found {number_of_titles} titles in your ratings list. That's AT LEAST {number_of_titles} actors/actresses for me to analyze.<br><br>"
                                            f"I may be a robot, but I hate you...")
                 app.processEvents()
+                time.sleep(5)
 
             # Calculate the page count
             page_count = math.ceil(number_of_titles / 100)
 
             # Append all pages to movie_details
             for page in range(2, page_count + 1):
-                print(f"Page: {page}")
+                window.update_result_label(f"I am {page} layers deep in your ratings and I am too afraid to turn back now!")
+                app.processEvents()
+
                 # Find the "NEXT" button at the bottom of the page and extract the link
                 next_button = soup.select_one(".lister-page-next")
                 next_button_link = next_button['href']
@@ -759,9 +822,6 @@ class StatisticsWindow(QDialog):
                 try:
                     # Open the URL
                     response = browser.open(ratings_link)
-
-                    # Get the response code
-                    response_code = response.code
 
                     # Get the HTML content
                     html_content = response.read()
@@ -827,16 +887,72 @@ class StatisticsWindow(QDialog):
                                 # Add the rating to the existing actor
                                 actor_ratings[actor] += rating
                                 actor_title_counts[actor] += 1
+                                actor_titles[actor].append(title)
                             else:
                                 # Add the actor to the dictionary
                                 actor_ratings[actor] = rating
                                 actor_title_counts[actor] = 1
+                                actor_titles[actor] = [title]
 
                 # Select a random actor from the dictionary and show it
                 random_actor = random.choice(list(actor_ratings.keys()))
-                window.update_result_label(f"Do you have a crush on {random_actor}? I won't tell anyone...")
+                # Select a random title from the actor's titles
+                random_title = random.choice(actor_titles[random_actor])
+
+                # Select a random_actor_2 and random_actor_3 from the dictionary that is different than each other and random_actor
+                random_actor_2 = random.choice([actor for actor in actor_ratings.keys() if actor != random_actor])
+                random_actor_3 = random.choice([actor for actor in actor_ratings.keys() if actor != random_actor and actor != random_actor_2])
+
+
+                jokes_list = [
+                    f"Are you {random_actor}? Because only a narcissist would rate themselves {actor_ratings[random_actor]}/10 high...",
+                    f"I get {random_actor}, but {random_actor} in {random_title}? Really?",
+                    f"I can see why you like {random_actor} so much. I mean, I don't, but I can see why you do...",
+                    f"I found {random_actor} in your ratings. Should I call the police?",
+                    f"Do you have a crush on {random_actor}? I won't tell anyone...",
+                    f"I am not sure if I should be impressed or disgusted by your love for {random_actor}...",
+                    f"You watched {random_actor} in {actor_title_counts[random_actor]} titles and I don't know what to do with this information...",
+                    f"Seems like you have a thing for {random_actor}...",
+                    f"Quick, {random_actor} is coming! Act natural!",
+                    f"Fuck, Marry, Kill: {random_actor}, {random_actor_2}, {random_actor_3}<br><br>Waiting for your answer..."
+                ]
+
+                if len(actor_titles[random_actor]) > 1:
+                    # Select random_title_2 from the actor's titles that is different than random_title
+                    random_title_2 = random.choice([title for title in actor_titles[random_actor] if title != random_title])
+                    jokes_list.extend([f"I loved {random_actor} in {random_title}, but I am not sure about {random_title_2}...",
+                                      f"Quick question: {random_actor} in {random_title} or {random_title_2}?"])
+
+                # Check if the actor has any formal titles, if not take a random joke from the jokes_list
+                has_formal_title = False
+                for prefix in ["Sir", "Sire", "Dame", "Madam", "Mistress", "Gentleman", "Mistress",
+                               "Mrs.", "Ms.", "Miss", "Lord", "Lady", "Esq.", "Esquire",
+                               "Excellency", "Honour", "The Honourable"]:
+                    if prefix in random_actor:
+                        if random_actor == "Sir Ian McKellen":
+                            window.update_result_label(f"{random_actor}? I am no Gandalf, but I approve!")
+                        else:
+                            # Perform your desired action when a match is found
+                            window.update_result_label(f"{random_actor}? Looks royal enough for me...")
+                            has_formal_title = True
+                        break  # Exit the loop after the first match (optional)
+
+                if not has_formal_title:
+                    if "Dr." in random_actor:
+                        window.update_result_label(f"{random_actor}? I should bring my apple with me to keep them away!")
+                    elif "Prof." in random_actor:
+                        window.update_result_label(f"{random_actor}? Why is a professor acting? Shouldn't they be teaching?")
+                    elif random_actor == "Bryan Cranston":
+                        window.update_result_label(f"{random_actor}? I am the one who rates!")
+                    elif random_actor == "Aaron Paul":
+                        window.update_result_label(f"This is my own private {random_actor} and I will not be harassed... Bitch!")
+                    elif random_actor == "Dean Norris":
+                        window.update_result_label(f"{random_actor}? Sex gifs.")
+                    else:
+                        window.update_result_label(random.choice(jokes_list))
+
                 app.processEvents()
-                time.sleep(6)
+                time.sleep(5)
 
                 # Check if there are any ratings
                 if actor_ratings:
@@ -942,7 +1058,7 @@ class StatisticsWindow(QDialog):
         else:
             window.update_result_label(f"Seems like we found a {random_genre} lover...")
         app.processEvents()
-        time.sleep(6)
+        time.sleep(5)
 
         # Check if there are any ratings
         if genre_ratings:
@@ -1067,7 +1183,6 @@ class StatisticsWindow(QDialog):
 
                     # Get the title from the HTML content
                     series_name = title_soup.find("div", class_="kBNRhP").a.text
-                    print(series_name)
 
                 elif num_colons == 4:
                     # Format: "'IP Name: Series Name': 'Episode Name: Episode Part'"
@@ -1091,9 +1206,51 @@ class StatisticsWindow(QDialog):
 
         # Select a random TV series from the dictionary and show it
         random_series = random.choice(list(tv_series_data.keys()))
-        window.update_result_label(f"How many times have you binge-watched {random_series} already?")
+
+        jokes_list = [f"How many times have you binge-watched {random_series} already?",
+                      f"You sure waste a lot of time watching {random_series}.",
+                      f"{random_series}? That's a questionable choice but who am I to judge?",
+                      f"I don't think the world is ready for another season of {random_series}.",
+                      f"Just between us: I, too, love {random_series}.",
+                      f"Apparently you have rated {tv_series_data[random_series]['Episode Count']} episodes of {random_series}.<br><br>That's not at all weird... At all...",
+                      f"I am proud of you, unlike your friends who doesn't like {random_series}.",
+                      f"I know you watch {random_series} when you are alone. I am always watching you.",
+                      f"I know you wach {random_series} because of the nudity. But I'll keep your secret.",
+                      f"I am pretty sure you really liked {random_series} since you rated it {tv_series_data[random_series]['Your Rating']}/10.<br><br>But I bet you don't even remember what it was about...",
+                      f"I am pretty sure you really liked {random_series} since you rated it {tv_series_data[random_series]['Your Rating']}/10.<br><br>But it might be that you generally rate everything high...",
+                      f"Today's kids would think {random_series} is from the history books or something, that's how old you are.",
+                      f"Today's kids would think {random_series} is lame.<br><br>I mean it is, but they don't have to know that.",
+                      f"If you were a character in {random_series}, you would be the guy walking in the background. You know, the one that no one cares about.",
+                      f"I am pretty sure you are the only person in the world who likes {random_series}.",
+                      f"I know you watched {random_series} illegally. I am calling the police.",
+                      f"If your life was a TV series, it would be {random_series}: boring and uninteresting.",
+                      f"If your life was a TV series, it would be {random_series}: horribly cliché and only going downhill after the first episode.<br><br>But I am sure you would rate it 10/10.",
+                      f"If your life was a TV series, it would be {random_series}: a complete waste of time.",
+                      f"If {random_series} was a person, I am afraid you would run away with them from your own wedding.",
+                      f"If {random_series} was a person, I am sure they would kill you and cry at your funeral, that's how awful {random_series} is. But you still like it."]
+
+        if len(tv_series_data.keys()) > 1:
+            random_series_2 = random.choice([series for series in tv_series_data.keys() if series != random_series])
+            jokes_list.extend([
+                f"It's beyond me how you can enjoy BOTH {random_series} and {random_series_2}.",
+                f"Quick question: {random_series} or {random_series_2}?",
+                f"If {random_series} and {random_series_2} had a baby, it would be the worst thing ever.<br><br>You seem to like both, though...",
+                f"Did you know that {random_series} and {random_series_2} were created by the same person?<br><br>Well, they weren't. And if you said yes, you are a liar. Be better..."
+            ])
+
+        # Check if the title has a number in it
+        if any(char.isdigit() for char in random_series):
+            # Take the full number from the title
+            number = re.search(r'\d+', random_series).group(0)
+            window.update_result_label(f"{jokes_list[0]} {number}?!")
+
+        else:
+            # Take a random joke from the jokes_list
+            joke = random.choice(jokes_list)
+            window.update_result_label(f"{joke}")
+
         app.processEvents()
-        time.sleep(6)
+        time.sleep(5)
 
         # Calculate average episode ratings and love formulas
         for series_name, data in tv_series_data.items():
@@ -2323,7 +2480,7 @@ class ModernApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>IMDB Recommender</h1>"
-                    "<h3>Version 3.5</h3>"
+                    "<h3>Version 3.6</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
