@@ -14,6 +14,7 @@ from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
 import re
 import mechanize
+import time
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -435,7 +436,14 @@ class StatisticsWindow(QDialog):
 
         self.setLayout(layout)
 
+        # Change the cursor back to the default cursor
+        QApplication.restoreOverrideCursor()
+
     def get_watchlist_stats(self):
+        window.update_result_label("Calculating your watchlist statistics...")
+        app.processEvents()
+        time.sleep(1.5)
+
         # Read the watchlist.csv file into a list
         with open('watchlist.csv', 'r') as file:
             watchlist_data = list(csv.DictReader(file))
@@ -514,12 +522,13 @@ class StatisticsWindow(QDialog):
         # Get the count of each individual genre in the watchlist
         genre_count = {}
         for item in watchlist_data:
-            if item['Title Type'] == "movie" or item['Title Type'] == "tvSeries" or item['Title Type'] == "tvEpisode" or \
-                    item['Title Type'] == "tvMiniSeries" or item['Title Type'] == "short" or item[
-                'Title Type'] == "tvMovie" or item['Title Type'] == "tvSpecial" or item['Title Type'] == "video" or \
-                    item['Title Type'] == "videoGame" or item['Title Type'] == "podcastSeries" or item[
-                'Title Type'] == "podcastEpisode" or item['Title Type'] == "tvMiniSeries" or item[
-                'Title Type'] == "tvShort" or item['Title Type'] == "documentary" or item['Title Type'] == "musicVideo":
+            if item['Title Type'] == "movie" or item['Title Type'] == "tvSeries" or item['Title Type'] == "tvEpisode"\
+                    or item['Title Type'] == "tvMiniSeries" or item['Title Type'] == "short"\
+                    or item['Title Type'] == "tvMovie" or item['Title Type'] == "tvSpecial"\
+                    or item['Title Type'] == "video" or item['Title Type'] == "videoGame"\
+                    or item['Title Type'] == "podcastSeries" or item['Title Type'] == "podcastEpisode"\
+                    or item['Title Type'] == "tvMiniSeries" or item['Title Type'] == "tvShort"\
+                    or item['Title Type'] == "documentary" or item['Title Type'] == "musicVideo":
 
                 genres = item['Genres'].split(", ")
 
@@ -534,6 +543,10 @@ class StatisticsWindow(QDialog):
 
                 # Sort the genres by the percentage in descending order
                 sorted_genres = sorted(genre_stats.items(), key=lambda x: x[1][1], reverse=True)
+
+        window.update_result_label(f"Looks like you wanna watch an unhealthy amount of {sorted_genres[0][0]} {sorted_types[0][0]}.")
+        app.processEvents()
+        time.sleep(6)
 
         return sorted_types, sorted_genres
 
@@ -597,6 +610,10 @@ class StatisticsWindow(QDialog):
         dialog.exec_()
 
     def get_favorite_director(self, ratings_data):
+        window.update_result_label("Calculating your favorite directors...")
+        app.processEvents()
+        time.sleep(1.5)
+
         director_ratings = {}
         director_title_counts = {}
 
@@ -617,6 +634,12 @@ class StatisticsWindow(QDialog):
                     # Add the director to the dictionary
                     director_ratings[director] = rating
                     director_title_counts[director] = 1
+
+        # Select a random director from the dictionary and show it
+        random_director = random.choice(list(director_ratings.keys()))
+        window.update_result_label(f"Do I see {random_director} here? Interesting...")
+        app.processEvents()
+        time.sleep(6)
 
         # Check if there are any ratings
         if director_ratings:
@@ -681,6 +704,10 @@ class StatisticsWindow(QDialog):
         dialog.exec_()
 
     def get_favorite_actor(self):
+        window.update_result_label("Calculating your favorite actors/actresses...")
+        app.processEvents()
+        time.sleep(1.5)
+
         actor_ratings = {}
         actor_title_counts = {}
 
@@ -711,10 +738,13 @@ class StatisticsWindow(QDialog):
             if match:
                 # The group(0) will contain the first matched integer
                 number_of_titles = int(match.group(0))
-                print(f"Number of titles: {number_of_titles}")
+                window.update_result_label(f"Oh, boy.<br><br>"
+                                           f"Found {number_of_titles} titles in your ratings list. That's AT LEAST {number_of_titles} actors/actresses for me to analyze.<br><br>"
+                                           f"I may be a robot, but I hate you...")
+                app.processEvents()
 
             # Calculate the page count
-            page_count = (number_of_titles // 100) + 1
+            page_count = math.ceil(number_of_titles / 100)
 
             # Append all pages to movie_details
             for page in range(2, page_count + 1):
@@ -802,6 +832,12 @@ class StatisticsWindow(QDialog):
                                 actor_ratings[actor] = rating
                                 actor_title_counts[actor] = 1
 
+                # Select a random actor from the dictionary and show it
+                random_actor = random.choice(list(actor_ratings.keys()))
+                window.update_result_label(f"Do you have a crush on {random_actor}? I won't tell anyone...")
+                app.processEvents()
+                time.sleep(6)
+
                 # Check if there are any ratings
                 if actor_ratings:
                     # Calculate the average rating for each actor
@@ -870,6 +906,10 @@ class StatisticsWindow(QDialog):
 
     # Get the favorite genre based on the average rating you have given to movies/series of that genre
     def get_favorite_genre(self, ratings_data):
+        window.update_result_label("Calculating your favorite genres...")
+        app.processEvents()
+        time.sleep(1.5)
+
         genre_ratings = {}
         genre_title_counts = {}
 
@@ -892,6 +932,17 @@ class StatisticsWindow(QDialog):
                         # Add the genre to the dictionary
                         genre_ratings[genre] = rating
                         genre_title_counts[genre] = 1
+
+        # Select a random genre from the dictionary and show it
+        random_genre = random.choice(list(genre_ratings.keys()))
+
+        # Find out if the genre starts with a vowel or a consonant
+        if random_genre[0].lower() in "aeiou":
+            window.update_result_label(f"Seems like we found an {random_genre} lover...")
+        else:
+            window.update_result_label(f"Seems like we found a {random_genre} lover...")
+        app.processEvents()
+        time.sleep(6)
 
         # Check if there are any ratings
         if genre_ratings:
@@ -957,6 +1008,10 @@ class StatisticsWindow(QDialog):
 
     # Get the favorite TV series based on the average rating you have given to its episodes
     def get_favorite_tv_series(self, ratings_data):
+        window.update_result_label("Calculating your favorite TV series...")
+        app.processEvents()
+        time.sleep(1.5)
+
         tv_series_data = {}
 
         # Loop through the ratings_data list
@@ -997,6 +1052,9 @@ class StatisticsWindow(QDialog):
                     # Format: "Series Name: Episode Name"
                     series_name = title_split[0]
                 elif num_colons == 3:
+                    window.update_result_label(f"Checking out individual episodes such as:<br>"
+                                               f"{item['Title']}")
+                    app.processEvents()
                     # Format: "Series Name: 'Episode Name: Episode Part'" or "'IP Name: Series Name': Episode Name"
                     # Check the URL to determine which format it is
                     title_url = item['URL']
@@ -1030,6 +1088,12 @@ class StatisticsWindow(QDialog):
                 tv_series_data[series_name]['Your Rating'] += 0
                 tv_series_data[series_name]['Average Episode Rating'] += float(item['Your Rating'])
                 tv_series_data[series_name]['Episode Count'] += 1
+
+        # Select a random TV series from the dictionary and show it
+        random_series = random.choice(list(tv_series_data.keys()))
+        window.update_result_label(f"How many times have you binge-watched {random_series} already?")
+        app.processEvents()
+        time.sleep(6)
 
         # Calculate average episode ratings and love formulas
         for series_name, data in tv_series_data.items():
@@ -1162,6 +1226,8 @@ class ModernApp(QMainWindow):
         self.min_rating = 0.0
         self.max_runtime = 0
         self.selected_genre = "All Genres"
+        self.selected_type = "All Types"
+        self.max_episodes = 0
 
         self.initUI()
 
@@ -1267,6 +1333,12 @@ class ModernApp(QMainWindow):
         self.filters_container.hide()
         self.main_layout.addWidget(self.filters_container)
 
+        # Create a combo box to select a title type
+        self.title_type_combo = QComboBox()
+        self.title_type_combo.addItem("All Types")  # Add a default option
+        self.title_type_combo.addItems(["Movies", "TV Series", "TV Episodes", "TV Mini-Series", "Shorts", "TV Movies", "TV Specials", "Videos", "Video Games", "Podcasts", "Podcast Episodes", "TV Mini-Series", "TV Shorts", "Documentaries", "Music Videos"])
+
+
         # Create a QSlider for selecting minimum IMDB rating
         self.rating_slider = QSlider(Qt.Horizontal)
         self.rating_slider.setMinimum(0)
@@ -1283,18 +1355,31 @@ class ModernApp(QMainWindow):
         self.runtime_slider.setTickInterval(1)
         self.runtime_slider.setTickPosition(QSlider.TicksAbove)
 
+        # Create a QSlider for selecting maximum number of episodes
+        self.episodes_slider = QSlider(Qt.Horizontal)
+        self.episodes_slider.setMinimum(0)
+        self.episodes_slider.setMaximum(100)  # Maximum number of episodes is 100
+        self.episodes_slider.setValue(0)  # Default to 0
+        self.episodes_slider.setTickInterval(1)
+        self.episodes_slider.setTickPosition(QSlider.TicksAbove)
 
         # Create a QLabel to display the selected rating
-        self.rating_label = QLabel("Minimum Rating: 0.0")
+        self.rating_label = QLabel("Minimum Rating: No Limit")
 
         # Create a QLabel to display the selected runtime
-        self.runtime_label = QLabel("Maximum Runtime: 0")
+        self.runtime_label = QLabel("Maximum Runtime: No Limit")
+
+        # Create a QLabel to display the selected number of episodes
+        self.episodes_label = QLabel("Maximum Number of Episodes: No Limit")
 
         # Update the label when the slider value changes
         self.rating_slider.valueChanged.connect(self.update_rating_label)
 
         # Update the label when the slider value changes
         self.runtime_slider.valueChanged.connect(self.update_runtime_label)
+
+        # Update the label when the slider value changes
+        self.episodes_slider.valueChanged.connect(self.update_episodes_label)
 
         # Create a QComboBox for selecting genres
         self.genre_combo = QComboBox()
@@ -1314,11 +1399,14 @@ class ModernApp(QMainWindow):
 
         # Create a layout for filter widgets
         filter_layout = QVBoxLayout()
+        filter_layout.addWidget(self.title_type_combo)
+        filter_layout.addWidget(self.genre_combo)
         filter_layout.addWidget(self.rating_label)
         filter_layout.addWidget(self.rating_slider)
         filter_layout.addWidget(self.runtime_label)
         filter_layout.addWidget(self.runtime_slider)
-        filter_layout.addWidget(self.genre_combo)
+        filter_layout.addWidget(self.episodes_label)
+        filter_layout.addWidget(self.episodes_slider)
         filter_layout.addWidget(apply_filters_button)
         self.filters_container.setLayout(filter_layout)
 
@@ -1430,22 +1518,59 @@ class ModernApp(QMainWindow):
 
 
     def find_random_movie(self):
-        print(self.min_rating, self.selected_genre)
-
+        # Change the cursor to indicate that the program is working
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         selected_index = self.list_combo.currentIndex()
-        if selected_index == 0:
-            self.watchlist_random(self.watchlist_link, self.min_rating, self.selected_genre, self.max_runtime)
-        else:
-            selected_list_link = self.list_links[selected_index - 1]
-            self.list_random(selected_list_link, self.min_rating, self.selected_genre, self.max_runtime)
 
-    def list_random(self, list_url, min_rating, selected_genre, max_runtime):
+        if selected_index == 0:
+            self.update_result_label(0)
+            app.processEvents()
+            self.watchlist_random(self.watchlist_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
+        else:
+            self.update_result_label(1)
+            app.processEvents()
+            selected_list_link = self.list_links[selected_index - 1]
+            self.list_random(selected_list_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
+
+        # Change the cursor back to normal
+        QApplication.restoreOverrideCursor()
+
+    def list_random(self, list_url, min_rating, selected_genre, max_runtime, selected_type, max_episodes):
+        number_of_episodes = 0
+
+        # If the user has selected a maximum number of episodes and not selected a title type, search only through TV series
+        if max_episodes != 0 and selected_type == "All Types":
+            self.update_result_label(3)
+            app.processEvents()
+            selected_type = "tvSeries"
+
+        # If the user has selected a maximum number of episodes and a title type, respect the title type
+        elif max_episodes != 0 and (selected_type == "tvSeries" or selected_type == "tvMiniSeries" or selected_type == "podcastSeries"):
+            self.update_result_label(3)
+            app.processEvents()
+            selected_type = selected_type
+
+        # If the user selected a title type other than any series, this overrides the episode filter
+        else:
+            self.update_result_label(3)
+            app.processEvents()
+            max_episodes = 0
+
+        list_url = list_url + f"?sort=list_order,asc&st_dt=&mode=detail"
+
+        if selected_type != "All Types":
+            self.update_result_label(3)
+            app.processEvents()
+            list_url = list_url + f"&title_type={selected_type}"
 
         # Send an HTTP GET request to fetch the list page
         response = requests.get(list_url, headers=headers)
 
         # Check if the request was successful
         if response.status_code == 200:
+            self.update_result_label(7)
+            app.processEvents()
+
             # Parse the HTML content of the page
             soup = BeautifulSoup(response.content, 'html.parser')
 
@@ -1454,7 +1579,13 @@ class ModernApp(QMainWindow):
 
             # Check how many titles are there in the list
             list_details = soup.select(".lister-total-num-results")
-            number_of_titles_str = list_details[0].text.strip()
+            if list_details:
+                number_of_titles_str = list_details[0].text.strip()
+
+            else:
+                list_details = soup.find_all("div.lister-details")
+                print(list_details)
+                number_of_titles_str = list_details[0].text.strip()
 
             # Use a regular expression to extract the integer
             match = re.search(r'\d+', number_of_titles_str)
@@ -1463,16 +1594,17 @@ class ModernApp(QMainWindow):
                 number_of_titles = int(match.group(0))
 
             # Calculate the page count
-            page_count = (number_of_titles // 100) + 1
+            page_count = math.ceil(number_of_titles / 100)
 
 
             # Append all pages to movie_details
             for page in range(2, page_count + 1):
                 # Use regex to remove referral parameters
                 list_url_without_referral = re.sub(r'[?&]ref_[^&]*', '', list_url)
+                print(f"{list_url_without_referral}&page={page}")
 
                 # Send an HTTP GET request to fetch the list page
-                response = requests.get(f"{list_url_without_referral}?page={page}", headers=headers)
+                response = requests.get(f"{list_url_without_referral}&page={page}", headers=headers)
 
                 # Check if the request was successful
                 if response.status_code == 200:
@@ -1483,31 +1615,51 @@ class ModernApp(QMainWindow):
                     movie_details += soup.select('.lister-item-content')
 
                 else:
-                    print("\nFailed to retrieve the list. Check the URL and try again.")
+                    print("\nThere was a problem while retrieving the list. Check the URL and try again.")
                     return
 
             # Check if there are any movie details
             if movie_details:
+                self.update_result_label(3)
+                app.processEvents()
+
                 # Filter movie details based on min_rating and selected_genre
                 filtered_movie_details = []
                 for movie_detail in movie_details:
-                    imdb_rating = float(movie_detail.find('span', class_='ipl-rating-star__rating').text.strip())
-                    genres = movie_detail.find('span', class_='genre').text.strip()
-                    runtime = movie_detail.find('span', class_='runtime').text.strip()
+                    imdb_rating = movie_detail.find('span', class_='ipl-rating-star__rating')
+                    if imdb_rating:
+                        imdb_rating = float(imdb_rating.text.strip())
+                    else:
+                        imdb_rating = 0.0
 
-                    # Check if runtime has decimal separator
-                    if "." in runtime or "," in runtime:
-                        runtime = runtime.replace(",", "")
-                        runtime = runtime.replace(".", "")
+                    genres = movie_detail.find('span', class_='genre')
+                    if genres:
+                        genres = genres.text.strip()
+                    else:
+                        genres = "-"
 
-                    runtime = runtime.split(" ")[0]
+                    runtime = movie_detail.find('span', class_='runtime')
+                    if runtime:
+                        runtime = runtime.text.strip()
 
-                    print(movie_detail, runtime)
+                        # Check if runtime has decimal separator
+                        if "." in runtime or "," in runtime:
+                            runtime = runtime.replace(",", "")
+                            runtime = runtime.replace(".", "")
+
+                        runtime = runtime.split(" ")[0]
+
+                    else:
+                        runtime = 0
+
                     if imdb_rating >= min_rating and (selected_genre == "All Genres" or selected_genre in genres) and (max_runtime == 0 or int(runtime) <= max_runtime):
                         filtered_movie_details.append(movie_detail)
 
                 # Check if there are any filtered movie details
                 if filtered_movie_details:
+                    self.update_result_label(4)
+                    app.processEvents()
+
                     # Randomly select a movie detail from the list
                     random_movie_detail = random.choice(filtered_movie_details)
 
@@ -1524,6 +1676,9 @@ class ModernApp(QMainWindow):
 
                     # Check if the request was successful
                     if second_response.status_code == 200:
+                        self.update_result_label(5)
+                        app.processEvents()
+
                         # Parse the HTML content of the page
                         second_soup = BeautifulSoup(second_response.content, 'html.parser')
 
@@ -1534,6 +1689,47 @@ class ModernApp(QMainWindow):
 
                         if title_type.isdigit():
                             title_type = "Movie"
+
+                        # If the title is not a TV series, do not get the number of episodes
+                        if title_type == "TV Series" or title_type == "TV Mini-Series":
+                            episode_details = second_soup.find('span', class_='ipc-title__subtext')
+
+                            if episode_details:
+                                number_of_episodes = int(episode_details.text.strip())
+
+                        else:
+                            number_of_episodes = 0
+
+                        # Check if the number of episodes is less than or equal to the selected maximum number of episodes
+                        if max_episodes != 0:
+                            # If the number of episodes is greater than the selected maximum number of episodes, try again until the list ends or a title matches the criteria
+                            if number_of_episodes > max_episodes:
+                                self.update_result_label(6)
+                                app.processEvents()
+                                for i in range(0, len(filtered_movie_details)):
+                                    random_movie_detail = random.choice(filtered_movie_details)
+                                    title = random_movie_detail.find('h3', class_='lister-item-header').find('a').text.strip()
+                                    url = 'https://www.imdb.com' + random_movie_detail.find('h3', class_='lister-item-header').find('a')['href']
+                                    second_response = requests.get(url, headers=headers)
+                                    second_soup = BeautifulSoup(second_response.content, 'html.parser')
+                                    type_details = second_soup.select("div.iwmAVw")
+                                    if type_details:
+                                        title_type = type_details[0].select_one('li.ipc-inline-list__item[role="presentation"]').text.strip()
+                                    if title_type.isdigit():
+                                        title_type = "Movie"
+                                    if title_type == "TV Series" or title_type == "TV Mini-Series":
+                                        episode_details = second_soup.find('span', class_='ipc-title__subtext')
+                                        if episode_details:
+                                            number_of_episodes = int(episode_details.text.strip())
+                                    else:
+                                        number_of_episodes = 0
+                                    if number_of_episodes <= max_episodes:
+                                        break
+
+                                # If the number of episodes is still greater than the selected maximum number of episodes, show an error message
+                                if number_of_episodes > max_episodes:
+                                    self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
+                                    return
 
                         director_details = second_soup.select("div.sc-dffc6c81-3")
 
@@ -1597,12 +1793,13 @@ class ModernApp(QMainWindow):
                     genres = random_movie_detail.find('span', class_='genre').text.strip()
                     user_rating = self.checkRatings(title, title_type)
 
-                    # Update self.result_label with the movie recommendation
+                    # Update self.result_label with the recommendation
                     self.result_label.setText(f"<div style=\"font-size: 18px;\">"
                                               f"<a href=\"{url}\"><h1>{title}</h1></a><br>"
                                               f"<b>Title Type:</b> {title_type}<br>"
                                               f"<b>IMDb Rating:</b> {imdb_rating}<br>"
                                               f"<b>Runtime:</b> {runtime}<br>"
+                                              f"<b>Episode Count:</b> {number_of_episodes}<br>"
                                               f"<b>Year:</b> {year}<br>"
                                               f"<b>Genres:</b> {genres}<br>"
                                               f"<b>Director/Creator:</b> {directors}<br><br></div>"
@@ -1616,13 +1813,21 @@ class ModernApp(QMainWindow):
                     self.poster_label.clear()
 
             else:
-                print("\nNo movie details found on the list page. Check the HTML structure or the URL.")
+                # If there are no movie details, show an error message
+                self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
         else:
-            print("\nFailed to retrieve the list. Check the URL and try again.")
+            self.result_label.setText(f"Failed to retrieve the list. Check the URL and try again.")
             return
 
     ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
-    def watchlist_random(self, url, min_rating, selected_genre, max_runtime):
+    def watchlist_random(self, url, min_rating, selected_genre, max_runtime, selected_type, max_episodes):
+        # If there are any episode filters, call list_random() instead
+        if max_episodes != 0:
+            # Delete 'export' from the URL
+            url = url.replace("export", "")
+            self.list_random(url, min_rating, selected_genre, max_runtime, selected_type, max_episodes)
+            return
+
         # Define the destination file path where you want to save the CSV file
         self.watchlist_csv = f'watchlist.csv'
 
@@ -1651,6 +1856,9 @@ class ModernApp(QMainWindow):
 
         # Check if there's data in the CSV file
         if csv_data:
+            self.update_result_label(3)
+            app.processEvents()
+
             # Filter the CSV data by minimum rating, maximum runtime and selected genre
             csv_data = [item for item in csv_data if 'IMDb Rating' in item and item['IMDb Rating'] and float(item['IMDb Rating']) >= min_rating]
 
@@ -1660,8 +1868,13 @@ class ModernApp(QMainWindow):
             if max_runtime != 0:
                 csv_data = [item for item in csv_data if 'Runtime (mins)' in item and item['Runtime (mins)'] and int(item['Runtime (mins)']) <= max_runtime]
 
+            if selected_type != "All Types":
+                csv_data = [item for item in csv_data if selected_type in item['Title Type']]
+
             # Check if there's data in the CSV file after filtering
             if csv_data:
+                self.update_result_label(4)
+                app.processEvents()
                 # Randomly select a row from the CSV data
                 random_item = random.choice(csv_data)
 
@@ -1674,6 +1887,8 @@ class ModernApp(QMainWindow):
 
                 # Check if the request was successful
                 if second_response.status_code == 200:
+                    self.update_result_label(5)
+                    app.processEvents()
                     # Parse the HTML content of the page
                     second_soup = BeautifulSoup(second_response.content, 'html.parser')
 
@@ -1873,7 +2088,7 @@ class ModernApp(QMainWindow):
 
         # Check if the file exists
         if not os.path.isfile(self.favorites_csv):
-            print("File does not exist.")
+            print("'favorites.csv' does not exist.")
             return False
 
         # Check if the movie/series is already in the favorites.csv file
@@ -1887,11 +2102,14 @@ class ModernApp(QMainWindow):
 
     # Search button logic for custom list input
     def search_button_click(self):
+        self.update_result_label(2)
+        app.processEvents()
+
         # Get the text from the QLineEdit
         list_link = self.custom_list.text()
 
         # Call the list_random function with the input
-        self.list_random(list_link, self.min_rating, self.selected_genre, self.max_runtime)
+        self.list_random(list_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
 
     def show_filters(self):
         if self.filters_container.isHidden():
@@ -1904,19 +2122,58 @@ class ModernApp(QMainWindow):
         self.min_rating = self.rating_slider.value() / 2.0
         self.selected_genre = self.genre_combo.currentText()
         self.max_runtime = self.runtime_slider.value()
+        self.max_episodes = self.episodes_slider.value()
 
-        # Use min_rating and selected_genre to filter recommendations
-        # Perform your filtering logic here
+        if self.title_type_combo.currentText() != "All Types":
+            match(self.title_type_combo.currentText()):
+                case "Movies":
+                    self.selected_type = "movie"
+                case "TV Series":
+                    self.selected_type = "tvSeries"
+                case "TV Episodes":
+                    self.selected_type = "tvEpisode"
+                case "TV Mini-Series":
+                    self.selected_type = "tvMiniSeries"
+                case "Shorts":
+                    self.selected_type = "short"
+                case "TV Movies":
+                    self.selected_type = "tvMovie"
+                case "TV Specials":
+                    self.selected_type = "tvSpecial"
+                case "Videos":
+                    self.selected_type = "video"
+                case "Video Games":
+                    self.selected_type = "videoGame"
+                case "Podcasts":
+                    self.selected_type = "podcastSeries"
+                case "Podcast Episodes":
+                    self.selected_type = "podcastEpisode"
+                case "TV Mini-Series":
+                    self.selected_type = "tvMiniSeries"
+                case "TV Shorts":
+                    self.selected_type = "tvShort"
+                case "Documentaries":
+                    self.selected_type = "documentary"
+                case "Music Videos":
+                    self.selected_type = "musicVideo"
 
-        # Example: Display the applied filters
-        self.result_label.setText(f"Applied Filters: Minimum Rating: {self.min_rating}, Genre: {self.selected_genre}, Maximum Runtime: {self.max_runtime}")
+        # Display the applied filters
+        self.result_label.setText(f"<h3>Applied Filters:</h3><br>"
+                                  f"Type: {self.title_type_combo.currentText()}<br>"
+                                  f"Minimum Rating: {self.min_rating}<br>"
+                                  f"Genre: {self.selected_genre}<br>"
+                                  f"Maximum Runtime: {self.max_runtime}<br>"
+                                  f"Maximum Episodes: {self.max_episodes}")
 
         # Hide the filters container after applying filters
         self.filters_container.hide()
 
     # Update the rating label when the slider value changes
     def update_rating_label(self):
-        self.rating_label.setText(f"Minimum Rating: {self.rating_slider.value() / 2.0}")
+        if self.rating_slider.value() == 0:
+            self.rating_label.setText(f"Minimum Rating: No Limit")
+        else:
+            self.rating_label.setText(f"Minimum Rating: {self.rating_slider.value() / 2.0}")
 
     # Update the runtime label when the slider value changes
     def update_runtime_label(self):
@@ -1924,6 +2181,53 @@ class ModernApp(QMainWindow):
             self.runtime_label.setText(f"Maximum Runtime: No Limit")
         else:
             self.runtime_label.setText(f"Maximum Runtime: {self.runtime_slider.value()}")
+
+    # Update the episodes label when the slider value changes
+    def update_episodes_label(self):
+        if self.episodes_slider.value() == 0:
+            self.episodes_label.setText(f"Maximum Episodes: No Limit")
+        else:
+            self.episodes_label.setText(f"Maximum Episodes: {self.episodes_slider.value()}")
+
+    # Update the result label to inform the user that the program is working
+    def update_result_label(self, flag):
+        match(flag):
+            case 0:
+                self.result_label.setText("<div style=\"font-size: 18px;\">"
+                                          "Our chefs are crafting a watchlist recommendation for you...<br><br></div>")
+                return
+            case 1:
+                self.result_label.setText("<div style=\"font-size: 18px;\">"
+                                          "We're preparing a delightful recommendation from your list...<br><br></div>")
+                return
+            case 2:
+                self.result_label.setText("<div style=\"font-size: 18px;\">"
+                                          "A custom recommendation is on its way, tailored just for you...<br><br></div>")
+                return
+            case 3:
+                self.result_label.setText("<div style=\"font-size: 18px;\">"
+                                          "Our chefs are adding filters to enhance your selection's flavor...<br><br></div>")
+                return
+            case 4:
+                self.result_label.setText("<div style=\"font-size: 18px;\">"
+                                          "We're handpicking a special title for you...<br><br></div>")
+                return
+            case 5:
+                self.result_label.setText("<div style=\"font-size: 18px;\">"
+                                          "Your perfect dish is ready to be served! Enjoy your meal!<br><br></div>")
+                return
+            case 6:
+                self.result_label.setText("<div style=\"font-size: 18px;\">"
+                                          "Creating a culinary masterpiece takes time. Please be patient!<br><br></div>")
+                return
+            case 7:
+                self.result_label.setText("<div style=\"font-size: 18px;\">"
+                                          "We're curating a special menu just for you...<br><br></div>")
+                return
+            case _:
+                self.result_label.setText("<div style=\"font-size: 18px;\">" + flag + "<br><br></div>")
+
+
 
     # Change the star icon color
     def change_star_color(self, color):
@@ -1988,8 +2292,15 @@ class ModernApp(QMainWindow):
             msg.exec_()
             return
 
+        # Change the cursor to a wait cursor
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        # Create and display the statistics dialog
         statistics_window = StatisticsWindow(ratings_csv_data)
         statistics_window.exec_()
+
+        # Change the cursor back to the default cursor
+        QApplication.restoreOverrideCursor()
 
 
 
@@ -2012,7 +2323,7 @@ class ModernApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>IMDB Recommender</h1>"
-                    "<h3>Version 3.2</h3>"
+                    "<h3>Version 3.5</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
