@@ -8,7 +8,7 @@ import csv
 import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
-    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout
+    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor
 from PyQt5.QtSvg import QSvgRenderer
@@ -978,7 +978,7 @@ class StatisticsWindow(QDialog):
 
 
                 jokes_list = [
-                    f"Are you {random_actor}? Because only a narcissist would rate themselves {actor_ratings[random_actor]}/10 high...",
+                    f"Are you {random_actor}? Because only a narcissist would rate themselves {actor_ratings[random_actor] / actor_title_counts[actor]}/10 high...",
                     f"I get {random_actor}, but {random_actor} in {random_title}? Really?",
                     f"I can see why you like {random_actor} so much. I mean, I don't, but I can see why you do...",
                     f"I found {random_actor} in your ratings. Should I call the police?",
@@ -988,9 +988,7 @@ class StatisticsWindow(QDialog):
                     f"Seems like you have a thing for {random_actor}...",
                     f"Quick, {random_actor} is coming! Act natural!",
                     f"Fuck, Marry, Kill: {random_actor}, {random_actor_2}, {random_actor_3}<br><br>Waiting for your answer...",
-                    f"You reaaally like {random_actor}, and you are objectively right!",
-                    f""
-                ]
+                    f"You reaaally like {random_actor}, and you are objectively right!"]
 
                 if len(actor_titles[random_actor]) > 1:
                     # Select random_title_2 from the actor's titles that is different than random_title
@@ -1423,6 +1421,192 @@ class StatisticsWindow(QDialog):
         # Connect the sorting function to the header labels
         dialog.exec_()
 
+class NowWatchingWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Now Watching")
+        self.resize(800, 500)
+
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
+
+        # Create a top-level layout for the main content
+        content_layout = QVBoxLayout()
+        self.main_layout.addLayout(content_layout)
+
+        # Show what the user is currently watching
+        self.now_watching_label = QLabel("You are now watching:")
+        self.now_watching_label.setAlignment(Qt.AlignCenter)
+        self.now_watching_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        content_layout.addWidget(self.now_watching_label)
+
+        # Create a list widget to show what the user is currently watching
+        self.now_watching_list = QListWidget()
+        self.check_now_watching_list()
+        self.now_watching_list.setStyleSheet("font-size: 20px;")
+        content_layout.addWidget(self.now_watching_list)
+
+        # Create a button to remove the selected title from the list
+        self.remove_button = QPushButton("Remove")
+        self.remove_button.clicked.connect(self.remove_title)
+        content_layout.addWidget(self.remove_button)
+
+        # Create a button to clear the list
+        self.clear_button = QPushButton("Clear")
+        self.clear_button.clicked.connect(self.clear_list)
+        content_layout.addWidget(self.clear_button)
+
+        # Create a search bar
+        self.search_bar = QLineEdit()
+
+        # Create a search button next to the search bar
+        self.search_button = QPushButton("Search")
+        self.search_button.clicked.connect(self.search)
+
+        # Create a horizontal layout for the search bar and the search button
+        search_layout = QHBoxLayout()
+        search_layout.addWidget(self.search_bar)
+        search_layout.addWidget(self.search_button)
+        content_layout.addLayout(search_layout)
+
+        # Create a list widget to show the search results
+        self.search_results_list = QListWidget()
+        self.search_results_list.setStyleSheet("font-size: 20px;")
+        content_layout.addWidget(self.search_results_list)
+
+        # Create a button to add the selected title to the list
+        self.add_button = QPushButton("Add")
+        self.add_button.clicked.connect(self.add_title)
+        content_layout.addWidget(self.add_button)
+
+    # Class Functions
+    def check_now_watching_list(self):
+        # Check if watching.csv exists
+        if os.path.exists("watching.csv"):
+            # Open watching.csv and add the titles to the list
+            with open("watching.csv", "r") as file:
+                for line in file:
+                    # Do not add the title if it is "Title"
+                    if line.strip("\n") == "Title":
+                        continue
+
+                    # Remove the newline character
+                    line = line.strip("\n")
+
+                    # Add the title to the list
+                    self.now_watching_list.addItem(line)
+
+    def remove_title(self):
+        # Check if there are any selected items
+        if self.now_watching_list.selectedItems():
+            # Loop through the selected items
+            for item in self.now_watching_list.selectedItems():
+                # Remove the item from the list
+                self.now_watching_list.takeItem(self.now_watching_list.row(item))
+
+                # Remove the item from watching.csv
+                with open("watching.csv", "r") as file:
+                    lines = file.readlines()
+
+                with open("watching.csv", "w") as file:
+                    for line in lines:
+                        if line.strip("\n") != item.text():
+                            file.write(line)
+
+        else:
+            # Show a message
+            msg = QMessageBox()
+            msg.setWindowTitle("Error")
+            msg.setText("Please select a title to remove.")
+            msg.setIcon(QMessageBox.Critical)
+            msg.exec_()
+
+    def clear_list(self):
+        # Clear the list
+        self.now_watching_list.clear()
+
+        # Clear watching.csv, if it exists
+        if os.path.exists("watching.csv"):
+            with open("watching.csv", "w") as file:
+                file.write("Title\n")
+
+
+    def search(self):
+        # Clear the list
+        self.search_results_list.clear()
+
+        # Get the search query
+        search_query = self.search_bar.text()
+
+        # Check if the search query is not empty
+        if search_query:
+            # Perform an IMDB search
+            try:
+                # Open the URL
+                response = browser.open(f"https://www.imdb.com/find?q={search_query}&ref_=nv_sr_sm")
+
+                # Get the HTML content
+                html_content = response.read()
+
+                soup = BeautifulSoup(html_content, 'html.parser')
+
+                # Extract the titles and their respective links from the search results
+                search_results = soup.select("div.sc-17bafbdb-2")
+                print(search_results)
+                search_results = search_results[0].select("li.ipc-metadata-list-summary-item")
+
+                # Check if there are any search results
+                if search_results:
+                    # Loop through the search results
+                    for result in search_results:
+                        # Extract the title
+                        title_element = result.select_one("a")
+                        title = title_element.text.strip()
+
+                        # Add the title to the list
+                        self.search_results_list.addItem(title)
+
+                else:
+                    # Show a message
+                    self.search_results_list.addItem("No search results found.")
+
+            except mechanize.URLError as e:
+                print(f"An error occurred: {e}")
+
+        else:
+            # Show a message
+            self.search_results_list.addItem("Please enter a search query.")
+
+    def add_title(self):
+        # Check if there are any selected items
+        if self.search_results_list.selectedItems():
+            # Loop through the selected items
+            for item in self.search_results_list.selectedItems():
+                # Add the item to the list
+                self.now_watching_list.addItem(item.text())
+
+            # If watching.csv doesn't exist, create it
+            if not os.path.exists("watching.csv"):
+                with open("watching.csv", "w") as file:
+                    file.write("Title\n")
+
+            # Add the selected title to watching.csv
+            with open("watching.csv", "a") as file:
+                file.write(f"{item.text()}\n")
+
+        else:
+            # Show a message
+            msg = QMessageBox()
+            msg.setWindowTitle("Error")
+            msg.setText("Please select a title to add.")
+            msg.setIcon(QMessageBox.Critical)
+            msg.exec_()
+
+
+
+
+
+
 class SortableTable(QTableWidget):
     def __init__(self, rows, cols):
         super().__init__(rows, cols)
@@ -1504,9 +1688,13 @@ class ModernApp(QMainWindow):
         about_action = QAction("About", self)
         about_action.triggered.connect(self.about)
 
+        now_watching_action = QAction("Now Watching", self)
+        now_watching_action.triggered.connect(self.now_watching)
+
         menu_bar.addAction(statistics_action)
         menu_bar.addAction(help_action)
         menu_bar.addAction(about_action)
+        menu_bar.addAction(now_watching_action)
 
         # Create a "User Preferences" action in the "Options" menu
         user_preferences_action = QAction("User Preferences", self)
@@ -1656,18 +1844,27 @@ class ModernApp(QMainWindow):
         filter_layout.addWidget(apply_filters_button)
         self.filters_container.setLayout(filter_layout)
 
-        # Create a new QLabel for displaying the movie/series poster
-        self.poster_label = QLabel()
-        self.poster_label.setAlignment(Qt.AlignCenter)
-        self.main_layout.addWidget(self.poster_label)
+        # Create a new QWidget for displaying the movie/series poster and details, horizontally
+        self.poster_widget = QWidget()
+        self.poster_layout = QHBoxLayout()
+        self.poster_widget.setLayout(self.poster_layout)
+        self.main_layout.addWidget(self.poster_widget)
 
-        # Create a QLabel for displaying movie/series details
-        self.result_label = QLabel("Movie Recommendation Will Appear Here")
+        self.poster_label = QLabel()
+        self.poster_label.hide()
+        self.poster_label.setAlignment(Qt.AlignCenter)
+        self.poster_layout.addWidget(self.poster_label)
+
+        self.result_label = QLabel("Your recommendation will appear here.")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setOpenExternalLinks(True)
-        self.result_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        self.result_label.setTextFormat(Qt.RichText)
-        self.main_layout.addWidget(self.result_label)
+        self.poster_layout.addWidget(self.result_label)
+
+        # Create a new QLabel for displaying the movie/series description
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        self.description_label.setAlignment(Qt.AlignCenter)
+        self.description_label.hide()
+        self.main_layout.addWidget(self.description_label)
 
         # Create a QLineEdit for custom IMDB list input
         self.custom_list = QLineEdit()
@@ -1772,6 +1969,7 @@ class ModernApp(QMainWindow):
             self.update_result_label(0)
             app.processEvents()
             self.watchlist_random(self.watchlist_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
+
         else:
             self.update_result_label(1)
             app.processEvents()
@@ -1779,6 +1977,9 @@ class ModernApp(QMainWindow):
             self.list_random(selected_list_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
 
         # Change the cursor back to normal
+        self.poster_label.show()
+        self.result_label.setAlignment(Qt.AlignVCenter)
+        self.description_label.show()
         QApplication.restoreOverrideCursor()
 
     def list_random(self, list_url, min_rating, selected_genre, max_runtime, selected_type, max_episodes):
@@ -1981,6 +2182,12 @@ class ModernApp(QMainWindow):
 
                         if director_details:
                             directors = director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
+
+                        description_details = second_soup.select("span.sc-466bb6c-0")
+
+                        if description_details:
+                            description = description_details[0].text.strip()
+                            self.description_label.setText(f"<div style=\"font-size: 18px;\">{description}</div>")
 
                         # Get the movie poster URL from the IMDb page
                         poster_image = second_soup.find('img', class_='ipc-image')
@@ -2189,6 +2396,12 @@ class ModernApp(QMainWindow):
                         # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
                         # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
                         self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Title'], random_item['URL'])
+
+                    description_details = second_soup.select("span.sc-466bb6c-0")
+
+                    if description_details:
+                        description = description_details[0].text.strip()
+                        self.description_label.setText(f"<div style=\"font-size: 18px;\">{description}</div>")
 
                     # Extract and print the desired columns
                     self.result_label.setText(f"<div style=\"font-size: 18px;\">"
@@ -2576,6 +2789,15 @@ class ModernApp(QMainWindow):
                     "<a href='https://www.instagram.com/isonerinan'>Instagram</a><br><br>"
                     "<a href='https://www.twitter.com/isonerinan'>Twitter</a>")
         msg.exec_()
+
+    # Show the now watching dialog
+    def now_watching(self):
+        # Create and display the now watching dialog
+        now_watching_window = NowWatchingWindow()
+        now_watching_window.exec_()
+
+        # Change the cursor back to the default cursor
+        QApplication.restoreOverrideCursor()
 
     # Show the favorited movies/series from the favorites.csv file
     def favorites(self):
