@@ -1504,14 +1504,15 @@ class NowWatchingWindow(QDialog):
                 # Remove the item from the list
                 self.now_watching_list.takeItem(self.now_watching_list.row(item))
 
-                # Remove the item from watching.csv
-                with open("watching.csv", "r") as file:
-                    lines = file.readlines()
+                # Remove the item from watching.csv, if it exists
+                if os.path.exists("watching.csv"):
+                    with open("watching.csv", "r") as file:
+                        lines = file.readlines()
 
-                with open("watching.csv", "w") as file:
-                    for line in lines:
-                        if line.strip("\n") != item.text():
-                            file.write(line)
+                    with open("watching.csv", "w") as file:
+                        for line in lines:
+                            if line.strip("\n") != item.text():
+                                file.write(line)
 
         else:
             # Show a message
