@@ -6,6 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 import csv
 import random
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
     QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget
@@ -1261,7 +1262,7 @@ class StatisticsWindow(QDialog):
                     title_soup = BeautifulSoup(title_html, 'html.parser')
 
                     # Get the title from the HTML content
-                    series_name = title_soup.find("div", class_="kBNRhP").a.text
+                    series_name = title_soup.find("div", class_="bTLVGY").a.text
 
                 elif num_colons == 4:
                     # Format: "'IP Name: Series Name': 'Episode Name: Episode Part'"
@@ -1693,9 +1694,9 @@ class ModernApp(QMainWindow):
         now_watching_action.triggered.connect(self.now_watching)
 
         menu_bar.addAction(statistics_action)
+        menu_bar.addAction(now_watching_action)
         menu_bar.addAction(help_action)
         menu_bar.addAction(about_action)
-        menu_bar.addAction(now_watching_action)
 
         # Create a "User Preferences" action in the "Options" menu
         user_preferences_action = QAction("User Preferences", self)
@@ -1755,6 +1756,14 @@ class ModernApp(QMainWindow):
                     list_link = f'https://www.imdb.com{href}'
                     self.list_links.append(list_link)
                     self.list_combo.addItem(list_name)
+
+        # Center every item in the combo box
+        self.list_combo.setEditable(True)
+        self.list_combo.lineEdit().setAlignment(Qt.AlignCenter)
+
+        # Make the combo box searchable
+        self.list_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.list_combo.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
 
         self.main_layout.addWidget(self.list_combo)
 
@@ -1857,6 +1866,8 @@ class ModernApp(QMainWindow):
         self.poster_layout.addWidget(self.poster_label)
 
         self.result_label = QLabel("Your recommendation will appear here.")
+        # Enable rich text
+        self.result_label.setOpenExternalLinks(True)
         self.result_label.setAlignment(Qt.AlignCenter)
         self.poster_layout.addWidget(self.result_label)
 
@@ -2131,7 +2142,7 @@ class ModernApp(QMainWindow):
                         second_soup = BeautifulSoup(second_response.content, 'html.parser')
 
                         # Extract the movie or TV series details from the list
-                        type_details = second_soup.select("div.iwmAVw")
+                        type_details = second_soup.select("div.sc-e6498a88-0")
                         if type_details:
                             title_type = type_details[0].select_one('li.ipc-inline-list__item[role="presentation"]').text.strip()
 
@@ -2179,7 +2190,7 @@ class ModernApp(QMainWindow):
                                     self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
                                     return
 
-                        director_details = second_soup.select("div.sc-dffc6c81-3")
+                        director_details = second_soup.select("div.ipc-metadata-list-item__content-container")
 
                         if director_details:
                             directors = director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
@@ -2346,9 +2357,19 @@ class ModernApp(QMainWindow):
                     # Parse the HTML content of the page
                     second_soup = BeautifulSoup(second_response.content, 'html.parser')
 
-                    director_details = second_soup.select("div.sc-dffc6c81-3")
+                    director_details = second_soup.select("div.ipc-metadata-list-item__content-container")
                     if director_details:
                         directors = random_item['Directors'] if random_item['Directors'] != "" else director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
+
+                    # If the title is not a TV series, do not get the number of episodes
+                    if random_item["Title Type"] == "tvSeries" or random_item["Title Type"] == "tvMiniSeries":
+                        episode_details = second_soup.find('span', class_='ipc-title__subtext')
+
+                        if episode_details:
+                            number_of_episodes = int(episode_details.text.strip())
+
+                    else:
+                        number_of_episodes = 0
 
                     # Get the movie poster URL from the IMDb page
                     poster_image = second_soup.find('img', class_='ipc-image')
@@ -2410,6 +2431,7 @@ class ModernApp(QMainWindow):
                                               f"<b>Title Type:</b> {random_item['Title Type']}<br>"
                                               f"<b>IMDb Rating:</b> {random_item['IMDb Rating']}<br>"
                                               f"<b>Runtime:</b> {random_item['Runtime (mins)']}<br>"
+                                              f"<b>Episode Count:</b> {number_of_episodes}<br>"
                                               f"<b>Year:</b> {random_item['Year']}<br>"
                                               f"<b>Genres:</b> {random_item['Genres']}<br>"
                                               # Use csv to get the directors, if empty, use the scraped data
