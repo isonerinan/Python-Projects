@@ -11,13 +11,15 @@ import random
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
-    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget, QScrollArea, QFrame
+    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget, QScrollArea
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor, QFont
 from PyQt5.QtSvg import QSvgRenderer
 import re
 import mechanize
 import time
+import matplotlib.pyplot as plt
+import numpy as np
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -404,7 +406,8 @@ class StatisticsWindow(QDialog):
         layout.addWidget(favorite_year_label, 2, 2, 1, 2)  # Row 2, Col 2-3
 
         # Get the favorite years
-        year_stats = self.get_favorite_year(ratings_data)
+        chronological_years, year_stats = self.get_favorite_year(ratings_data)
+        print(chronological_years)
 
         # Create a QVBoxLayout to add QLabel widgets
         year_labels_layout = QVBoxLayout()
@@ -419,7 +422,7 @@ class StatisticsWindow(QDialog):
         year_see_all = QPushButton("See All")
 
         # Connect the button click to see_all_years function
-        year_see_all.clicked.connect(lambda: self.see_all_years(year_stats))
+        year_see_all.clicked.connect(lambda: self.see_all_years(chronological_years, year_stats))
         year_labels_layout.addWidget(year_see_all)
 
         # Create a QWidget to hold the QLabel widgets
@@ -484,8 +487,8 @@ class StatisticsWindow(QDialog):
 
         # Loop through the ratings_data list
         for item in ratings_data:
-            # Check if the title type is "movie"
-            if item['Title Type'] == "movie" or item['Title Type'] == "tvSeries" or item['Title Type'] == "tvMovie" or item['Title Type'] == "tvSpecial" or item['Title Type'] == "tvMiniSeries" or item['Title Type'] == "videoGame" or item['Title Type'] == "documentary":
+            # Check if the title type is not empty
+            if item['Title Type'] != "":
                 # Extract year and rating
                 year = int(item['Year'])
                 rating = float(item['Your Rating'])
@@ -515,22 +518,25 @@ class StatisticsWindow(QDialog):
                 for year, avg_rating in year_ratings.items()
             }
 
+            # Sort the years by ascending order (earliest to latest)
+            chronological_years = sorted(year_love_formulas.items(), key=lambda x: x[0])
+
             # Sort the years by the love_formula in descending order
-            sorted_years = sorted(year_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
+            best_years = sorted(year_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
 
             # Return the sorted year stats
-            return sorted_years
+            return chronological_years, best_years
 
         else:
             return "N/A"    # Return "N/A" if there are no ratings
 
-    def see_all_years(self, year_stats):
+    def see_all_years(self, chronological_years, year_stats):
         # Create a new QDialog to show all the directors
         dialog = QDialog()
         dialog.setWindowTitle("All Years")
 
         # Set the window size to a reasonable size so that the table is visible
-        dialog.resize(800, 500)
+        dialog.resize(1400, 800)
 
         layout = QVBoxLayout()
 
@@ -556,11 +562,311 @@ class StatisticsWindow(QDialog):
 
             layout.addWidget(table)
 
+            # Create 3 buttons to see graphs: average rating, title count, love formula
+            graph_buttons_layout = QVBoxLayout()
+
+            # Love formula graph
+            love_formula_graph_button = QPushButton("Your Favorite Years Graph")
+            love_formula_graph_button.clicked.connect(lambda: self.show_love_formula_graph(chronological_years))
+            graph_buttons_layout.addWidget(love_formula_graph_button)
+
+            # Average rating graph
+            avg_rating_graph_button = QPushButton("Average Rating Per Year Graph")
+            avg_rating_graph_button.clicked.connect(lambda: self.show_avg_rating_graph(chronological_years))
+            graph_buttons_layout.addWidget(avg_rating_graph_button)
+
+            # Title count graph
+            title_count_graph_button = QPushButton("Title Count Per Year Graph")
+            title_count_graph_button.clicked.connect(lambda: self.show_title_count_graph(chronological_years))
+            graph_buttons_layout.addWidget(title_count_graph_button)
+
+            layout.addLayout(graph_buttons_layout)
 
         else:
             no_years_label = QLabel("You have no favorite years.")
             layout.addWidget(no_years_label)
 
+        dialog.setLayout(layout)
+        # Connect the sorting function to the header labels
+        dialog.exec_()
+
+    def show_love_formula_graph(self, chronological_years):
+        # Create a new QDialog to show all the directors
+        dialog = QDialog()
+        dialog.setWindowTitle("All Years")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(1400, 800)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        graph_text_label = QLabel("Hover over the bars to see how much you love each year.")
+
+        # If there are any years, show them in a graph
+        if chronological_years:
+            # Create a list of years and love formulas
+            love_formulas = [year[1][2] for year in chronological_years]
+
+            years = [year[0] for year in chronological_years]
+
+            # Create the figures and the axes
+            fig, ax = plt.subplots()
+
+            # Set the title
+            ax.set_title("Your Favorite Years")
+
+            # Set the x and y labels
+            ax.set_xlabel("Year")
+            ax.set_ylabel("Your Love")
+
+            # Set the x and y ticks
+            ax.set_xticks(years)
+            ax.set_yticks(np.arange(0, max(love_formulas) + 1, max(love_formulas) / 15))
+
+            # Set the x and y limits
+            ax.set_xlim(min(years) - 1, max(years) + 1)
+            ax.set_ylim(0, max(love_formulas) + 1)
+
+            # Plot the bar chart
+            ax.bar(years, love_formulas, color="#FFC107")
+
+            # Rotate the x ticks
+            plt.xticks(rotation=60)
+
+            # Add a legend
+            ax.legend(["Your Love"])
+
+            # Embed the plot in the dialog
+            canvas = plt.gcf().canvas
+            canvas.draw()
+            plt.close(fig)
+            plt.show()
+            # Extend into the whole row
+            layout.addWidget(canvas)
+            # Stretch the canvas to the whole row and column
+            layout.setStretch(0, 1)
+
+            # Hover over the bars to see the love formula
+            def hover(event):
+                # If the mouse is over a bar
+                if event.xdata is not None and event.ydata is not None:
+                    # Get the position of the cursor
+                    cursor_pos = (event.x, event.y)
+
+                    # Get the index of the bar
+                    year = int(event.xdata)
+
+                    # Check if the hovered year is in the years list, if yes, get the index of the year in years
+                    if year in years:
+                        year_index = years.index(year)
+
+                        # Get the love formula of the year
+                        love_formula = love_formulas[year_index]
+
+                        print(f"years[year_index]: {years[year_index]}\thovered: {year}\tlove_formula: {love_formula}")
+
+                    # If not, set the love formula to 0
+                    else:
+                        love_formula = 0
+
+                    graph_text_label.setText(f"Your love for {year}: {love_formula:.2f}")
+                    app.processEvents()
+
+            # Connect the hover function to the mouse move event
+            canvas.mpl_connect("motion_notify_event", hover)
+
+        else:
+            no_years_label = QLabel("You have no favorite years.")
+            layout.addWidget(no_years_label)
+
+        layout.addWidget(graph_text_label)
+        dialog.setLayout(layout)
+        # Connect the sorting function to the header labels
+        dialog.exec_()
+
+    def show_avg_rating_graph(self, chronological_years):
+        # Create a new QDialog to show all the directors
+        dialog = QDialog()
+        dialog.setWindowTitle("All Years")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(1400, 800)
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        graph_text_label = QLabel("Hover over the bars to see the average rating of each year.")
+
+        # If there are any years, show them in a graph
+        if chronological_years:
+            # Create a list of years and average ratings
+            avg_ratings = [year[1][0] for year in chronological_years]
+
+            years = [year[0] for year in chronological_years]
+
+            # Create the figures and the axes
+            fig, ax = plt.subplots()
+
+            # Set the title
+            ax.set_title("Average Rating Per Year")
+
+            # Set the x and y labels
+            ax.set_xlabel("Year")
+            ax.set_ylabel("Average Rating")
+
+            # Set the x and y ticks
+            ax.set_xticks(years)
+            ax.set_yticks(np.arange(0, 11, 1))
+
+            # Set the x and y limits
+            ax.set_xlim(min(years) - 1, max(years) + 1)
+            ax.set_ylim(0, 11)
+
+            # Plot the bar chart
+            ax.bar(years, avg_ratings, color="#FFC107")
+
+            # Rotate the x ticks
+            plt.xticks(rotation=60)
+
+            # Add a legend
+            ax.legend(["Average Rating"])
+
+            # Embed the plot in the dialog
+            canvas = plt.gcf().canvas
+            canvas.draw()
+            plt.close(fig)
+            plt.show()
+            # Extend into the whole row
+            layout.addWidget(canvas)
+            # Stretch the canvas to the whole row and column
+            layout.setStretch(0, 1)
+
+            # Hover over the bars to see the average rating
+            def hover(event):
+                # If the mouse is over a bar
+                if event.xdata is not None and event.ydata is not None:
+                    # Get the position of the cursor
+                    cursor_pos = (event.x, event.y)
+
+                    # Get the index of the bar
+                    year = int(event.xdata)
+
+                    # Check if the hovered year is in the years list, if yes, get the index of the year in years
+                    if year in years:
+                        year_index = years.index(year)
+
+                        # Get the average rating of the year
+                        avg_rating = avg_ratings[year_index]
+
+                        print(f"years[year_index]: {years[year_index]}\thovered: {year}\tavg_rating: {avg_rating}")
+
+                    # If not, set the average rating to 0
+                    else:
+                        avg_rating = 0
+
+                    graph_text_label.setText(f"Average Rating in {year}: {avg_rating:.2f}")
+                    app.processEvents()
+
+            # Connect the hover function to the mouse move event
+            canvas.mpl_connect("motion_notify_event", hover)
+
+        else:
+            no_years_label = QLabel("You have no favorite years.")
+            layout.addWidget(no_years_label)
+
+        layout.addWidget(graph_text_label)
+        dialog.setLayout(layout)
+        # Connect the sorting function to the header labels
+        dialog.exec_()
+
+    def show_title_count_graph(self, chronological_years):
+        # Create a new QDialog to show all the directors
+        dialog = QDialog()
+        dialog.setWindowTitle("All Years")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(1400, 800)
+
+        layout = QVBoxLayout()
+
+        graph_text_label = QLabel("Hover over the bars to see the number of titles rated in each year.")
+
+        # If there are any years, show them in a graph
+        if chronological_years:
+            # Create a list of years and title counts
+            title_counts = [year[1][1] for year in chronological_years]
+
+            years = [year[0] for year in chronological_years]
+
+            # Create the figures and the axes
+            fig, ax = plt.subplots()
+
+            # Set the title
+            ax.set_title("Title Count Per Year")
+
+            # Set the x and y labels
+            ax.set_xlabel("Year")
+            ax.set_ylabel("Title Count")
+
+            # Set the x and y ticks
+            ax.set_xticks(years)
+            ax.set_yticks(np.arange(0, max(title_counts) + 1, 1))
+
+            # Set the x and y limits
+            ax.set_xlim(min(years) - 1, max(years) + 1)
+            ax.set_ylim(0, max(title_counts) + 1)
+
+            # Plot the bar chart
+            ax.bar(years, title_counts, color="#FFC107")
+
+            # Rotate the x ticks
+            plt.xticks(rotation=60)
+
+            # Add a legend
+            ax.legend(["Title Count"])
+
+            # Embed the plot in the dialog
+            canvas = plt.gcf().canvas
+            canvas.draw()
+            plt.close(fig)
+            plt.show()
+
+            layout.addWidget(canvas)
+            # Stretch the canvas to the whole row and column
+            layout.setStretch(0, 1)
+
+            # Hover over the bars to see the title count
+            def hover(event):
+                # If the mouse is over a bar
+                if event.xdata is not None and event.ydata is not None:
+                    # Get the index of the bar
+                    year = int(event.xdata)
+
+                    # Check if the hovered year is in the years list, if yes, get the index of the year in years
+                    if year in years:
+                        year_index = years.index(year)
+
+                        # Get the title count of the year
+                        title_count = title_counts[year_index]
+
+                        print(f"years[year_index]: {years[year_index]}\thovered: {year}\ttitle_count: {title_count}")
+
+                    # If not, set the title count to 0
+                    else:
+                        title_count = 0
+
+                    graph_text_label.setText(f"Title Count in {year}: {title_count}")
+                    app.processEvents()
+
+            # Connect the hover function to the mouse move event
+            canvas.mpl_connect("motion_notify_event", hover)
+
+        else:
+            no_years_label = QLabel("You have no favorite years.")
+            layout.addWidget(no_years_label)
+
+        layout.addWidget(graph_text_label)
         dialog.setLayout(layout)
         # Connect the sorting function to the header labels
         dialog.exec_()
@@ -2423,6 +2729,7 @@ class ModernApp(QMainWindow):
         self.poster_layout.addWidget(self.poster_label)
 
         self.result_label = QLabel("Your recommendation will appear here.")
+        self.result_label.setWordWrap(True)
         # Enable rich text
         self.result_label.setOpenExternalLinks(True)
         self.result_label.setAlignment(Qt.AlignCenter)
