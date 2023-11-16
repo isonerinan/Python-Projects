@@ -3724,7 +3724,7 @@ class ModernApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>IMDB Recommender</h1>"
-                    "<h3>Version 3.6.5</h3>"
+                    "<h3>Version 3.8</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
