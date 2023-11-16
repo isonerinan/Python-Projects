@@ -2,6 +2,8 @@ import math
 import shutil
 import sys
 import os
+import webbrowser
+
 import requests
 from bs4 import BeautifulSoup
 import csv
@@ -9,9 +11,9 @@ import random
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
-    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor
+    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget, QScrollArea, QFrame
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor, QFont
 from PyQt5.QtSvg import QSvgRenderer
 import re
 import mechanize
@@ -393,14 +395,45 @@ class StatisticsWindow(QDialog):
         tv_labels_widget = QWidget()
         tv_labels_widget.setLayout(tv_labels_layout)
 
-        # Add the director_labels_widget to your main layout
+        # Add the tv_labels_widget to main layout
         layout.addWidget(tv_labels_widget, 5, 0)    # Row 5, Col 0
+
+        # Your favorite years based on the average rating you have given to movies/series released in that year
+        favorite_year_label = QLabel("<h3>Your Favorite Years</h3>")
+        favorite_year_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(favorite_year_label, 2, 2, 1, 2)  # Row 2, Col 2-3
+
+        # Get the favorite years
+        year_stats = self.get_favorite_year(ratings_data)
+
+        # Create a QVBoxLayout to add QLabel widgets
+        year_labels_layout = QVBoxLayout()
+
+        # Iterate through the favorite years and add them to QLabel widgets
+        for year, info in year_stats[:5]:
+            year_label = QLabel(f"<b>{year}:</b> {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
+            year_label.setAlignment(Qt.AlignCenter)
+            year_labels_layout.addWidget(year_label)
+
+        # Add "See All" button
+        year_see_all = QPushButton("See All")
+
+        # Connect the button click to see_all_years function
+        year_see_all.clicked.connect(lambda: self.see_all_years(year_stats))
+        year_labels_layout.addWidget(year_see_all)
+
+        # Create a QWidget to hold the QLabel widgets
+        year_labels_widget = QWidget()
+        year_labels_widget.setLayout(year_labels_layout)
+
+        # Add the year_labels_widget to main layout
+        layout.addWidget(year_labels_widget, 3, 2, 1, 2)  # Row 3, Col 2
 
         # Watchlist statistics
         watchlist_stats_label = QLabel("<h3>Your Watchlist Statistics</h3><br>"
                                        "<b>Top Title Types</b><br>")
         watchlist_stats_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(watchlist_stats_label, 2, 2, 1, 2)  # Row 2, Col 2-3
+        layout.addWidget(watchlist_stats_label, 4, 2, 1, 2)  # Row 4, Col 2-3
 
         # Get the watchlist statistics
         watchlist_type_stats, watchlist_genre_stats = self.get_watchlist_stats()
@@ -433,12 +466,104 @@ class StatisticsWindow(QDialog):
         watchlist_stats_widget.setLayout(watchlist_stats_layout)
 
         # Add the watchlist_stats_widget to your main layout
-        layout.addWidget(watchlist_stats_widget, 3, 2)  # Row 3, Col 2
+        layout.addWidget(watchlist_stats_widget, 5, 2)  # Row 5, Col 2
 
         self.setLayout(layout)
 
         # Change the cursor back to the default cursor
         QApplication.restoreOverrideCursor()
+
+    def get_favorite_year(self, ratings_data):
+        window.update_result_label("Calculating your favorite years...")
+        app.processEvents()
+        time.sleep(1.5)
+
+        # Create a dictionary to hold the year stats
+        year_ratings = {}
+        year_title_count = {}
+
+        # Loop through the ratings_data list
+        for item in ratings_data:
+            # Check if the title type is "movie"
+            if item['Title Type'] == "movie" or item['Title Type'] == "tvSeries" or item['Title Type'] == "tvMovie" or item['Title Type'] == "tvSpecial" or item['Title Type'] == "tvMiniSeries" or item['Title Type'] == "videoGame" or item['Title Type'] == "documentary":
+                # Extract year and rating
+                year = int(item['Year'])
+                rating = float(item['Your Rating'])
+
+
+                # Check if the year is already in the dictionary
+                if year in year_ratings:
+                    # Add the rating to the existing year
+                    year_ratings[year] += rating
+                    year_title_count[year] += 1
+
+                else:
+                    # Add the year and rating to the dictionary
+                    year_ratings[year] = rating
+                    year_title_count[year] = 1
+
+        # Check ifthere are any ratings
+        if year_ratings:
+            # Calculate the average rating for each year
+            for year in year_ratings:
+                year_ratings[year] /= year_title_count[year]
+
+            # Calculate the love formula for each year
+            year_love_formulas = {
+                year: (avg_rating, year_title_count[year],
+                       ((avg_rating ** 5) * (year_title_count[year] ** 1.3)) / 1000)
+                for year, avg_rating in year_ratings.items()
+            }
+
+            # Sort the years by the love_formula in descending order
+            sorted_years = sorted(year_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
+
+            # Return the sorted year stats
+            return sorted_years
+
+        else:
+            return "N/A"    # Return "N/A" if there are no ratings
+
+    def see_all_years(self, year_stats):
+        # Create a new QDialog to show all the directors
+        dialog = QDialog()
+        dialog.setWindowTitle("All Years")
+
+        # Set the window size to a reasonable size so that the table is visible
+        dialog.resize(800, 500)
+
+        layout = QVBoxLayout()
+
+        # If there are too many directors, show them in a table
+        if year_stats:
+            table = SortableTable(len(year_stats), 4)
+            table.setHorizontalHeaderLabels(["Year", "Average Rating", "Rated Titles", "Your Love For The Year"])
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+            for row, (year, info) in enumerate(year_stats):
+                # Convert data to strings
+                year_str = str(year)
+                avg_rating_str = f"{info[0]:.2f}"
+                title_count_str = str(info[1])
+                your_love_str = f"{info[2]:.4f}"
+
+                # Create QTableWidgetItem objects from the strings
+                table.setItem(row, 0, QTableWidgetItem(year_str))
+                table.setItem(row, 1, QTableWidgetItem(avg_rating_str))
+                table.setItem(row, 2, QTableWidgetItem(title_count_str))
+                table.setItem(row, 3, QTableWidgetItem(your_love_str))
+
+            layout.addWidget(table)
+
+
+        else:
+            no_years_label = QLabel("You have no favorite years.")
+            layout.addWidget(no_years_label)
+
+        dialog.setLayout(layout)
+        # Connect the sorting function to the header labels
+        dialog.exec_()
 
     def get_watchlist_stats(self):
         window.update_result_label("Calculating your watchlist statistics...")
@@ -1295,7 +1420,7 @@ class StatisticsWindow(QDialog):
                       f"Apparently you have rated {tv_series_data[random_series]['Episode Count']} episodes of {random_series}.<br><br>That's not at all weird... At all...",
                       f"I am proud of you, unlike your friends who doesn't like {random_series}.",
                       f"I know you watch {random_series} when you are alone. I am always watching you.",
-                      f"I know you wach {random_series} because of the nudity. But I'll keep your secret.",
+                      f"I know you watch {random_series} because of the nudity. But I'll keep your secret.",
                       f"I am pretty sure you really liked {random_series} since you rated it {tv_series_data[random_series]['Your Rating']}/10.<br><br>"
                       f"But I bet you don't even remember what it was about...",
 
@@ -1605,7 +1730,439 @@ class NowWatchingWindow(QDialog):
             msg.exec_()
 
 
+class ImageLoaderThread(QThread):
+    image_loaded = pyqtSignal(QPixmap)
 
+    def __init__(self, image_url):
+        super().__init__()
+        self.image_url = image_url
+
+    def run(self):
+        # Download the image
+        image_data = requests.get(self.image_url).content
+
+        # Convert the image data to QPixmap
+        pixmap = QPixmap()
+        pixmap.loadFromData(image_data)
+
+        # Emit the signal with the loaded pixmap
+        self.image_loaded.emit(pixmap)
+
+
+class DetailsWindow(QDialog):
+    def __init__(self, title_url):
+        super().__init__()
+        # Access the title's URL
+        response = browser.open(title_url)
+
+        if response.code == 200:
+            # Get the HTML content
+            html_content = response.read()
+
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # Get the number of awards and nominations (span.ipc-metadata-list-item__list-content-item ::before)
+            awards = soup.select_one("div[data-testid='awards']")
+            if awards:
+                awards = awards.select_one("span", class_="ipc-metadata-list-item__list-content-item").text.strip()
+            print(awards)
+        else:
+            # Get the title from result_label's text's first row
+            print("An error occurred while getting the awards and nominations on title")
+
+        # Get certificate ratings and parental guide
+        response = browser.open(title_url + "parentalguide")
+
+        if response.code == 200:
+            # Get the HTML content
+            html_content = response.read()
+
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # Get the certificate ratings
+            certificate_ratings_list = []
+            certificate_ratings = soup.select_one("section[id='certificates']")
+
+            if certificate_ratings:
+                certificate_ratings = certificate_ratings.find("ul" , class_="ipl-inline-list")
+                if certificate_ratings:
+                    for item in certificate_ratings:
+                        item = item.text.strip().replace('\n', '').replace('  ', '')
+                        certificate_ratings_list.append(item)
+
+            certificate_ratings_list = [item for item in certificate_ratings_list if item]  # Remove empty strings
+            print(certificate_ratings_list)
+
+            # Get the parental guide
+            sex_nudity_list = []
+            sex_nudity = soup.select_one("section[id='advisory-nudity']")
+
+            if sex_nudity:
+                sn_severity = sex_nudity.find("span", class_="ipl-status-pill").text.strip()
+                sex_nudity = sex_nudity.find_all("li", class_="ipl-zebra-list__item")
+                for item in sex_nudity:
+                    sex_nudity_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
+            print(sex_nudity_list)
+
+            violence_gore_list = []
+            violence_gore = soup.select_one("section[id='advisory-violence']")
+
+            if violence_gore:
+                violence_severity = violence_gore.find("span", class_="ipl-status-pill").text.strip()
+                violence_gore = violence_gore.find_all("li", class_="ipl-zebra-list__item")
+                for item in violence_gore:
+                    violence_gore_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
+            print(violence_gore_list)
+
+            profanity_list = []
+            profanity = soup.select_one("section[id='advisory-profanity']")
+
+            if profanity:
+                profanity_severity = profanity.find("span", class_="ipl-status-pill").text.strip()
+                profanity = profanity.find_all("li", class_="ipl-zebra-list__item")
+                for item in profanity:
+                    profanity_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
+            print(profanity_list)
+
+            alcohol_drugs_smoking_list = []
+            alcohol_drugs_smoking = soup.select_one("section[id='advisory-alcohol']")
+
+            if alcohol_drugs_smoking:
+                ad_severity = alcohol_drugs_smoking.find("span", class_="ipl-status-pill").text.strip()
+                alcohol_drugs_smoking = alcohol_drugs_smoking.find_all("li", class_="ipl-zebra-list__item")
+                for item in alcohol_drugs_smoking:
+                    alcohol_drugs_smoking_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
+            print(alcohol_drugs_smoking_list)
+
+            frightening_intense_scenes_list = []
+            frightening_intense_scenes = soup.select_one("section[id='advisory-frightening']")
+
+            if frightening_intense_scenes:
+                fis_severity = frightening_intense_scenes.find("span", class_="ipl-status-pill").text.strip()
+                frightening_intense_scenes = frightening_intense_scenes.find_all("li", class_="ipl-zebra-list__item")
+                for item in frightening_intense_scenes:
+                    frightening_intense_scenes_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
+            print(frightening_intense_scenes_list)
+
+        self.setWindowTitle("Details")
+        self.resize(1400, 800)
+
+        self.main_layout = QGridLayout(self, spacing=0)
+
+        # Show certificate ratings
+        certificate_widget = QWidget()
+
+        certificate_ratings_label = QLabel("<h2>Certificate Ratings</h2>")
+        certificate_list_label = QLabel()
+        certificate_list_label.setText(", ".join(certificate_ratings_list))
+        certificate_list_label.setStyleSheet("font-size: 18px;")
+        certificate_list_label.setWordWrap(True)
+        certificate_list_label.hide()
+
+        certificate_button = QPushButton("Show/Hide Certificate Ratings")
+        certificate_button.clicked.connect(lambda: certificate_list_label.show() if certificate_list_label.isHidden() else certificate_list_label.hide())
+
+        default_button_stylesheet = certificate_button.styleSheet()
+
+        certificate_label_widget = QWidget()
+        certificate_label_widget_layout = QHBoxLayout()
+        certificate_label_widget_layout.addWidget(certificate_ratings_label)
+        certificate_label_widget_layout.addWidget(certificate_button)
+        certificate_label_widget_layout.setAlignment(Qt.AlignLeft)
+        certificate_label_widget.setLayout(certificate_label_widget_layout)
+
+        certificate_widget_layout = QVBoxLayout()
+        certificate_widget_layout.addWidget(certificate_label_widget)
+        certificate_widget_layout.addWidget(certificate_list_label)
+        certificate_widget.setLayout(certificate_widget_layout)
+
+        self.main_layout.addWidget(certificate_widget, 0, 0)
+
+        # Show parental guide: Nudity, Violence, Profanity, Alcohol, Drugs & Smoking, Frightening & Intense Scenes
+        parental_guide_widget = QWidget()
+        parental_guide_label_widget = QWidget()
+        parental_guide_label = QLabel("<h2>Parental Guide</h2>")
+
+        # Create a button to show/hide the parental guide
+        parental_guide_button = QPushButton("| Show/Hide")
+        parental_guide_button.clicked.connect(
+            lambda: parental_guide_container.show() if parental_guide_container.isHidden() else parental_guide_container.hide())
+        parental_guide_button.setStyleSheet("border: 3px solid black; border-radius: 8px;")
+
+
+        parental_guide_label_widget_layout = QHBoxLayout()
+        parental_guide_label_widget_layout.addWidget(parental_guide_label)
+        parental_guide_label_widget_layout.addWidget(parental_guide_button)
+        parental_guide_label_widget_layout.setAlignment(Qt.AlignLeft)
+        parental_guide_label_widget.setLayout(parental_guide_label_widget_layout)
+
+
+        # Nudity
+        sex_nudity_label = QLabel(f"<h3>Sex & Nudity ({sn_severity})</h3>")
+        sex_nudity_list_label = QLabel(f"\t-" + "\n\n\t- ".join(sex_nudity_list))
+        sex_nudity_list_label.setStyleSheet("font-size: 18px;")
+        sex_nudity_list_label.setWordWrap(True)
+        sex_nudity_list_label.hide()
+
+        match(sn_severity):
+            case "Severe":
+                sex_nudity_label.setStyleSheet("color: red;")
+            case "Moderate":
+                sex_nudity_label.setStyleSheet("color: orange;")
+            case "Mild":
+                sex_nudity_label.setStyleSheet("color: green;")
+
+        sex_nudity_label_widget = QWidget()
+        sex_nudity_button = QPushButton("| Show/Hide")
+        sex_nudity_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        sex_nudity_label_widget_layout = QHBoxLayout()
+        sex_nudity_button.clicked.connect(lambda: sex_nudity_list_label.show() if sex_nudity_list_label.isHidden() else sex_nudity_list_label.hide())
+        sex_nudity_label_widget_layout.addWidget(sex_nudity_label)
+        sex_nudity_label_widget_layout.addWidget(sex_nudity_button)
+        sex_nudity_label_widget_layout.setAlignment(Qt.AlignLeft)
+        sex_nudity_label_widget.setLayout(sex_nudity_label_widget_layout)
+
+        # Violence & Gore
+        violence_gore_label = QLabel(f"<h3>Violence & Gore ({violence_severity})</h3>")
+        violence_gore_list_label = QLabel("\t- " + "\n\n\t- ".join(violence_gore_list))
+        violence_gore_list_label.setStyleSheet("font-size: 18px;")
+        violence_gore_list_label.setWordWrap(True)
+        violence_gore_list_label.hide()
+
+        match(violence_severity):
+            case "Severe":
+                violence_gore_label.setStyleSheet("color: red;")
+            case "Moderate":
+                violence_gore_label.setStyleSheet("color: orange;")
+            case "Mild":
+                violence_gore_label.setStyleSheet("color: green;")
+
+        violence_gore_label_widget = QWidget()
+        violence_gore_button = QPushButton("| Show/Hide")
+        violence_gore_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        violence_gore_label_widget_layout = QHBoxLayout()
+        violence_gore_button.clicked.connect(
+            lambda: violence_gore_list_label.show() if violence_gore_list_label.isHidden() else violence_gore_list_label.hide())
+        violence_gore_label_widget_layout.addWidget(violence_gore_label)
+        violence_gore_label_widget_layout.addWidget(violence_gore_button)
+        violence_gore_label_widget_layout.setAlignment(Qt.AlignLeft)
+        violence_gore_label_widget.setLayout(violence_gore_label_widget_layout)
+
+        # Profanity
+        profanity_label = QLabel(f"<h3>Profanity ({profanity_severity})</h3>")
+        profanity_list_label = QLabel("\t- " + "\n\n\t- ".join(profanity_list))
+        profanity_list_label.setStyleSheet("font-size: 18px;")
+        profanity_list_label.setWordWrap(True)
+        profanity_list_label.hide()
+
+        match(profanity_severity):
+            case "Severe":
+                profanity_label.setStyleSheet("color: red;")
+            case "Moderate":
+                profanity_label.setStyleSheet("color: orange;")
+            case "Mild":
+                profanity_label.setStyleSheet("color: green;")
+
+        profanity_label_widget = QWidget()
+        profanity_button = QPushButton("| Show/Hide")
+        profanity_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        profanity_label_widget_layout = QHBoxLayout()
+        profanity_button.clicked.connect(
+            lambda: profanity_list_label.show() if profanity_list_label.isHidden() else profanity_list_label.hide())
+        profanity_label_widget_layout.addWidget(profanity_label)
+        profanity_label_widget_layout.addWidget(profanity_button)
+        profanity_label_widget_layout.setAlignment(Qt.AlignLeft)
+        profanity_label_widget.setLayout(profanity_label_widget_layout)
+
+        # Alcohol, Drugs & Smoking
+        alcohol_drugs_smoking_label = QLabel(f"<h3>Alcohol, Drugs & Smoking ({ad_severity})</h3>")
+        alcohol_drugs_smoking_list_label = QLabel("\t- " + "\n\n\t- ".join(alcohol_drugs_smoking_list))
+        alcohol_drugs_smoking_list_label.setStyleSheet("font-size: 18px;")
+        alcohol_drugs_smoking_list_label.setWordWrap(True)
+        alcohol_drugs_smoking_list_label.hide()
+
+        match(ad_severity):
+            case "Severe":
+                alcohol_drugs_smoking_label.setStyleSheet("color: red;")
+            case "Moderate":
+                alcohol_drugs_smoking_label.setStyleSheet("color: orange;")
+            case "Mild":
+                alcohol_drugs_smoking_label.setStyleSheet("color: green;")
+
+        alcohol_drugs_smoking_label_widget = QWidget()
+        alcohol_drugs_smoking_button = QPushButton("| Show/Hide")
+        alcohol_drugs_smoking_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        alcohol_drugs_smoking_label_widget_layout = QHBoxLayout()
+        alcohol_drugs_smoking_button.clicked.connect(
+            lambda: alcohol_drugs_smoking_list_label.show() if alcohol_drugs_smoking_list_label.isHidden() else alcohol_drugs_smoking_list_label.hide())
+        alcohol_drugs_smoking_label_widget_layout.addWidget(alcohol_drugs_smoking_label)
+        alcohol_drugs_smoking_label_widget_layout.addWidget(alcohol_drugs_smoking_button)
+        alcohol_drugs_smoking_label_widget_layout.setAlignment(Qt.AlignLeft)
+        alcohol_drugs_smoking_label_widget.setLayout(alcohol_drugs_smoking_label_widget_layout)
+
+        # Frightening & Intense Scenes
+        frightening_intense_scenes_label = QLabel(f"<h3>Frightening & Intense Scenes ({fis_severity})</h3>")
+        frightening_intense_scenes_list_label = QLabel("\t- " + "\n\n\t- ".join(frightening_intense_scenes_list))
+        frightening_intense_scenes_list_label.setStyleSheet("font-size: 18px;")
+        frightening_intense_scenes_list_label.setWordWrap(True)
+        frightening_intense_scenes_list_label.hide()
+
+        match(fis_severity):
+            case "Severe":
+                frightening_intense_scenes_label.setStyleSheet("color: red;")
+            case "Moderate":
+                frightening_intense_scenes_label.setStyleSheet("color: orange;")
+            case "Mild":
+                frightening_intense_scenes_label.setStyleSheet("color: green;")
+
+        frightening_intense_scenes_label_widget = QWidget()
+        frightening_intense_scenes_button = QPushButton("| Show/Hide")
+        frightening_intense_scenes_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        frightening_intense_scenes_label_widget_layout = QHBoxLayout()
+        frightening_intense_scenes_button.clicked.connect(
+            lambda: frightening_intense_scenes_list_label.show() if frightening_intense_scenes_list_label.isHidden() else frightening_intense_scenes_list_label.hide())
+        frightening_intense_scenes_label_widget_layout.addWidget(frightening_intense_scenes_label)
+        frightening_intense_scenes_label_widget_layout.addWidget(frightening_intense_scenes_button)
+        frightening_intense_scenes_label_widget_layout.setAlignment(Qt.AlignLeft)
+        frightening_intense_scenes_label_widget.setLayout(frightening_intense_scenes_label_widget_layout)
+
+        # Create a container widget for the parental guide
+        parental_guide_container = QWidget()
+        parental_guide_container_layout = QVBoxLayout()
+        parental_guide_container.hide()
+
+        # Make the parental guide scrollable
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(parental_guide_widget)
+        scroll_area.setStyleSheet("border: none;")
+
+        parental_guide_container_layout.addWidget(sex_nudity_label_widget)
+        parental_guide_container_layout.addWidget(sex_nudity_list_label)
+        parental_guide_container_layout.addWidget(violence_gore_label_widget)
+        parental_guide_container_layout.addWidget(violence_gore_list_label)
+        parental_guide_container_layout.addWidget(profanity_label_widget)
+        parental_guide_container_layout.addWidget(profanity_list_label)
+        parental_guide_container_layout.addWidget(alcohol_drugs_smoking_label_widget)
+        parental_guide_container_layout.addWidget(alcohol_drugs_smoking_list_label)
+        parental_guide_container_layout.addWidget(frightening_intense_scenes_label_widget)
+        parental_guide_container_layout.addWidget(frightening_intense_scenes_list_label)
+
+        # Create another button at the end of the container in case the parental guide is too long
+        parental_guide_button_inner = QPushButton("Show/Hide")
+        parental_guide_button_inner.setStyleSheet("border: 3px solid black; border-radius: 8px;")
+        parental_guide_button_inner.clicked.connect(
+            lambda: parental_guide_container.show() if parental_guide_container.isHidden() else parental_guide_container.hide())
+
+        parental_guide_container_layout.addWidget(parental_guide_button_inner)
+        parental_guide_container.setLayout(parental_guide_container_layout)
+
+        parental_guide_widget_layout = QVBoxLayout()
+        parental_guide_widget_layout.addWidget(parental_guide_label_widget)
+        parental_guide_widget_layout.addWidget(parental_guide_container)
+        parental_guide_widget.setLayout(parental_guide_widget_layout)
+        self.main_layout.addWidget(scroll_area, 1, 0)
+
+        # Show the awards and nominations
+        awards_widget = QWidget()
+        awards_label = QLabel(f"<h2>Awards: {awards}</h2>")
+
+        # Create a button to open the awards page
+        awards_button = QPushButton("Show Awards && Nominations")
+        awards_button.clicked.connect(lambda: webbrowser.open(title_url + "awards"))
+
+        awards_widget_layout = QVBoxLayout()
+        awards_widget_layout.addWidget(awards_label)
+        awards_widget_layout.addWidget(awards_button)
+        awards_widget.setLayout(awards_widget_layout)
+
+        self.main_layout.addWidget(awards_widget, 2, 0)
+
+
+
+
+        # Show the plot
+        # Get to summaries page
+        response = browser.open(title_url + "plotsummary")
+
+        if response.code == 200:
+            # Get the HTML content
+            html_content = response.read()
+
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # Get the plot
+            plot = soup.select_one("div[data-testid='sub-section-summaries']")
+            if plot:
+                # Get the list of plot summaries
+                plot = plot.select("li[data-testid='list-item']")
+
+                # Get the longest plot summary
+                plot = max(plot, key=lambda x: len(x.text.strip()))
+
+                # Get the plot text
+                plot = plot.text.strip()
+
+        else:
+            print("An error occurred while getting the plot summary")
+
+        plot_widget = QWidget()
+        plot_label = QLabel("<h2>Plot</h2>")
+        plot_text = QLabel(plot)
+        plot_text.setWordWrap(True)
+
+        # Add the plot text to a scroll area
+        plot_scroll_area = QScrollArea()
+        plot_scroll_area.setWidgetResizable(True)
+        plot_scroll_area.setWidget(plot_text)
+        plot_scroll_area.setStyleSheet("border: none;")
+
+        plot_widget_layout = QVBoxLayout()
+        plot_widget_layout.addWidget(plot_label)
+        plot_widget_layout.addWidget(plot_scroll_area)
+        plot_widget.setLayout(plot_widget_layout)
+
+        self.main_layout.addWidget(plot_widget, 0, 1)
+
+        # Show the plot keywords
+        # Get to plot keywords page
+        response = browser.open(title_url + "keywords")
+
+        if response.code == 200:
+            # Get the HTML content
+            html_content = response.read()
+
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # Get the plot keywords
+            plot_keywords = soup.select_one("div[data-testid='sub-section']")
+            if plot_keywords:
+                # Get the list of plot keywords
+                plot_keywords = plot_keywords.select("li[data-testid='list-summary-item']")
+
+                # Get the plot keywords text
+                plot_keywords = [keyword.text.strip() for keyword in plot_keywords]
+
+        else:
+            print("An error occurred while getting the plot keywords")
+
+        plot_keywords_widget = QWidget()
+        plot_keywords_label = QLabel("<h2>Plot Keywords</h2>")
+        plot_keywords_text = QLabel("\n".join(plot_keywords))
+        plot_keywords_text.setWordWrap(True)
+
+        # Add the plot keywords text to a scroll area
+        plot_keywords_scroll_area = QScrollArea()
+        plot_keywords_scroll_area.setWidgetResizable(True)
+        plot_keywords_scroll_area.setWidget(plot_keywords_text)
+        plot_keywords_scroll_area.setStyleSheet("border: none;")
+
+        plot_keywords_widget_layout = QVBoxLayout()
+        plot_keywords_widget_layout.addWidget(plot_keywords_label)
+        plot_keywords_widget_layout.addWidget(plot_keywords_scroll_area)
+        plot_keywords_widget.setLayout(plot_keywords_widget_layout)
+
+        self.main_layout.addWidget(plot_keywords_widget, 1, 1)
 
 
 
@@ -1878,6 +2435,12 @@ class ModernApp(QMainWindow):
         self.description_label.hide()
         self.main_layout.addWidget(self.description_label)
 
+        # Create a new QPushButton for displaying more details about the movie/series
+        self.more_details_button = QPushButton("More About This Title")
+        self.more_details_button.clicked.connect(self.more_details)
+        self.more_details_button.hide()
+        self.main_layout.addWidget(self.more_details_button)
+
         # Create a QLineEdit for custom IMDB list input
         self.custom_list = QLineEdit()
         self.custom_list.setPlaceholderText("Want to explore a custom list? Paste it here!")
@@ -1992,6 +2555,7 @@ class ModernApp(QMainWindow):
         self.poster_label.show()
         self.result_label.setAlignment(Qt.AlignVCenter)
         self.description_label.show()
+        self.more_details_button.show()
         QApplication.restoreOverrideCursor()
 
     def list_random(self, list_url, min_rating, selected_genre, max_runtime, selected_type, max_episodes):
@@ -2187,7 +2751,7 @@ class ModernApp(QMainWindow):
 
                                 # If the number of episodes is still greater than the selected maximum number of episodes, show an error message
                                 if number_of_episodes > max_episodes:
-                                    self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
+                                    self.result_label.setText(f"No title matches your criteria. Try again with different filters.")
                                     return
 
                         director_details = second_soup.select("div.ipc-metadata-list-item__content-container")
@@ -2199,7 +2763,7 @@ class ModernApp(QMainWindow):
 
                         if description_details:
                             description = description_details[0].text.strip()
-                            self.description_label.setText(f"<div style=\"font-size: 18px;\">{description}</div>")
+                            self.description_label.setText(f"{description}")
 
                         # Get the movie poster URL from the IMDb page
                         poster_image = second_soup.find('img', class_='ipc-image')
@@ -2259,27 +2823,26 @@ class ModernApp(QMainWindow):
                     user_rating = self.checkRatings(title, title_type)
 
                     # Update self.result_label with the recommendation
-                    self.result_label.setText(f"<div style=\"font-size: 18px;\">"
-                                              f"<a href=\"{url}\"><h1>{title}</h1></a><br>"
+                    self.result_label.setText(f"<a href=\"{url}\"><h1>{title}</h1></a><br>"
                                               f"<b>Title Type:</b> {title_type}<br>"
                                               f"<b>IMDb Rating:</b> {imdb_rating}<br>"
                                               f"<b>Runtime:</b> {runtime}<br>"
                                               f"<b>Episode Count:</b> {number_of_episodes}<br>"
                                               f"<b>Year:</b> {year}<br>"
                                               f"<b>Genres:</b> {genres}<br>"
-                                              f"<b>Director/Creator:</b> {directors}<br><br></div>"
+                                              f"<b>Director/Creator:</b> {directors}<br><br>"
                                               f"{user_rating}")
 
                 else:
                     # If there are no filtered movie details, show an error message
-                    self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
+                    self.result_label.setText("No title matches your criteria. Try again with different filters.")
 
                     # Reset the poster_label
                     self.poster_label.clear()
 
             else:
                 # If there are no movie details, show an error message
-                self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
+                self.result_label.setText("No title matches your criteria. Try again with different filters.")
         else:
             self.result_label.setText(f"Failed to retrieve the list. Check the URL and try again.")
             return
@@ -2423,11 +2986,10 @@ class ModernApp(QMainWindow):
 
                     if description_details:
                         description = description_details[0].text.strip()
-                        self.description_label.setText(f"<div style=\"font-size: 18px;\">{description}</div>")
+                        self.description_label.setText(f"{description}")
 
                     # Extract and print the desired columns
-                    self.result_label.setText(f"<div style=\"font-size: 18px;\">"
-                                              f"<a href=\"{random_item['URL']}\"><h1>{random_item['Title']}</h1></a><br>"
+                    self.result_label.setText(f"<a href=\"{random_item['URL']}\"><h1>{random_item['Title']}</h1></a><br>"
                                               f"<b>Title Type:</b> {random_item['Title Type']}<br>"
                                               f"<b>IMDb Rating:</b> {random_item['IMDb Rating']}<br>"
                                               f"<b>Runtime:</b> {random_item['Runtime (mins)']}<br>"
@@ -2435,7 +2997,7 @@ class ModernApp(QMainWindow):
                                               f"<b>Year:</b> {random_item['Year']}<br>"
                                               f"<b>Genres:</b> {random_item['Genres']}<br>"
                                               # Use csv to get the directors, if empty, use the scraped data
-                                              f"<b>Director/Creator:</b> {directors}<br><br></div>"
+                                              f"<b>Director/Creator:</b> {directors}<br><br>"
                                               f"{user_rating}")
 
                 else:
@@ -2443,7 +3005,7 @@ class ModernApp(QMainWindow):
 
             else:
                 # If there are no filtered movie details, show an error message
-                self.result_label.setText(f"<div style=\"font-size: 18px;\">No title matches your criteria. Try again with different filters.</div>")
+                self.result_label.setText(f"No title matches your criteria. Try again with different filters.")
 
                 # Reset the poster_label
                 self.poster_label.clear()
@@ -2453,7 +3015,7 @@ class ModernApp(QMainWindow):
 
     ## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
     def checkRatings(self, title, title_type):
-        # The best way would be to download ratings.csv manually from the IMDb website
+
 
         # Define the destination file path where you want to save the CSV file
         self.ratings_csv = 'ratings.csv'
@@ -2488,6 +3050,15 @@ class ModernApp(QMainWindow):
         else:
             rating_result = f"\nYou have not rated this {title_type}."
             return rating_result
+
+    # Get more details about the movie/series
+    def more_details(self):
+        # Get the title URL from the result_label
+        title_url = self.result_label.text().split("<a href=\"")[1].split("\"><h1>")[0]
+
+        # Create a new window to display the details
+        self.details_window = DetailsWindow(title_url)
+        self.details_window.show()
 
 
     # Check the preferences file for the user's IMDb user page link and watchlist export link
@@ -2675,39 +3246,31 @@ class ModernApp(QMainWindow):
     def update_result_label(self, flag):
         match(flag):
             case 0:
-                self.result_label.setText("<div style=\"font-size: 18px;\">"
-                                          "Our chefs are crafting a watchlist recommendation for you...<br><br></div>")
+                self.result_label.setText("Our chefs are crafting a watchlist recommendation for you...<br><br>")
                 return
             case 1:
-                self.result_label.setText("<div style=\"font-size: 18px;\">"
-                                          "We're preparing a delightful recommendation from your list...<br><br></div>")
+                self.result_label.setText("We're preparing a delightful recommendation from your list...<br><br>")
                 return
             case 2:
-                self.result_label.setText("<div style=\"font-size: 18px;\">"
-                                          "A custom recommendation is on its way, tailored just for you...<br><br></div>")
+                self.result_label.setText("A custom recommendation is on its way, tailored just for you...<br><br>")
                 return
             case 3:
-                self.result_label.setText("<div style=\"font-size: 18px;\">"
-                                          "Our chefs are adding filters to enhance your selection's flavor...<br><br></div>")
+                self.result_label.setText("Our chefs are adding filters to enhance your selection's flavor...<br><br>")
                 return
             case 4:
-                self.result_label.setText("<div style=\"font-size: 18px;\">"
-                                          "We're handpicking a special title for you...<br><br></div>")
+                self.result_label.setText("We're handpicking a special title for you...<br><br>")
                 return
             case 5:
-                self.result_label.setText("<div style=\"font-size: 18px;\">"
-                                          "Your perfect dish is ready to be served! Enjoy your meal!<br><br></div>")
+                self.result_label.setText("Your perfect dish is ready to be served! Enjoy your meal!<br><br>")
                 return
             case 6:
-                self.result_label.setText("<div style=\"font-size: 18px;\">"
-                                          "Creating a culinary masterpiece takes time. Please be patient!<br><br></div>")
+                self.result_label.setText("Creating a culinary masterpiece takes time. Please be patient!<br><br>")
                 return
             case 7:
-                self.result_label.setText("<div style=\"font-size: 18px;\">"
-                                          "We're curating a special menu just for you...<br><br></div>")
+                self.result_label.setText("We're curating a special menu just for you...<br><br>")
                 return
             case _:
-                self.result_label.setText("<div style=\"font-size: 18px;\">" + flag + "<br><br></div>")
+                self.result_label.setText(flag)
 
 
 
@@ -2805,7 +3368,7 @@ class ModernApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>IMDB Recommender</h1>"
-                    "<h3>Version 3.6.1</h3>"
+                    "<h3>Version 3.6.5</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
@@ -2858,6 +3421,7 @@ if __name__ == '__main__':
     app = QApplication([])
 
     app.setStyle("Fusion")
+    app.setFont(QFont("Roboto"))
 
     # Set the dark theme
     dark_palette = QPalette()
