@@ -493,7 +493,6 @@ class StatisticsWindow(QDialog):
                 year = int(item['Year'])
                 rating = float(item['Your Rating'])
 
-
                 # Check if the year is already in the dictionary
                 if year in year_ratings:
                     # Add the rating to the existing year
@@ -505,7 +504,7 @@ class StatisticsWindow(QDialog):
                     year_ratings[year] = rating
                     year_title_count[year] = 1
 
-        # Check ifthere are any ratings
+        # Check if there are any ratings
         if year_ratings:
             # Calculate the average rating for each year
             for year in year_ratings:
@@ -523,6 +522,51 @@ class StatisticsWindow(QDialog):
 
             # Sort the years by the love_formula in descending order
             best_years = sorted(year_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
+
+            # Choose a random year
+            random_year = random.choice(best_years)
+
+            if random_year[0] < 1900:
+                jokes_list = [f"{random_year[0]}? You are definitely a time traveler.",
+                              f"You are a vampire. This is the only way you could have watched a movies from {random_year[0]}.",
+                              f"Wow, you are old. You watched movies from {random_year[0]}.",
+                              f"Did they even have cameras in {random_year[0]}? How did you watch a movie from that year?",
+                              f"Did you know that {random_year[0]} is the year that the first movie was made?<br><br>Well, I lied, but it must be close."]
+            if random_year[0] >= 1900 and random_year[0] < 1930:
+                jokes_list = [f"Do you sometimes watch movies in library? Because you watched a movie from {random_year[0]}. You probably needed a silent film or something.",
+                              f"{random_year[0]}? You are either a cinephile or a historian. Or both."]
+            if random_year[0] >= 1930 and random_year[0] < 1960:
+                jokes_list = [f"Some people think {random_year[0]} is a legendary year for movies. You probably agree with them.",
+                              f"There are a lot of arguments about whether {random_year[0]} is a good or bad year for cinema, you seem to like it.",
+                              f"Quick! What is the first movie that comes to your mind when you think of {random_year[0]}?"]
+            if random_year[0] >= 1960 and random_year[0] < 1980:
+                jokes_list = [f"Ah, {random_year[0]}: golden age of sci-fi...",
+                              f"I have a question: How did you watched that one movie from {random_year[0]}?<br>In the cinema? On VHS? From your laptop?",
+                              f"Surely when I hear {random_year[0]}, I think of Blockbuster. Good times."]
+            if random_year[0] >= 1980 and random_year[0] < 2000:
+                jokes_list = [f"I see {random_year[0]} here. Wonder what did you watch from that year, Disney Renaissance?",
+                              f"Ah, {random_year[0]}: golden age of action movies...",
+                              f"{random_year[0]} means Spielberg or Tarantino to me. Let's see what you've got."]
+            if random_year[0] >= 2000 and random_year[0] < 2010:
+                jokes_list = [f"Ah, {random_year[0]}: the very beginnings of quality standalone superhero movies.",
+                              f"Hmm, I bet {random_year[0]} in your ratings history means some indie cinema.",
+                              f"{random_year[0]}? I'm guessing Nolan or Fincher."]
+            if random_year[0] >= 2010 and random_year[0] < 2020:
+                jokes_list = [f"{random_year[0]} can be a lot of things. I'm guessing you watched some Marvel movies, though.",
+                              f"{random_year[0]} is like a box of chocolates. You never know what you're gonna get.",
+                              f"Oh, boy. Half of {random_year[1][1]} titles you've watched from {random_year[0]} are the greatest cinema ever and the other half are otter dogshit."]
+            if random_year[0] >= 2020:
+                jokes_list = [f"I see {random_year[0]} here. You seem to be pretty up to date with the latest watchables.",
+                              f"{random_year[0]}? Pandemic cinema, huh?",
+                              f"{random_year[0]}? You must go to the cinema a lot. Or you have a lot of streaming services."]
+
+            # Choose a random joke
+            random_joke = random.choice(jokes_list)
+
+            # Update the result label
+            window.update_result_label(f"{random_joke}")
+            app.processEvents()
+            time.sleep(1.5)
 
             # Return the sorted year stats
             return chronological_years, best_years
@@ -2058,6 +2102,9 @@ class ImageLoaderThread(QThread):
 class DetailsWindow(QDialog):
     def __init__(self, title_url):
         super().__init__()
+        # Remove the referral from the URL
+        title_url = title_url.split("?")[0]
+
         # Access the title's URL
         response = browser.open(title_url)
 
@@ -2108,7 +2155,8 @@ class DetailsWindow(QDialog):
                 sex_nudity = sex_nudity.find_all("li", class_="ipl-zebra-list__item")
                 for item in sex_nudity:
                     sex_nudity_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
-            print(sex_nudity_list)
+            else:
+                sn_severity = "-"
 
             violence_gore_list = []
             violence_gore = soup.select_one("section[id='advisory-violence']")
@@ -2118,7 +2166,8 @@ class DetailsWindow(QDialog):
                 violence_gore = violence_gore.find_all("li", class_="ipl-zebra-list__item")
                 for item in violence_gore:
                     violence_gore_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
-            print(violence_gore_list)
+            else:
+                violence_severity = "-"
 
             profanity_list = []
             profanity = soup.select_one("section[id='advisory-profanity']")
@@ -2128,7 +2177,8 @@ class DetailsWindow(QDialog):
                 profanity = profanity.find_all("li", class_="ipl-zebra-list__item")
                 for item in profanity:
                     profanity_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
-            print(profanity_list)
+            else:
+                profanity_severity = "-"
 
             alcohol_drugs_smoking_list = []
             alcohol_drugs_smoking = soup.select_one("section[id='advisory-alcohol']")
@@ -2138,7 +2188,8 @@ class DetailsWindow(QDialog):
                 alcohol_drugs_smoking = alcohol_drugs_smoking.find_all("li", class_="ipl-zebra-list__item")
                 for item in alcohol_drugs_smoking:
                     alcohol_drugs_smoking_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
-            print(alcohol_drugs_smoking_list)
+            else:
+                ad_severity = "-"
 
             frightening_intense_scenes_list = []
             frightening_intense_scenes = soup.select_one("section[id='advisory-frightening']")
@@ -2148,7 +2199,8 @@ class DetailsWindow(QDialog):
                 frightening_intense_scenes = frightening_intense_scenes.find_all("li", class_="ipl-zebra-list__item")
                 for item in frightening_intense_scenes:
                     frightening_intense_scenes_list.append(item.text.strip().strip("\n\n     \n\n\n\n\n\nEdit"))
-            print(frightening_intense_scenes_list)
+            else:
+                fis_severity = "-"
 
         self.setWindowTitle("Details")
         self.resize(1400, 800)
@@ -2383,9 +2435,6 @@ class DetailsWindow(QDialog):
         awards_widget.setLayout(awards_widget_layout)
 
         self.main_layout.addWidget(awards_widget, 2, 0)
-
-
-
 
         # Show the plot
         # Get to summaries page
