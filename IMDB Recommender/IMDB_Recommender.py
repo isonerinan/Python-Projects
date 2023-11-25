@@ -2518,6 +2518,8 @@ class DetailsWindow(QDialog):
         plot_keywords_widget.setLayout(plot_keywords_widget_layout)
 
         self.main_layout.addWidget(plot_keywords_widget, 1, 1)
+        self.main_layout.setColumnStretch(0, 1) # Make the first column stretchable
+        self.main_layout.setColumnStretch(1, 1) # Make the second column stretchable
 
 
 
@@ -3115,10 +3117,10 @@ class ModernApp(QMainWindow):
                         if director_details:
                             directors = director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
 
-                        description_details = second_soup.select("span.sc-466bb6c-0")
+                        description_details = second_soup.select_one("span[data-testid='plot-xl']")
 
                         if description_details:
-                            description = description_details[0].text.strip()
+                            description = description_details.text.strip()
                             self.description_label.setText(f"{description}")
 
                         # Get the movie poster URL from the IMDb page
@@ -3338,10 +3340,10 @@ class ModernApp(QMainWindow):
                         # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
                         self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Title'], random_item['URL'])
 
-                    description_details = second_soup.select("span.sc-466bb6c-0")
+                    description_details = second_soup.select_one("span[data-testid='plot-xl']")
 
                     if description_details:
-                        description = description_details[0].text.strip()
+                        description = description_details.text.strip()
                         self.description_label.setText(f"{description}")
 
                     # Extract and print the desired columns
