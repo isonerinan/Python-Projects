@@ -1,5 +1,6 @@
 # PyQT application to recommend books based on user input
-
+import os
+import random
 # FEATURES:
 # - "Read Later" QLineEdit to add books to a list of books to read later
 # - "Search" QLineEdit to search for books
@@ -17,110 +18,495 @@
 
 import sys
 import requests
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, QGridLayout
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont, QPalette, QColor, QPixmap
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, \
+    QGridLayout, QMainWindow, QAction, QMenu, QSlider, QMessageBox
+from bs4 import BeautifulSoup
 
-class BookRecommendationApp(QWidget):
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47'}
+
+
+class BookRecommendationApp(QMainWindow):
     def __init__(self):
-        super().__init__()
+        QMainWindow.__init__(self)
+        self.theme = "dark"
+        self.initUI()
 
-        # Initialize UI
-        self.init_ui()
+    def initUI(self):
+        self.setWindowTitle("Readable: Book Recommender")
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
 
-    def init_ui(self):
-        # Create widgets
-        self.read_later_edit = QLineEdit(self)
-        self.search_edit = QLineEdit(self)
-        self.add_to_list_button = QPushButton('Add to List', self)
-        self.delete_list_button = QPushButton('Delete List', self)
-        self.recommend_button = QPushButton('Recommend', self)
-        self.read_history_button = QPushButton('Read History', self)
-        self.delete_button = QPushButton('Delete', self)
-        self.star_rating_combo = QComboBox(self)
-        self.my_lists_combo = QComboBox(self)
+        self.resize(800, 500)
 
-        # Set up genre, type, maximum page, and author filters
-        # (You can add more filters as needed)
-        self.genre_filter = QLineEdit(self)
-        self.type_filter = QLineEdit(self)
-        self.max_page_filter = QLineEdit(self)
-        self.author_filter = QLineEdit(self)
-        self.clear_filters_button = QPushButton('Clear Filters', self)
+        self.main_layout = QVBoxLayout()
+        central_widget.setLayout(self.main_layout)
 
-        # Set up layout
-        layout = QGridLayout()
-        layout.addWidget(QLabel('Read Later'), 0, 0)
-        layout.addWidget(self.read_later_edit, 0, 1)
-        layout.addWidget(QLabel('Search'), 1, 0)
-        layout.addWidget(self.search_edit, 1, 1)
-        layout.addWidget(QLabel('Add to List'), 2, 0)
-        layout.addWidget(self.add_to_list_button, 2, 1)
-        layout.addWidget(QLabel('Delete List'), 3, 0)
-        layout.addWidget(self.delete_list_button, 3, 1)
-        layout.addWidget(QLabel('Recommend'), 4, 0)
-        layout.addWidget(self.recommend_button, 4, 1)
-        layout.addWidget(QLabel('Read History'), 5, 0)
-        layout.addWidget(self.read_history_button, 5, 1)
-        layout.addWidget(QLabel('Delete'), 6, 0)
-        layout.addWidget(self.delete_button, 6, 1)
-        layout.addWidget(QLabel('Star Rating'), 7, 0)
-        layout.addWidget(self.star_rating_combo, 7, 1)
-        layout.addWidget(QLabel('My Lists'), 8, 0)
-        layout.addWidget(self.my_lists_combo, 8, 1)
+        # Create a top-level layout for the main content
+        content_layout = QVBoxLayout()
+        self.main_layout.addLayout(content_layout)
 
-        # Add filters to layout
-        layout.addWidget(QLabel('Genre Filter'), 9, 0)
-        layout.addWidget(self.genre_filter, 9, 1)
-        layout.addWidget(QLabel('Type Filter'), 10, 0)
-        layout.addWidget(self.type_filter, 10, 1)
-        layout.addWidget(QLabel('Max Page Filter'), 11, 0)
-        layout.addWidget(self.max_page_filter, 11, 1)
-        layout.addWidget(QLabel('Author Filter'), 12, 0)
-        layout.addWidget(self.author_filter, 12, 1)
-        layout.addWidget(self.clear_filters_button, 13, 0, 1, 2)
+        # Create a menu toolbar
+        menu_bar = self.menuBar()
+        options_menu = menu_bar.addMenu("Options")
 
-        # Set up connections
-        self.add_to_list_button.clicked.connect(self.add_to_list)
-        self.delete_list_button.clicked.connect(self.delete_list)
-        self.recommend_button.clicked.connect(self.recommend)
-        self.read_history_button.clicked.connect(self.view_read_history)
-        self.delete_button.clicked.connect(self.delete_book)
-        self.clear_filters_button.clicked.connect(self.clear_filters)
+        help_action = QAction("Help", self)
+        help_action.triggered.connect(self.help)
 
-        # Set up the main layout
-        main_layout = QVBoxLayout()
-        main_layout.addLayout(layout)
-        self.setLayout(main_layout)
+        about_action = QAction("About", self)
+        about_action.triggered.connect(self.about)
 
-        # Set up the window
-        self.setGeometry(300, 300, 400, 300)
-        self.setWindowTitle('Book Recommendation App')
-        self.show()
+        menu_bar.addAction(help_action)
+        menu_bar.addAction(about_action)
 
-    def add_to_list(self):
-        # Implement logic to add book to user list
-        pass
+        # Create a "User Preferences" action in the "Options" menu
+        user_preferences_action = QAction("User Preferences", self)
+        user_preferences_action.triggered.connect(self.create_preferences_file)
+        options_menu.addAction(user_preferences_action)
 
-    def delete_list(self):
-        # Implement logic to delete user list
-        pass
+        # Create a "Theme" submenu in the "Options" menu
+        theme_menu = QMenu("Theme", self)
+        options_menu.addMenu(theme_menu)
 
-    def recommend(self):
-        # Implement logic to recommend random books
-        pass
+        # Create a "Light" action in the "Theme" submenu
+        light_theme_action = QAction("Light", self)
+        light_theme_action.triggered.connect(self.light_theme)
+        theme_menu.addAction(light_theme_action)
 
-    def view_read_history(self):
-        # Implement logic to view read history
-        pass
+        # Create a "Dark" action in the "Theme" submenu
+        dark_theme_action = QAction("Dark", self)
+        dark_theme_action.triggered.connect(self.dark_theme)
+        theme_menu.addAction(dark_theme_action)
 
-    def delete_book(self):
-        # Implement logic to delete a book from the selected user list
-        pass
+        # Check if the preferences file exists, and create it if not
+        self.preferences_file = "user_preferences.txt"
+        self.user_lists_link = ""
+        self.to_read_link = ""
 
-    def clear_filters(self):
-        # Implement logic to clear all filters
-        pass
+        # Create a combo box to select a list
+        self.list_combo = QComboBox()
+        self.list_names = []
+        self.list_links = []
+
+        # Check if the preferences file exists or not empty
+        if not self.check_preferences_file() or os.stat(self.preferences_file).st_size == 0:
+            self.create_preferences_file()
+
+        # Check the preferences file and get the necessary links
+        self.user_lists_link = self.checkPreferences()
+
+        if not (self.user_lists_link == "" and self.to_read_link == ""):
+            # Send an HTTP GET request to fetch the Goodreads user lists page
+            response = requests.get(self.user_lists_link, headers=headers)
+
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
+                list_items = soup.find_all('div', class_='stacked', id='paginatedShelfList')
+
+                # Extract the list names and links
+                for item in list_items:
+                    lists = item.find_all('a', class_='actionLinkLite')
+                    for list in lists:
+                        self.list_names.append(list.text.strip())
+                        self.list_links.append(list['href'])
+
+                # Add the list names to the combo box
+                self.list_combo.addItems(self.list_names)
+
+        # Center every item in the combo box
+        self.list_combo.setEditable(True)
+        self.list_combo.lineEdit().setAlignment(Qt.AlignCenter)
+
+        # Remove non-printable characters from list names
+        self.list_names = [''.join(char for char in list_name if char.isprintable()) for list_name in self.list_names]
+        self.list_names = [list_name.strip() for list_name in self.list_names]
+
+        print(self.list_names)
+
+        # If there is a "Want to Read" list, select it by default
+        want_to_read_indices = [i for i, list_name in enumerate(self.list_names) if "Want to Read" in list_name]
+        if want_to_read_indices:
+            # If there are multiple occurrences, choose the first one.
+            index = want_to_read_indices[0]
+            print("Found at index:", index)
+            self.list_combo.setCurrentIndex(index)
+            print("True")
+        else:
+            print("String 'Want to Read' not found in any list.")
+
+        # Make the combo box searchable
+        self.list_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.list_combo.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        self.main_layout.addWidget(self.list_combo)
+
+        # Create a "Filters" button
+        filters_button = QPushButton("Filters", self)
+        filters_button.clicked.connect(self.show_filters)
+        self.main_layout.addWidget(filters_button)
+
+        # Create a container widget to hold filter widgets
+        self.filters_container = QWidget()
+        self.filters_container.hide()
+        self.main_layout.addWidget(self.filters_container)
+
+        # Create a QSlider for selecting minimum Goodreads rating
+        self.rating_slider = QSlider(Qt.Horizontal)
+        self.rating_slider.setMinimum(0)
+        self.rating_slider.setMaximum(10)  # To allow 0.5 increments, use 10 instead of 5
+        self.rating_slider.setValue(0)  # Default to 0.0
+        self.rating_slider.setTickInterval(1)
+        self.rating_slider.setTickPosition(QSlider.TicksAbove)
+
+        # Create a QLabel to display the selected rating
+        self.rating_label = QLabel("Minimum Rating: No Limit")
+
+        # Update the label when the slider value changes
+        self.rating_slider.valueChanged.connect(self.update_rating_label)
+
+        # Create a QComboBox for selecting genres
+        self.genre_combo = QComboBox()
+        self.genre_combo.addItem("All Genres")  # Add a default option
+        # Add genre options to the combo box
+        self.genre_combo.addItems(["Art", "Biography", "Business", "Chick-lit",
+                                   "Children's", "Christian", "Classics", "Comics",
+                                   "Contemporary", "Cookbooks", "Crime", "Ebooks",
+                                   "Fantasy", "Fiction", "Gay and Lesbian", "Graphic novels",
+                                   "Historical Fiction", "History", "Horror", "Humor and Comedy",
+                                   "Manga", "Memoir", "Music", "Mystery",
+                                   "Non-fiction", "Paranormal", "Philosophy", "Poetry", "Psychology",
+                                   "Religion", "Romance", "Science", "Science fiction", "Self help",
+                                   "Suspense", "Spirituality", "Sports", "Thriller", "Travel", "Young-adult"])
+
+        # Create a "Apply Filters" button
+        apply_filters_button = QPushButton("Apply Filters")
+        apply_filters_button.clicked.connect(self.apply_filters)
+
+        # Create a layout for filter widgets
+        filter_layout = QVBoxLayout()
+        filter_layout.addWidget(self.genre_combo)
+        filter_layout.addWidget(self.rating_label)
+        filter_layout.addWidget(self.rating_slider)
+        filter_layout.addWidget(apply_filters_button)
+        self.filters_container.setLayout(filter_layout)
+
+        # Create a new QWidget for displaying the movie/series poster and details, horizontally
+        self.poster_widget = QWidget()
+        self.poster_layout = QHBoxLayout()
+        self.poster_widget.setLayout(self.poster_layout)
+        self.main_layout.addWidget(self.poster_widget)
+
+        self.poster_label = QLabel()
+        self.poster_label.hide()
+        self.poster_label.setAlignment(Qt.AlignCenter)
+        self.poster_layout.addWidget(self.poster_label)
+
+        self.result_label = QLabel("Welcome to Readable!<br>Your recommendation will appear here.")
+        self.result_label.setWordWrap(True)
+        # Enable rich text
+        self.result_label.setOpenExternalLinks(True)
+        self.result_label.setAlignment(Qt.AlignCenter)
+        self.poster_layout.addWidget(self.result_label)
+
+        # Create a new QLabel for displaying the movie/series description
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        self.description_label.setAlignment(Qt.AlignCenter)
+        self.description_label.hide()
+        self.main_layout.addWidget(self.description_label)
+
+        # Create a QLineEdit for custom Goodreads list input
+        self.custom_list = QLineEdit()
+        self.custom_list.setPlaceholderText("Want to explore a custom list? Paste it here!")
+        self.custom_list.setAlignment(Qt.AlignCenter)
+
+        # Create a QPushButton
+        search_button = QPushButton("Search")
+
+        # Connect the button's clicked signal to the slot
+        search_button.clicked.connect(self.apply_filters)
+        search_button.clicked.connect(self.search_button_click)
+
+
+        # Add both the QLineEdit and the button to a container widget
+        container = QWidget()
+        container_layout = QHBoxLayout()
+        container_layout.addWidget(self.custom_list)
+        container_layout.addWidget(search_button)
+        container.setLayout(container_layout)
+
+        # Add the container to the main layout
+        self.main_layout.addWidget(container)
+
+        self.setLayout(self.main_layout)
+
+        find_book_button = QPushButton("Find Something to Read!")
+        find_book_button.clicked.connect(self.apply_filters)
+        find_book_button.clicked.connect(self.find_random_book)
+        self.main_layout.addWidget(find_book_button)
+
+    def check_preferences_file(self):
+        return os.path.isfile(self.preferences_file)
+
+    # Create a new preferences file in a form of dictionary
+    def create_preferences_file(self):
+        # Ask the user for their Goodreads user lists link
+        user_lists_link, ok = QtWidgets.QInputDialog.getText(self, "User Lists Link", "Enter your Goodreads user lists link:")
+        if ok:
+            # Write the links to the preferences file
+            with open(self.preferences_file, "w") as file:
+                file.write(f"\"User Lists Link\": \"{user_lists_link}\"\n")
+
+    def find_random_book(self):
+        # Change the cursor to indicate that the program is working
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        selected_index = self.list_combo.currentIndex()
+
+        # Get the selected list's name
+        selected_list_name = self.list_names[selected_index]
+
+        # Get the selected export link from the list of links
+        # (example export link: https://www.goodreads.com/review_porter/export/171429787/goodreads_export.csv)
+        # (example list link: https://www.goodreads.com/review/list/171429787?shelf=read-later)
+        selected_list_link = "https://www.goodreads.com" + self.list_links[selected_index] + "&per_page=infinite"
+
+        print(selected_list_link)
+
+        # Send an HTTP GET request to fetch the Goodreads export link and download the CSV file
+        response = requests.get(selected_list_link, headers=headers)
+
+        # Check if the response is successful
+        if response.status_code == 200:
+            # Get the book details
+            soup = BeautifulSoup(response.content, 'html.parser')
+            book_details = soup.find_all('tr', class_='bookalike review')
+
+            # If not empty, select a random book from the list
+            if book_details:
+                random_book = random.choice(book_details)
+
+                # Get the book title
+                book_title = random_book.find('td', class_='field title')
+                book_title = book_title.find('a').text.strip()
+
+                # Get the book author
+                book_author = random_book.find('td', class_='field author')
+                book_author = book_author.find('a').text.strip()
+
+                # Author names are formatted as "Surname, Name", so we need to reverse them
+                book_author = book_author.split(", ")
+                book_author = book_author[1] + " " + book_author[0]
+
+                # Get the book rating
+                book_rating = random_book.find('td', class_='field avg_rating')
+                book_rating = book_rating.find('div', class_='value').text.strip()
+
+                # Get the book link
+                book_link = "https://www.goodreads.com" + random_book.find('td', class_='field title').find('a')['href']
+
+                # Get the book cover image link
+                # List covers are 45x75 pixels and end with "._SY75_.jpg"
+                # Book covers are 283x475 pixels and end with ".jpg"
+                book_cover_link = random_book.find('td', class_='field cover').find('img')['src']
+                book_cover_link = book_cover_link.replace("._SY75_.jpg", ".jpg")
+
+                # Get the book page count
+                book_page_count = random_book.find('td', class_='field num_pages')
+                book_page_count = book_page_count.find('nobr').text.strip()
+                book_page_count = book_page_count.replace("pp", "")
+
+
+                print(book_title)
+                print(book_author)
+                print(book_rating)
+                print(book_link)
+                print(book_cover_link)
+                print(book_page_count)
+
+                # Update the result label
+                self.update_result_label(f"<h3><a href='{book_link}'>{book_title}</a></h3><br>"
+                                         f"<b>Author:</b> {book_author}<br>"
+                                         f"<b>Average Rating:</b> {book_rating}<br>"
+                                         f"<b>Page Count:</b> {book_page_count}<br><br>")
+
+                self.result_label.setAlignment(Qt.AlignVCenter)
+
+
+                # Create a pixmap from the poster image URL
+                pixmap = QPixmap()
+                pixmap.loadFromData(requests.get(book_cover_link).content)
+
+                self.poster_label.setPixmap(pixmap)
+
+
+
+        # Change the cursor back to normal
+        self.poster_label.show()
+        self.result_label.setAlignment(Qt.AlignVCenter)
+        self.description_label.show()
+        QApplication.restoreOverrideCursor()
+
+    # Check the preferences file for the user's IMDb user page link and watchlist export link
+    def checkPreferences(self):
+        with open(self.preferences_file, "r") as file:
+            preferences = file.read()
+            preferences = preferences.split("\n")
+
+            user_lists_link = preferences[0].split(": ")[1].strip("\"")
+
+            return user_lists_link
+
+
+    # Search button logic for custom list input
+    def search_button_click(self):
+        self.update_result_label(2)
+        app.processEvents()
+
+        # Get the text from the QLineEdit
+        list_link = self.custom_list.text()
+
+        # Call the list_random function with the input
+
+
+    def show_filters(self):
+        if self.filters_container.isHidden():
+            self.filters_container.show()
+        else:
+            self.filters_container.hide()
+
+    def apply_filters(self):
+        # Retrieve selected minimum rating and genre
+        self.min_rating = self.rating_slider.value() / 2.0
+        self.selected_genre = self.genre_combo.currentText()
+
+        # Display the applied filters
+        self.result_label.setText(f"<h3>Applied Filters:</h3><br>"
+                                  f"Minimum Rating: {self.min_rating}<br>"
+                                  f"Genre: {self.selected_genre}<br>")
+
+        # Hide the filters container after applying filters
+        self.filters_container.hide()
+
+    # Update the rating label when the slider value changes
+    def update_rating_label(self):
+        if self.rating_slider.value() == 0:
+            self.rating_label.setText(f"Minimum Rating: No Limit")
+        else:
+            self.rating_label.setText(f"Minimum Rating: {self.rating_slider.value() / 2.0}")
+
+    # Update the result label to inform the user that the program is working
+    def update_result_label(self, flag):
+        match(flag):
+            case 0:
+                self.result_label.setText("Our chefs are crafting a watchlist recommendation for you...<br><br>")
+                return
+            case 1:
+                self.result_label.setText("We're preparing a delightful recommendation from your list...<br><br>")
+                return
+            case 2:
+                self.result_label.setText("A custom recommendation is on its way, tailored just for you...<br><br>")
+                return
+            case 3:
+                self.result_label.setText("Our chefs are adding filters to enhance your selection's flavor...<br><br>")
+                return
+            case 4:
+                self.result_label.setText("We're handpicking a special title for you...<br><br>")
+                return
+            case 5:
+                self.result_label.setText("Your perfect dish is ready to be served! Enjoy your meal!<br><br>")
+                return
+            case 6:
+                self.result_label.setText("Creating a culinary masterpiece takes time. Please be patient!<br><br>")
+                return
+            case 7:
+                self.result_label.setText("We're curating a special menu just for you...<br><br>")
+                return
+            case _:
+                self.result_label.setText(flag)
+
+    # Change the theme to light
+    def light_theme(self):
+        app.setPalette(light_palette)
+        self.theme = "light"
+
+    # Change the theme to dark
+    def dark_theme(self):
+        app.setPalette(dark_palette)
+        self.theme == "dark"
+
+    # Show the help dialog
+    def help(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("Help")
+        msg.setText(
+            "This program allows you to randomly select a book from your Goodreads Read Later list or any other custom list.<br><br>"
+            "For more information on how to use this program, please visit:<br><br>"
+            "BOOK RECOMMENDER LINK HERE")
+
+        msg.exec_()
+
+    # Show the about dialog
+    def about(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Information)
+        msg.setWindowTitle("About")
+        msg.setText("<h1>Readable: Book Recommender</h1>"
+                    "<h3>Version 1.0</h3>"
+                    "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
+                    "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
+                    "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
+                    "<a href='https://www.instagram.com/isonerinan'>Instagram</a><br><br>"
+                    "<a href='https://www.twitter.com/isonerinan'>Twitter</a>")
+        msg.exec_()
+
+
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = BookRecommendationApp()
+    # Create the application
+    app = QApplication([])
+
+    app.setStyle("Fusion")
+    app.setFont(QFont("Roboto"))
+
+    # Set the dark theme
+    dark_palette = QPalette()
+    dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.WindowText, Qt.white)
+    dark_palette.setColor(QPalette.Base, QColor(25, 25, 25))
+    dark_palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ToolTipBase, Qt.white)
+    dark_palette.setColor(QPalette.ToolTipText, Qt.white)
+    dark_palette.setColor(QPalette.Text, Qt.white)
+    dark_palette.setColor(QPalette.Button, QColor(53, 53, 53))
+    dark_palette.setColor(QPalette.ButtonText, Qt.white)
+    dark_palette.setColor(QPalette.BrightText, Qt.red)
+    dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.HighlightedText, Qt.white)
+
+    # Set the light theme
+    light_palette = QPalette()
+    light_palette.setColor(QPalette.Window, QColor(255, 255, 255))
+    light_palette.setColor(QPalette.WindowText, Qt.black)
+    light_palette.setColor(QPalette.Base, QColor(240, 240, 240))
+    light_palette.setColor(QPalette.AlternateBase, QColor(255, 255, 255))
+    light_palette.setColor(QPalette.ToolTipBase, Qt.black)
+    light_palette.setColor(QPalette.ToolTipText, Qt.black)
+    light_palette.setColor(QPalette.Text, Qt.black)
+    light_palette.setColor(QPalette.Button, QColor(255, 255, 255))
+    light_palette.setColor(QPalette.ButtonText, Qt.black)
+    light_palette.setColor(QPalette.BrightText, Qt.red)
+    light_palette.setColor(QPalette.Link, QColor(42, 130, 218))
+    light_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+    light_palette.setColor(QPalette.HighlightedText, Qt.white)
+
+    # Initialize in dark mode
+    app.setPalette(dark_palette)
+
+    window = BookRecommendationApp()
+    window.show()
     sys.exit(app.exec_())
