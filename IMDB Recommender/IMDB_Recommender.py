@@ -2217,7 +2217,7 @@ class DetailsWindow(QDialog):
         certificate_list_label.setWordWrap(True)
         certificate_list_label.hide()
 
-        certificate_button = QPushButton("Show/Hide Certificate Ratings")
+        certificate_button = QPushButton("| Show/Hide Certificate Ratings")
         certificate_button.clicked.connect(lambda: certificate_list_label.show() if certificate_list_label.isHidden() else certificate_list_label.hide())
 
         default_button_stylesheet = certificate_button.styleSheet()
@@ -2245,7 +2245,7 @@ class DetailsWindow(QDialog):
         parental_guide_button = QPushButton("| Show/Hide")
         parental_guide_button.clicked.connect(
             lambda: parental_guide_container.show() if parental_guide_container.isHidden() else parental_guide_container.hide())
-        parental_guide_button.setStyleSheet("border: 3px solid black; border-radius: 8px;")
+        parental_guide_button.setStyleSheet("border: 1px solid black; border-radius: 8px; background-color: #50565D;")
 
 
         parental_guide_label_widget_layout = QHBoxLayout()
@@ -2272,7 +2272,7 @@ class DetailsWindow(QDialog):
 
         sex_nudity_label_widget = QWidget()
         sex_nudity_button = QPushButton("| Show/Hide")
-        sex_nudity_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        sex_nudity_button.setStyleSheet("border: 1px solid black; border-radius: 8px; font-size: 18px; background-color: #50565D;")
         sex_nudity_label_widget_layout = QHBoxLayout()
         sex_nudity_button.clicked.connect(lambda: sex_nudity_list_label.show() if sex_nudity_list_label.isHidden() else sex_nudity_list_label.hide())
         sex_nudity_label_widget_layout.addWidget(sex_nudity_label)
@@ -2297,7 +2297,7 @@ class DetailsWindow(QDialog):
 
         violence_gore_label_widget = QWidget()
         violence_gore_button = QPushButton("| Show/Hide")
-        violence_gore_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        violence_gore_button.setStyleSheet("border: 1px solid black; border-radius: 8px; font-size: 18px; background-color: #50565D;")
         violence_gore_label_widget_layout = QHBoxLayout()
         violence_gore_button.clicked.connect(
             lambda: violence_gore_list_label.show() if violence_gore_list_label.isHidden() else violence_gore_list_label.hide())
@@ -2323,7 +2323,7 @@ class DetailsWindow(QDialog):
 
         profanity_label_widget = QWidget()
         profanity_button = QPushButton("| Show/Hide")
-        profanity_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        profanity_button.setStyleSheet("border: 1px solid black; border-radius: 8px; font-size: 18px; background-color: #50565D;")
         profanity_label_widget_layout = QHBoxLayout()
         profanity_button.clicked.connect(
             lambda: profanity_list_label.show() if profanity_list_label.isHidden() else profanity_list_label.hide())
@@ -2349,7 +2349,7 @@ class DetailsWindow(QDialog):
 
         alcohol_drugs_smoking_label_widget = QWidget()
         alcohol_drugs_smoking_button = QPushButton("| Show/Hide")
-        alcohol_drugs_smoking_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        alcohol_drugs_smoking_button.setStyleSheet("border: 1px solid black; border-radius: 8px; font-size: 18px; background-color: #50565D;")
         alcohol_drugs_smoking_label_widget_layout = QHBoxLayout()
         alcohol_drugs_smoking_button.clicked.connect(
             lambda: alcohol_drugs_smoking_list_label.show() if alcohol_drugs_smoking_list_label.isHidden() else alcohol_drugs_smoking_list_label.hide())
@@ -2375,7 +2375,7 @@ class DetailsWindow(QDialog):
 
         frightening_intense_scenes_label_widget = QWidget()
         frightening_intense_scenes_button = QPushButton("| Show/Hide")
-        frightening_intense_scenes_button.setStyleSheet("border: 2px solid black; border-radius: 8px; font-size: 18px;")
+        frightening_intense_scenes_button.setStyleSheet("border: 1px solid black; border-radius: 8px; font-size: 18px; background-color: #50565D;")
         frightening_intense_scenes_label_widget_layout = QHBoxLayout()
         frightening_intense_scenes_button.clicked.connect(
             lambda: frightening_intense_scenes_list_label.show() if frightening_intense_scenes_list_label.isHidden() else frightening_intense_scenes_list_label.hide())
@@ -2408,7 +2408,7 @@ class DetailsWindow(QDialog):
 
         # Create another button at the end of the container in case the parental guide is too long
         parental_guide_button_inner = QPushButton("Show/Hide")
-        parental_guide_button_inner.setStyleSheet("border: 3px solid black; border-radius: 8px;")
+        parental_guide_button_inner.setStyleSheet("border: 1px solid black; border-radius: 8px; background-color: #50565D;")
         parental_guide_button_inner.clicked.connect(
             lambda: parental_guide_container.show() if parental_guide_container.isHidden() else parental_guide_container.hide())
 
@@ -2520,6 +2520,8 @@ class DetailsWindow(QDialog):
         self.main_layout.addWidget(plot_keywords_widget, 1, 1)
         self.main_layout.setColumnStretch(0, 1) # Make the first column stretchable
         self.main_layout.setColumnStretch(1, 1) # Make the second column stretchable
+        self.main_layout.setRowStretch(0, 1) # Make the first row stretchable
+        self.main_layout.setRowStretch(1, 1) # Make the second row stretchable
 
 
 
@@ -2578,7 +2580,7 @@ class ModernApp(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("IMDB Recommender")
+        self.setWindowTitle("Watchable: IMDB Recommender")
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
 
@@ -2779,7 +2781,7 @@ class ModernApp(QMainWindow):
         self.poster_label.setAlignment(Qt.AlignCenter)
         self.poster_layout.addWidget(self.poster_label)
 
-        self.result_label = QLabel("Your recommendation will appear here.")
+        self.result_label = QLabel("Welcome to Watchable!<br>Your recommendation will appear here.")
         self.result_label.setWordWrap(True)
         # Enable rich text
         self.result_label.setOpenExternalLinks(True)
@@ -3725,7 +3727,7 @@ class ModernApp(QMainWindow):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
-        msg.setText("<h1>IMDB Recommender</h1>"
+        msg.setText("<h1>Watchable: IMDB Recommender</h1>"
                     "<h3>Version 3.8</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
