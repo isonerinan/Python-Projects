@@ -1,6 +1,5 @@
 # PyQT application to recommend books based on user input
-import os
-import random
+import json
 # FEATURES:
 # - "Read Later" QLineEdit to add books to a list of books to read later
 # - "Search" QLineEdit to search for books
@@ -14,7 +13,9 @@ import random
 # - Genre, Type, Maximum Page, and Author filters to filter books by
 # - "Clear Filters" QPushButton to clear all filters
 # - Goodreads API to get book information
-# - Google Books API to get book information
+
+import os
+import random
 
 import sys
 import requests
@@ -24,6 +25,16 @@ from PyQt5.QtGui import QFont, QPalette, QColor, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, \
     QGridLayout, QMainWindow, QAction, QMenu, QSlider, QMessageBox
 from bs4 import BeautifulSoup
+import re
+
+from selenium import webdriver
+from selenium.common import NoSuchElementException, StaleElementReferenceException, MoveTargetOutOfBoundsException, \
+    ElementClickInterceptedException
+from selenium.webdriver import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47'}
@@ -291,6 +302,7 @@ class BookRecommendationApp(QMainWindow):
                 # Get the book title
                 book_title = random_book.find('td', class_='field title')
                 book_title = book_title.find('a').text.strip()
+                print("Title:", book_title)
 
                 # Get the book author
                 book_author = random_book.find('td', class_='field author')
@@ -299,45 +311,221 @@ class BookRecommendationApp(QMainWindow):
                 # Author names are formatted as "Surname, Name", so we need to reverse them
                 book_author = book_author.split(", ")
                 book_author = book_author[1] + " " + book_author[0]
+                print("Author:", book_author)
 
                 # Get the book rating
                 book_rating = random_book.find('td', class_='field avg_rating')
                 book_rating = book_rating.find('div', class_='value').text.strip()
+                print("Rating:", book_rating)
 
                 # Get the book link
                 book_link = "https://www.goodreads.com" + random_book.find('td', class_='field title').find('a')['href']
+                print("Link:", book_link)
 
                 # Get the book cover image link
-                # List covers are 45x75 pixels and end with "._SY75_.jpg"
+                # List covers end with "._SY75_.jpg" or "._SX50_.jpg" etc.
                 # Book covers are 283x475 pixels and end with ".jpg"
                 book_cover_link = random_book.find('td', class_='field cover').find('img')['src']
-                book_cover_link = book_cover_link.replace("._SY75_.jpg", ".jpg")
+
+                # Regular expression pattern
+                pattern = re.compile(r'\._\w+_\.jpg')
+
+                # Replace the pattern with ".jpg" in each cover link
+                book_cover_link = re.sub(pattern, '.jpg', book_cover_link)
+                print("New Cover Link:", book_cover_link)
 
                 # Get the book page count
                 book_page_count = random_book.find('td', class_='field num_pages')
                 book_page_count = book_page_count.find('nobr').text.strip()
                 book_page_count = book_page_count.replace("pp", "")
+                print("Page Count:", book_page_count)
+
+                # Get more details about the book
+                # Set up Chrome options for headless mode
+                chrome_options = Options()
+                chrome_options.add_argument('--headless')  # Run Chrome in headless mode
+
+                # Specify the path to ChromeDriver
+                chromedriver_path = 'chromedriver.exe'
+
+                # Create ChromeOptions and set the executable path
+                chrome_options.add_argument(f'--executable_path={chromedriver_path}')
+
+                # Create a WebDriver instance
+                driver = webdriver.Chrome(options=chrome_options)
+
+                # Visit the book link
+                driver.get(book_link)
+
+                # Wait for the page to load
+                wait = WebDriverWait(driver, 5)
+                wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'BookPageMetadataSection__genres')))
+                wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'BookPageMetadataSection__description')))
+                wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'BookDetails')))
+                wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'FeaturedDetails')))
+                wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'TruncatedContent')))
+
+                # turn the page into soup
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+                print(soup.prettify())
+
+                # Extract content of the script tag
+                script_content = soup.select_one('script[type="application/ld+json"]').string
+
+                # Convert the content to a dictionary
+                script_content = json.loads(script_content)
+
+                # Extract the book language
+                book_language = script_content.get('inLanguage')
+
+                # Extract the book ISBN
+                isbn = script_content.get('isbn')
+
+                # Extract the book author URL
+                author_url = script_content.get('author', [{}])[0].get('url')
+
+                # Extract the book type
+                book_type = script_content.get('bookFormat')
+
+                # Extract the book awards (find the item with the format
+                # "awardsWon": [{"__typename":"Award", ANYTHING INBETWEEN CURLY BRACES}]
+                # and extract the "name" key) using regex
+                awards = re.findall(r'"awardsWon": \[{"__typename":"Award",(.+?)}', str(script_content))
+
+                # Extract the book characters
+                characters = script_content.get('characters')
+
+                # Extract the book places
+                places = script_content.get('places')
 
 
-                print(book_title)
-                print(book_author)
-                print(book_rating)
-                print(book_link)
-                print(book_cover_link)
-                print(book_page_count)
+
+                # Print extracted values
+                print(f'Language: {book_language}')
+                print(f'ISBN: {isbn}')
+                print(f'Author URL: {author_url}')
+                print(f'Book Type: {book_type}')
+                print(f'Awards: {awards}')
+                print(f'Characters: {characters}')
+                print(f'Places: {places}')
+
+
+
+
+                # Get the book genres
+                try:
+                    genres_element = driver.find_element(By.CLASS_NAME, 'BookPageMetadataSection__genres')
+                    more_button = genres_element.find_element(By.CLASS_NAME, 'Button__container')
+                    if more_button:
+                        try:
+                            # Click the "More Details" button
+                            more_button.click()
+
+                        except MoveTargetOutOfBoundsException:
+                            print("MoveTargetOutOfBoundsException")
+                            # Scroll to the "more" button
+                            actions = ActionChains(driver)
+                            actions.move_to_element(more_button).perform()
+
+                            # Click the "more" button
+                            more_button.click()
+
+                        except ElementClickInterceptedException:
+                            print("ElementClickInterceptedException")
+                            # Use ActionChains to move to the element before clicking
+                            actions = ActionChains(driver)
+                            actions.move_to_element(more_button).click().perform()
+
+                    new_genres_element = driver.find_element(By.CLASS_NAME, 'BookPageMetadataSection__genres')
+
+                    try:
+                        genres_links = new_genres_element.find_elements(By.CLASS_NAME, 'Button__labelItem')
+
+                    except:
+                        print("Clicked the 'More Details' button but couldn't find the genres.")
+                        genres_links = genres_element.find_elements(By.CLASS_NAME, 'Button__labelItem')
+
+                    try:
+                        book_genres = [link.text.strip() for link in genres_links]
+
+                    except:
+                        print("Cannot extract genres from the genres links.")
+                        book_genres = ["None"]
+
+                except NoSuchElementException:
+                    book_genres = ["None"]
+
+                except StaleElementReferenceException:
+                    book_genres = ["StaleElementReferenceException"]
+
+                # Remove the last element from the list if it is "...show all"
+                if book_genres[-1] == "...show all":
+                    book_genres.pop(-1)
+
+                # Turn the list into a string
+                book_genres = ", ".join(book_genres)
+
+                # Get book details
+                try:
+                    book_details_element = driver.find_element(By.CLASS_NAME, 'BookDetails')
+                    # Get the book publish date
+                    try:
+                        publish_date_element = book_details_element.find_element(By.CSS_SELECTOR,
+                                                                                     'p[data-testid="publicationInfo"]')
+                        book_publish_date = publish_date_element.text.strip().replace("First published", "")
+
+                    except NoSuchElementException:
+                        book_publish_date = None
+
+                    # Get the literary awards
+                    try:
+                        work_details_element = book_details_element.find_element(By.CSS_SELECTOR, 'div.WorkDetails')
+                        awards_element = work_details_element.find_element(By.CSS_SELECTOR, 'class[data-testid="contentContainer"]')
+                        awards_list = awards_element.find_elements(By.CSS_SELECTOR, 'span[data-testid="award"]')
+                        book_awards = [award.text.strip() for award in awards_list]
+
+                    except NoSuchElementException:
+                        book_awards = None
+
+                except NoSuchElementException:
+                    print("Book details not found.")
+
+                # Get the book description
+                try:
+                    description_element = driver.find_element(By.CLASS_NAME, 'BookPageMetadataSection__description')
+                    description_container = description_element.find_element(By.CLASS_NAME, 'Formatted')
+                    book_description = description_container.text.strip()
+
+                except NoSuchElementException:
+                    book_description = None
+
+                # Close the browser window
+                driver.quit()
 
                 # Update the result label
                 self.update_result_label(f"<h3><a href='{book_link}'>{book_title}</a></h3><br>"
-                                         f"<b>Author:</b> {book_author}<br>"
-                                         f"<b>Average Rating:</b> {book_rating}<br>"
-                                         f"<b>Page Count:</b> {book_page_count}<br><br>")
+                                         f"<b>Author:</b><a href='{author_url}'>{book_author}</a><br>"
+                                         f"<b>Average Rating:</b>{book_rating}/5<br>"
+                                         f"<b>Page Count:</b>{book_page_count}<br><br>"
+                                         f"<b>Genres:</b>{book_genres}<br>"
+                                         f"<b>Type:</b>{book_type}<br>"
+                                         f"<b>Publish Date:</b>{book_publish_date}<br>"
+                                         f"<b>Edition Language:</b>{book_language}<br><br>"
+                                         f"<b>Literary Awards:</b>{awards}<br><br>")
+
 
                 self.result_label.setAlignment(Qt.AlignVCenter)
+
+                # Update the description label
+                self.description_label.setText(f"{book_description}")
 
 
                 # Create a pixmap from the poster image URL
                 pixmap = QPixmap()
                 pixmap.loadFromData(requests.get(book_cover_link).content)
+
+                # Scale the pixmap so it wouldn't be too big or too small
+                pixmap = pixmap.scaledToWidth(300, Qt.SmoothTransformation)
 
                 self.poster_label.setPixmap(pixmap)
 
