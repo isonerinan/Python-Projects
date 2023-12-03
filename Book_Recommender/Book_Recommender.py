@@ -378,6 +378,9 @@ class BookRecommendationApp(QMainWindow):
                 # Extract the book language
                 book_language = script_content.get('inLanguage')
 
+                # Extract the book genres
+                book_genres = script_content.get('bookGenres')
+
                 # Extract the book ISBN
                 isbn = script_content.get('isbn')
 
@@ -390,7 +393,7 @@ class BookRecommendationApp(QMainWindow):
                 # Extract the book awards (find the item with the format
                 # "awardsWon": [{"__typename":"Award", ANYTHING INBETWEEN CURLY BRACES}]
                 # and extract the "name" key) using regex
-                awards = re.findall(r'"awardsWon": \[{"__typename":"Award",(.+?)}', str(script_content))
+                awards = script_content.get('awards')
 
                 # Extract the book characters
                 characters = script_content.get('characters')
