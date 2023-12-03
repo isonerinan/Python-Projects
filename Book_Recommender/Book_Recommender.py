@@ -1,5 +1,6 @@
 # PyQT application to recommend books based on user input
 import json
+import math
 # FEATURES:
 # - "Read Later" QLineEdit to add books to a list of books to read later
 # - "Search" QLineEdit to search for books
@@ -243,21 +244,21 @@ class BookRecommendationApp(QMainWindow):
 
 
         # Add both the QLineEdit and the button to a container widget
-        container = QWidget()
-        container_layout = QHBoxLayout()
-        container_layout.addWidget(self.custom_list)
-        container_layout.addWidget(search_button)
-        container.setLayout(container_layout)
+        self.container = QWidget()
+        self.container_layout = QHBoxLayout()
+        self.container_layout.addWidget(self.custom_list)
+        self.container_layout.addWidget(search_button)
+        self.container.setLayout(self.container_layout)
 
         # Add the container to the main layout
-        self.main_layout.addWidget(container)
+        self.main_layout.addWidget(self.container)
 
         self.setLayout(self.main_layout)
 
-        find_book_button = QPushButton("Find Something to Read!")
-        find_book_button.clicked.connect(self.apply_filters)
-        find_book_button.clicked.connect(self.find_random_book)
-        self.main_layout.addWidget(find_book_button)
+        self.find_book_button = QPushButton("Find Something to Read!")
+        self.find_book_button.clicked.connect(self.apply_filters)
+        self.find_book_button.clicked.connect(self.find_random_book)
+        self.main_layout.addWidget(self.find_book_button)
 
     def check_preferences_file(self):
         return os.path.isfile(self.preferences_file)
@@ -334,6 +335,93 @@ class BookRecommendationApp(QMainWindow):
                 book_cover_link = re.sub(pattern, '.jpg', book_cover_link)
                 print("New Cover Link:", book_cover_link)
 
+                # Create a pixmap from the poster image URL
+                pixmap = QPixmap()
+                pixmap.loadFromData(requests.get(book_cover_link).content)
+
+                # Scale the pixmap so it wouldn't be too big or too small
+                pixmap = pixmap.scaledToWidth(300, Qt.SmoothTransformation)
+
+                self.poster_label.setPixmap(pixmap)
+
+                # Find the majority color of the poster image
+                # Convert the pixmap to a QImage
+                image = pixmap.toImage()
+
+                # Get the image dimensions
+                width = image.width()
+                height = image.height()
+
+                # Create a dictionary to store the colors and their counts
+                color_counts = {}
+
+                # Iterate through the image and add the colors to the list
+                # (Similar colors should be counted as one color)
+                # (The more centered the pixel is, the more important it is)
+                # (Use Gaussian distribution to calculate the importance of the pixel)
+                # (Similarity threshold: 10)
+                similarity_threshold = 10
+
+                # Iterate through the image and add the colors to the dictionary
+                for x in range(width):
+                    for y in range(height):
+                        # Get the color at the current pixel
+                        color = QColor(image.pixel(x, y))
+
+                        # Convert QColor to tuple of RGBA values
+                        color_tuple = (color.red(), color.green(), color.blue(), color.alpha())
+
+                        # Calculate the importance of the pixel using Gaussian distribution
+                        importance = math.exp(-(x - width / 2) ** 2 / (2 * similarity_threshold ** 2)) * \
+                                     math.exp(-(y - height / 2) ** 2 / (2 * similarity_threshold ** 2))
+
+                        # Add the color to the dictionary, considering its importance
+                        if color_tuple in color_counts:
+                            color_counts[color_tuple] += importance
+                        else:
+                            color_counts[color_tuple] = importance
+
+                # Find the color with the highest count
+                dominant_color_tuple = max(color_counts, key=color_counts.get)
+
+                # Find the color with second highest count
+                second_dominant_color_tuple = max(color_counts, key=lambda x: color_counts[x] if x != dominant_color_tuple else 0)
+
+                # Convert the tuples back to a QColor object
+                dominant_color = QColor(*dominant_color_tuple)
+                second_dominant_color = QColor(*second_dominant_color_tuple)
+
+                print("Dominant Color:", dominant_color.name())
+                print("Dominant Color RGB:", dominant_color.red(), dominant_color.green(), dominant_color.blue())
+
+                # Check if we are in dark mode
+                if self.theme == "dark":
+                    # Check if the dominant color is too dark
+                    if dominant_color.lightness() < 100 and second_dominant_color.lightness() > 100:
+                        # Use the second dominant color instead
+                        dominant_color = second_dominant_color
+
+                    elif dominant_color.lightness() < 100 and second_dominant_color.lightness() < 100:
+                        # Lighten the dominant color
+                        dominant_color = dominant_color.lighter(150)
+
+                    dark_palette.setColor(QPalette.Link, dominant_color)
+                    self.dark_theme()
+
+                elif self.theme == "light":
+                    # Check if the dominant color is too light
+                    if dominant_color.lightness() > 150 and second_dominant_color.lightness() < 150:
+                        # Use the second dominant color instead
+                        dominant_color = second_dominant_color
+
+                    elif dominant_color.lightness() > 150 and second_dominant_color.lightness() > 150:
+                        # Darken the dominant color
+                        dominant_color = dominant_color.darker(150)
+
+                    light_palette.setColor(QPalette.Link, dominant_color)
+                    self.light_theme()
+
+
                 # Get the book page count
                 book_page_count = random_book.find('td', class_='field num_pages')
                 book_page_count = book_page_count.find('nobr').text.strip()
@@ -379,7 +467,13 @@ class BookRecommendationApp(QMainWindow):
                 book_language = script_content.get('inLanguage')
 
                 # Extract the book genres
-                book_genres = script_content.get('bookGenres')
+                genre_info = re.findall(r'{"__typename":"Genre","name":"(.*?)","webUrl":"(.*?)"}', str(soup))
+
+                genre_names = [genre[0] for genre in genre_info]
+                genre_urls = [genre[1] for genre in genre_info]
+
+                # Join the genres into a string, separated by commas, and with <a> tags
+                book_genres = ", ".join([f"<a href='{genre_url}'>{genre}</a>" for genre, genre_url in zip(genre_names, genre_urls)])
 
                 # Extract the book ISBN
                 isbn = script_content.get('isbn')
@@ -390,18 +484,28 @@ class BookRecommendationApp(QMainWindow):
                 # Extract the book type
                 book_type = script_content.get('bookFormat')
 
-                # Extract the book awards (find the item with the format
-                # "awardsWon": [{"__typename":"Award", ANYTHING INBETWEEN CURLY BRACES}]
-                # and extract the "name" key) using regex
+                # Extract the book awards
                 awards = script_content.get('awards')
 
                 # Extract the book characters
-                characters = script_content.get('characters')
+                character_info = re.findall(r'\{"__typename":"Character","name":"(.*?)","webUrl":"(.*?)"\}', str(soup))
+
+                character_names = [character[0] for character in character_info]
+                character_urls = [character[1] for character in character_info]
+
+                # Join the characters into a string, separated by commas, and with <a> tags
+                characters = ", ".join([f"<a href='{character_url}'>{character}</a>" for character, character_url in zip(character_names, character_urls)])
 
                 # Extract the book places
-                places = script_content.get('places')
+                place_info = re.findall(r'\{"__typename":"Places","name":(.*?),"countryName":(.*?),"webUrl":(.*?),"year":(.*?)\}', str(soup))
 
+                place_names = [place[0].strip("\"") for place in place_info]
+                place_countries = [place[1].strip("\"") for place in place_info]
+                place_urls = [place[2].strip("\"") for place in place_info]
+                place_years = [place[3].strip("\"") for place in place_info]
 
+                # Join the places into a string, separated by commas, and with <a> tags
+                places = ", ".join([f"<a href='{place_url}'>{place}</a> ({place_year})" for place, place_url, place_year in zip(place_names, place_urls, place_years)])
 
                 # Print extracted values
                 print(f'Language: {book_language}')
@@ -411,62 +515,6 @@ class BookRecommendationApp(QMainWindow):
                 print(f'Awards: {awards}')
                 print(f'Characters: {characters}')
                 print(f'Places: {places}')
-
-
-
-
-                # Get the book genres
-                try:
-                    genres_element = driver.find_element(By.CLASS_NAME, 'BookPageMetadataSection__genres')
-                    more_button = genres_element.find_element(By.CLASS_NAME, 'Button__container')
-                    if more_button:
-                        try:
-                            # Click the "More Details" button
-                            more_button.click()
-
-                        except MoveTargetOutOfBoundsException:
-                            print("MoveTargetOutOfBoundsException")
-                            # Scroll to the "more" button
-                            actions = ActionChains(driver)
-                            actions.move_to_element(more_button).perform()
-
-                            # Click the "more" button
-                            more_button.click()
-
-                        except ElementClickInterceptedException:
-                            print("ElementClickInterceptedException")
-                            # Use ActionChains to move to the element before clicking
-                            actions = ActionChains(driver)
-                            actions.move_to_element(more_button).click().perform()
-
-                    new_genres_element = driver.find_element(By.CLASS_NAME, 'BookPageMetadataSection__genres')
-
-                    try:
-                        genres_links = new_genres_element.find_elements(By.CLASS_NAME, 'Button__labelItem')
-
-                    except:
-                        print("Clicked the 'More Details' button but couldn't find the genres.")
-                        genres_links = genres_element.find_elements(By.CLASS_NAME, 'Button__labelItem')
-
-                    try:
-                        book_genres = [link.text.strip() for link in genres_links]
-
-                    except:
-                        print("Cannot extract genres from the genres links.")
-                        book_genres = ["None"]
-
-                except NoSuchElementException:
-                    book_genres = ["None"]
-
-                except StaleElementReferenceException:
-                    book_genres = ["StaleElementReferenceException"]
-
-                # Remove the last element from the list if it is "...show all"
-                if book_genres[-1] == "...show all":
-                    book_genres.pop(-1)
-
-                # Turn the list into a string
-                book_genres = ", ".join(book_genres)
 
                 # Get book details
                 try:
@@ -479,16 +527,6 @@ class BookRecommendationApp(QMainWindow):
 
                     except NoSuchElementException:
                         book_publish_date = None
-
-                    # Get the literary awards
-                    try:
-                        work_details_element = book_details_element.find_element(By.CSS_SELECTOR, 'div.WorkDetails')
-                        awards_element = work_details_element.find_element(By.CSS_SELECTOR, 'class[data-testid="contentContainer"]')
-                        awards_list = awards_element.find_elements(By.CSS_SELECTOR, 'span[data-testid="award"]')
-                        book_awards = [award.text.strip() for award in awards_list]
-
-                    except NoSuchElementException:
-                        book_awards = None
 
                 except NoSuchElementException:
                     print("Book details not found.")
@@ -507,14 +545,15 @@ class BookRecommendationApp(QMainWindow):
 
                 # Update the result label
                 self.update_result_label(f"<h3><a href='{book_link}'>{book_title}</a></h3><br>"
-                                         f"<b>Author:</b><a href='{author_url}'>{book_author}</a><br>"
-                                         f"<b>Average Rating:</b>{book_rating}/5<br>"
-                                         f"<b>Page Count:</b>{book_page_count}<br><br>"
-                                         f"<b>Genres:</b>{book_genres}<br>"
-                                         f"<b>Type:</b>{book_type}<br>"
-                                         f"<b>Publish Date:</b>{book_publish_date}<br>"
-                                         f"<b>Edition Language:</b>{book_language}<br><br>"
-                                         f"<b>Literary Awards:</b>{awards}<br><br>")
+                                         f"<b>Author: </b><a href='{author_url}'>{book_author}</a><br>"
+                                         f"<b>Average Rating: </b>{book_rating}/5<br>"
+                                         f"<b>Book Format: </b>{book_page_count}, {book_type}<br><br>"
+                                         f"<b>Genres: </b>{book_genres}<br>"
+                                         f"<b>Publish Date: </b>{book_publish_date}<br>"
+                                         f"<b>Edition Language: </b>{book_language}<br><br>"
+                                         f"<b>Literary Awards: </b>{awards}<br><br>"
+                                         f"<b>Characters: </b>{characters}<br>"
+                                         f"<b>Setting: </b>{places}<br><br>")
 
 
                 self.result_label.setAlignment(Qt.AlignVCenter)
@@ -522,15 +561,36 @@ class BookRecommendationApp(QMainWindow):
                 # Update the description label
                 self.description_label.setText(f"{book_description}")
 
+                # Check if result label is too long
+                if len(self.result_label.text()) > 140:
+                    # Add the result label to a scroll area
+                    result_scroll_area = QtWidgets.QScrollArea()
+                    result_scroll_area.setWidget(self.result_label)
+                    result_scroll_area.setWidgetResizable(True)
+                    result_scroll_area.setFixedHeight(450)
+                    self.poster_layout.addWidget(result_scroll_area)
 
-                # Create a pixmap from the poster image URL
-                pixmap = QPixmap()
-                pixmap.loadFromData(requests.get(book_cover_link).content)
+                # Check if the description label is too long
+                if len(book_description) > 140:
+                    # Add the description label to a scroll area
+                    description_scroll_area = QtWidgets.QScrollArea()
+                    description_scroll_area.setWidget(self.description_label)
+                    description_scroll_area.setWidgetResizable(True)
+                    description_scroll_area.setFixedHeight(250)
+                    self.main_layout.addWidget(description_scroll_area)
 
-                # Scale the pixmap so it wouldn't be too big or too small
-                pixmap = pixmap.scaledToWidth(300, Qt.SmoothTransformation)
+                    # Move "find_book_button" and "search_button" to the bottom
+                    self.main_layout.removeWidget(self.container)
+                    self.main_layout.addWidget(self.container)
+                    self.main_layout.removeWidget(self.find_book_button)
+                    self.main_layout.addWidget(self.find_book_button)
 
-                self.poster_label.setPixmap(pixmap)
+
+
+                # Add padding to the result label and description label
+                self.result_label.setStyleSheet("padding: 10px")
+                self.description_label.setStyleSheet("padding: 10px")
+
 
 
 
@@ -646,7 +706,7 @@ class BookRecommendationApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>Readable: Book Recommender</h1>"
-                    "<h3>Version 1.0</h3>"
+                    "<h3>Version 1.5</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
@@ -694,6 +754,7 @@ if __name__ == '__main__':
     light_palette.setColor(QPalette.Link, QColor(42, 130, 218))
     light_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
     light_palette.setColor(QPalette.HighlightedText, Qt.white)
+
 
     # Initialize in dark mode
     app.setPalette(dark_palette)
