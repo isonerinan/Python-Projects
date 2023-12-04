@@ -24,14 +24,12 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QPalette, QColor, QPixmap
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QComboBox, \
-    QGridLayout, QMainWindow, QAction, QMenu, QSlider, QMessageBox
+    QMainWindow, QAction, QMenu, QSlider, QMessageBox
 from bs4 import BeautifulSoup
 import re
 
 from selenium import webdriver
-from selenium.common import NoSuchElementException, StaleElementReferenceException, MoveTargetOutOfBoundsException, \
-    ElementClickInterceptedException
-from selenium.webdriver import ActionChains
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -216,6 +214,7 @@ class BookRecommendationApp(QMainWindow):
         self.poster_label.setAlignment(Qt.AlignCenter)
         self.poster_layout.addWidget(self.poster_label)
 
+        # Create a new QLabel for displaying the movie/series title and details
         self.result_label = QLabel("Welcome to Readable!<br>Your recommendation will appear here.")
         self.result_label.setWordWrap(True)
         # Enable rich text
@@ -229,6 +228,22 @@ class BookRecommendationApp(QMainWindow):
         self.description_label.setAlignment(Qt.AlignCenter)
         self.description_label.hide()
         self.main_layout.addWidget(self.description_label)
+
+        # Create scroll areas for the result label and description label
+        self.result_scroll_area = QtWidgets.QScrollArea()
+        self.result_scroll_area.setWidgetResizable(True)
+        self.result_scroll_area.setFixedHeight(450)
+        self.result_scroll_area.hide()
+
+        self.poster_layout.addWidget(self.result_scroll_area)
+
+        # Add the description label to a scroll area
+        self.description_scroll_area = QtWidgets.QScrollArea()
+        self.description_scroll_area.setWidgetResizable(True)
+        self.description_scroll_area.setFixedHeight(250)
+        self.description_scroll_area.hide()
+
+        self.main_layout.addWidget(self.description_scroll_area)
 
         # Create a QLineEdit for custom Goodreads list input
         self.custom_list = QLineEdit()
@@ -393,15 +408,32 @@ class BookRecommendationApp(QMainWindow):
 
                 print("Dominant Color:", dominant_color.name())
                 print("Dominant Color RGB:", dominant_color.red(), dominant_color.green(), dominant_color.blue())
+                print("Second Dominant Color:", second_dominant_color.name())
+                print("Second Dominant Color RGB:", second_dominant_color.red(), second_dominant_color.green(), second_dominant_color.blue())
+
+                # Find the average color
+                average_color_tuple = (0, 0, 0, 0)
+                for color_tuple in color_counts:
+                    average_color_tuple = tuple(map(sum, zip(average_color_tuple, color_tuple)))
+                average_color_tuple = tuple([int(color / len(color_counts)) for color in average_color_tuple])
+                average_color = QColor(*average_color_tuple)
+                print("Average Color:", average_color.name())
+                print("Average Color RGB:", average_color.red(), average_color.green(), average_color.blue())
 
                 # Check if we are in dark mode
                 if self.theme == "dark":
+                    new_window_color = QColor(int(25 * 0.8 + average_color.red() * 0.2),
+                                              int(25 * 0.8 + average_color.green() * 0.2),
+                                              int(25 * 0.8 + average_color.blue() * 0.2))
+                    print("New Window Color:", new_window_color.name())
+                    dark_palette.setColor(QPalette.Window, new_window_color)
+
                     # Check if the dominant color is too dark
-                    if dominant_color.lightness() < 100 and second_dominant_color.lightness() > 100:
+                    if dominant_color.lightness() < QColor(100, 100, 100).lightness() and second_dominant_color.lightness() > QColor(100, 100, 100).lightness():
                         # Use the second dominant color instead
                         dominant_color = second_dominant_color
 
-                    elif dominant_color.lightness() < 100 and second_dominant_color.lightness() < 100:
+                    elif dominant_color.lightness() < QColor(100, 100, 100).lightness() and second_dominant_color.lightness() < QColor(100, 100, 100).lightness():
                         # Lighten the dominant color
                         dominant_color = dominant_color.lighter(150)
 
@@ -409,12 +441,18 @@ class BookRecommendationApp(QMainWindow):
                     self.dark_theme()
 
                 elif self.theme == "light":
+                    new_window_color = QColor(int(255 * 0.8 + average_color.red() * 0.2),
+                                              int(255 * 0.8 + average_color.green() * 0.2),
+                                              int(255 * 0.8 + average_color.blue() * 0.2))
+                    print("New Window Color:", new_window_color.name())
+                    light_palette.setColor(QPalette.Window, new_window_color)
+
                     # Check if the dominant color is too light
-                    if dominant_color.lightness() > 150 and second_dominant_color.lightness() < 150:
+                    if dominant_color.lightness() > QColor(200, 200, 200).lightness() and second_dominant_color.lightness() < QColor(200, 200, 200).lightness():
                         # Use the second dominant color instead
                         dominant_color = second_dominant_color
 
-                    elif dominant_color.lightness() > 150 and second_dominant_color.lightness() > 150:
+                    elif dominant_color.lightness() > QColor(200, 200, 200).lightness() and second_dominant_color.lightness() > QColor(200, 200, 200).lightness():
                         # Darken the dominant color
                         dominant_color = dominant_color.darker(150)
 
@@ -553,7 +591,7 @@ class BookRecommendationApp(QMainWindow):
                                          f"<b>Edition Language: </b>{book_language}<br><br>"
                                          f"<b>Literary Awards: </b>{awards}<br><br>"
                                          f"<b>Characters: </b>{characters}<br>"
-                                         f"<b>Setting: </b>{places}<br><br>")
+                                         f"<b>Places: </b>{places}<br><br>")
 
 
                 self.result_label.setAlignment(Qt.AlignVCenter)
@@ -563,29 +601,15 @@ class BookRecommendationApp(QMainWindow):
 
                 # Check if result label is too long
                 if len(self.result_label.text()) > 140:
-                    # Add the result label to a scroll area
-                    result_scroll_area = QtWidgets.QScrollArea()
-                    result_scroll_area.setWidget(self.result_label)
-                    result_scroll_area.setWidgetResizable(True)
-                    result_scroll_area.setFixedHeight(450)
-                    self.poster_layout.addWidget(result_scroll_area)
+                    # Add result label to the scroll area
+                    self.result_scroll_area.setWidget(self.result_label)
+                    self.result_scroll_area.show()
 
                 # Check if the description label is too long
                 if len(book_description) > 140:
-                    # Add the description label to a scroll area
-                    description_scroll_area = QtWidgets.QScrollArea()
-                    description_scroll_area.setWidget(self.description_label)
-                    description_scroll_area.setWidgetResizable(True)
-                    description_scroll_area.setFixedHeight(250)
-                    self.main_layout.addWidget(description_scroll_area)
-
-                    # Move "find_book_button" and "search_button" to the bottom
-                    self.main_layout.removeWidget(self.container)
-                    self.main_layout.addWidget(self.container)
-                    self.main_layout.removeWidget(self.find_book_button)
-                    self.main_layout.addWidget(self.find_book_button)
-
-
+                    # Add description label to the scroll area
+                    self.description_scroll_area.setWidget(self.description_label)
+                    self.description_scroll_area.show()
 
                 # Add padding to the result label and description label
                 self.result_label.setStyleSheet("padding: 10px")
