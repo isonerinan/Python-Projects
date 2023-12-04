@@ -705,12 +705,70 @@ class BookRecommendationApp(QMainWindow):
     # Change the theme to light
     def light_theme(self):
         app.setPalette(light_palette)
+
+        # Delete existing scroll area widgets
+        if hasattr(self, 'result_scroll_area'):
+            self.result_scroll_area.deleteLater()
+        if hasattr(self, 'description_scroll_area'):
+            self.description_scroll_area.deleteLater()
+
+        # Create scroll areas for the result label and description label
+        self.result_scroll_area = QtWidgets.QScrollArea()
+        self.result_scroll_area.setWidgetResizable(True)
+        self.result_scroll_area.setFixedHeight(450)
+        self.result_scroll_area.setWidget(self.result_label)
+
+        self.poster_layout.addWidget(self.result_scroll_area)
+
+        # Add the description label to a scroll area
+        self.description_scroll_area = QtWidgets.QScrollArea()
+        self.description_scroll_area.setWidgetResizable(True)
+        self.description_scroll_area.setFixedHeight(250)
+        self.description_scroll_area.setWidget(self.description_label)
+
+        self.main_layout.addWidget(self.description_scroll_area)
+
+        # Move container widget and find book button to the bottom
+        self.main_layout.removeWidget(self.container)
+        self.main_layout.removeWidget(self.find_book_button)
+        self.main_layout.addWidget(self.container)
+        self.main_layout.addWidget(self.find_book_button)
+
         self.theme = "light"
 
     # Change the theme to dark
     def dark_theme(self):
         app.setPalette(dark_palette)
-        self.theme == "dark"
+
+        # Delete existing scroll area widgets
+        if hasattr(self, 'result_scroll_area'):
+            self.result_scroll_area.deleteLater()
+        if hasattr(self, 'description_scroll_area'):
+            self.description_scroll_area.deleteLater()
+
+        # Create scroll areas for the result label and description label
+        self.result_scroll_area = QtWidgets.QScrollArea()
+        self.result_scroll_area.setWidgetResizable(True)
+        self.result_scroll_area.setFixedHeight(450)
+        self.result_scroll_area.setWidget(self.result_label)
+
+        self.poster_layout.addWidget(self.result_scroll_area)
+
+        # Add the description label to a scroll area
+        self.description_scroll_area = QtWidgets.QScrollArea()
+        self.description_scroll_area.setWidgetResizable(True)
+        self.description_scroll_area.setFixedHeight(250)
+        self.description_scroll_area.setWidget(self.description_label)
+
+        self.main_layout.addWidget(self.description_scroll_area)
+
+        # Move container widget and find book button to the bottom
+        self.main_layout.removeWidget(self.container)
+        self.main_layout.removeWidget(self.find_book_button)
+        self.main_layout.addWidget(self.container)
+        self.main_layout.addWidget(self.find_book_button)
+
+        self.theme = "dark"
 
     # Show the help dialog
     def help(self):
