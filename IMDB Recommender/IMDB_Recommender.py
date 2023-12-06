@@ -3170,7 +3170,7 @@ class ModernApp(QMainWindow):
                             pixmap.loadFromData(requests.get(poster_url).content)
 
                             # Scale the pixmap so it wouldn't be too big or too small
-                            pixmap4 = pixmap.scaled(350, 350, Qt.KeepAspectRatio)
+                            pixmap = pixmap.scaled(350, 350, Qt.KeepAspectRatio)
 
                             # Set the pixmap to the poster_label
                             self.poster_label.setPixmap(pixmap)
