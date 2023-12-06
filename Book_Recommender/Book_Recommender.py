@@ -226,6 +226,7 @@ class BookRecommendationApp(QMainWindow):
         self.description_label = QLabel()
         self.description_label.setWordWrap(True)
         self.description_label.setAlignment(Qt.AlignCenter)
+        self.description_label.setStyleSheet("padding: 10px")
         self.description_label.hide()
         self.main_layout.addWidget(self.description_label)
 
@@ -613,7 +614,6 @@ class BookRecommendationApp(QMainWindow):
 
                 # Add padding to the result label and description label
                 self.result_label.setStyleSheet("padding: 10px")
-                self.description_label.setStyleSheet("padding: 10px")
 
 
 

@@ -2769,6 +2769,8 @@ class ModernApp(QMainWindow):
         self.poster_label = QLabel()
         self.poster_label.hide()
         self.poster_label.setAlignment(Qt.AlignCenter)
+        self.poster_label.setStyleSheet("padding: 10px;")
+        self.poster_label.setMinimumWidth(300)
         self.poster_layout.addWidget(self.poster_label)
 
         self.result_label = QLabel("Welcome to Watchable!<br>Your recommendation will appear here.")
@@ -2786,6 +2788,24 @@ class ModernApp(QMainWindow):
         self.description_label.setStyleSheet("padding: 10px;")
         self.description_label.hide()
         self.main_layout.addWidget(self.description_label)
+
+        # Create scroll areas for the result label and description label
+        self.result_scroll_area = QtWidgets.QScrollArea()
+        self.result_scroll_area.setWidgetResizable(True)
+        self.result_scroll_area.setFixedHeight(450)
+        self.result_scroll_area.setAlignment(Qt.AlignCenter)
+        self.result_scroll_area.hide()
+
+        self.poster_layout.addWidget(self.result_scroll_area)
+
+        # Add the description label to a scroll area
+        self.description_scroll_area = QtWidgets.QScrollArea()
+        self.description_scroll_area.setWidgetResizable(True)
+        self.description_scroll_area.setFixedHeight(250)
+        self.description_scroll_area.setAlignment(Qt.AlignCenter)
+        self.description_scroll_area.hide()
+
+        self.main_layout.addWidget(self.description_scroll_area)
 
         # Create a new QPushButton for displaying more details about the movie/series
         self.more_details_button = QPushButton("More About This Title")
@@ -2807,21 +2827,21 @@ class ModernApp(QMainWindow):
 
 
         # Add both the QLineEdit and the button to a container widget
-        container = QWidget()
-        container_layout = QHBoxLayout()
-        container_layout.addWidget(self.custom_list)
-        container_layout.addWidget(search_button)
-        container.setLayout(container_layout)
+        self.container = QWidget()
+        self.container_layout = QHBoxLayout()
+        self.container_layout.addWidget(self.custom_list)
+        self.container_layout.addWidget(search_button)
+        self.container.setLayout(self.container_layout)
 
         # Add the container to the main layout
-        self.main_layout.addWidget(container)
+        self.main_layout.addWidget(self.container)
 
         self.setLayout(self.main_layout)
 
-        find_movie_button = QPushButton("Find Something to Watch!")
-        find_movie_button.clicked.connect(self.apply_filters)
-        find_movie_button.clicked.connect(self.find_random_movie)
-        self.main_layout.addWidget(find_movie_button)
+        self.find_movie_button = QPushButton("Find Something to Watch!")
+        self.find_movie_button.clicked.connect(self.apply_filters)
+        self.find_movie_button.clicked.connect(self.find_random_movie)
+        self.main_layout.addWidget(self.find_movie_button)
 
     def check_preferences_file(self):
         return os.path.isfile(self.preferences_file)
@@ -3117,15 +3137,40 @@ class ModernApp(QMainWindow):
                             description = description_details.text.strip()
                             self.description_label.setText(f"{description}")
 
+                        # Check if result label is too long
+                        if len(self.result_label.text()) > 140:
+                            # Add result label to the scroll area
+                            self.result_scroll_area.setWidget(self.result_label)
+                            self.result_scroll_area.show()
+
+                        # Check if the description label is too long
+                        if description and len(description) > 140:
+                            # Add description label to the scroll area
+                            self.description_scroll_area.setWidget(self.description_label)
+                            self.description_scroll_area.show()
+
+                        # Add padding to the result label and description label
+                        self.result_label.setStyleSheet("padding: 10px")
+
                         # Get the movie poster URL from the IMDb page
                         poster_image = second_soup.find('img', class_='ipc-image')
 
                         if poster_image:
                             poster_url = poster_image['src']
 
+                            # Get the biggest poster image by changing the url
+                            # For example:
+                            # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                            # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                            # Remove everything except ".jpg" after "@@"
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
                             # Create a pixmap from the poster image URL
                             pixmap = QPixmap()
                             pixmap.loadFromData(requests.get(poster_url).content)
+
+                            # Scale the pixmap so it wouldn't be too big or too small
+                            pixmap4 = pixmap.scaled(350, 350, Qt.KeepAspectRatio)
 
                             # Set the pixmap to the poster_label
                             self.poster_label.setPixmap(pixmap)
@@ -3146,15 +3191,13 @@ class ModernApp(QMainWindow):
                                 self.star_color = "yellow"
                                 self.change_star_color(self.star_color)
 
-                            else:
-                                # If not in the favorites list, change the color of the star icon to white or black depending on the theme
-                                if self.theme == "light":
-                                    self.star_color = "black"
-                                    self.change_star_color(self.star_color)
+                            elif self.theme == "light":
+                                self.star_color = "black"
+                                self.change_star_color(self.star_color)
 
-                                else:
-                                    self.star_color = "white"
-                                    self.change_star_color(self.star_color)
+                            else:
+                                self.star_color = "white"
+                                self.change_star_color(self.star_color)
 
                             self.star_icon_label = QLabel(self.poster_label)
                             self.star_icon_label.setPixmap(self.star_icon_pixmap)
@@ -3298,6 +3341,117 @@ class ModernApp(QMainWindow):
 
                         # Set the pixmap to the poster_label
                         self.poster_label.setPixmap(pixmap)
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        # Get the image dimensions
+                        width = image.width()
+                        height = image.height()
+
+                        # Create a dictionary to store the colors and their counts
+                        color_counts = {}
+
+                        # Iterate through the image and add the colors to the list
+                        # (Similar colors should be counted as one color)
+                        # (The more centered the pixel is, the more important it is)
+                        # (Use Gaussian distribution to calculate the importance of the pixel)
+                        # (Similarity threshold: 10)
+                        similarity_threshold = 10
+
+                        # Iterate through the image and add the colors to the dictionary
+                        for x in range(width):
+                            for y in range(height):
+                                # Get the color at the current pixel
+                                color = QColor(image.pixel(x, y))
+
+                                # Convert QColor to tuple of RGBA values
+                                color_tuple = (color.red(), color.green(), color.blue(), color.alpha())
+
+                                # Calculate the importance of the pixel using Gaussian distribution
+                                importance = math.exp(-(x - width / 2) ** 2 / (2 * similarity_threshold ** 2)) * \
+                                             math.exp(-(y - height / 2) ** 2 / (2 * similarity_threshold ** 2))
+
+                                # Add the color to the dictionary, considering its importance
+                                if color_tuple in color_counts:
+                                    color_counts[color_tuple] += importance
+                                else:
+                                    color_counts[color_tuple] = importance
+
+                        # Find the color with the highest count
+                        dominant_color_tuple = max(color_counts, key=color_counts.get)
+
+                        # Find the color with second highest count
+                        second_dominant_color_tuple = max(color_counts, key=lambda x: color_counts[
+                            x] if x != dominant_color_tuple else 0)
+
+                        # Convert the tuples back to a QColor object
+                        dominant_color = QColor(*dominant_color_tuple)
+                        second_dominant_color = QColor(*second_dominant_color_tuple)
+
+                        print("Dominant Color:", dominant_color.name())
+                        print("Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+                              dominant_color.blue())
+                        print("Second Dominant Color:", second_dominant_color.name())
+                        print("Second Dominant Color RGB:", second_dominant_color.red(), second_dominant_color.green(),
+                              second_dominant_color.blue())
+
+                        # Find the average color
+                        average_color_tuple = (0, 0, 0, 0)
+                        for color_tuple in color_counts:
+                            average_color_tuple = tuple(map(sum, zip(average_color_tuple, color_tuple)))
+                        average_color_tuple = tuple([int(color / len(color_counts)) for color in average_color_tuple])
+                        average_color = QColor(*average_color_tuple)
+                        print("Average Color:", average_color.name())
+                        print("Average Color RGB:", average_color.red(), average_color.green(), average_color.blue())
+
+                        # Check if we are in dark mode
+                        if self.theme == "dark":
+                            new_window_color = QColor(int(25 * 0.8 + average_color.red() * 0.2),
+                                                      int(25 * 0.8 + average_color.green() * 0.2),
+                                                      int(25 * 0.8 + average_color.blue() * 0.2))
+                            print("New Window Color:", new_window_color.name())
+                            dark_palette.setColor(QPalette.Window, new_window_color)
+
+                            # Check if the dominant color is too dark
+                            if dominant_color.lightness() < QColor(100, 100,
+                                                                   100).lightness() and second_dominant_color.lightness() > QColor(
+                                    100, 100, 100).lightness():
+                                # Use the second dominant color instead
+                                dominant_color = second_dominant_color
+
+                            elif dominant_color.lightness() < QColor(100, 100,
+                                                                     100).lightness() and second_dominant_color.lightness() < QColor(
+                                    100, 100, 100).lightness():
+                                # Lighten the dominant color
+                                dominant_color = dominant_color.lighter(150)
+
+                            dark_palette.setColor(QPalette.Link, dominant_color)
+                            self.dark_theme()
+
+                        elif self.theme == "light":
+                            new_window_color = QColor(int(255 * 0.8 + average_color.red() * 0.2),
+                                                      int(255 * 0.8 + average_color.green() * 0.2),
+                                                      int(255 * 0.8 + average_color.blue() * 0.2))
+                            print("New Window Color:", new_window_color.name())
+                            light_palette.setColor(QPalette.Window, new_window_color)
+
+                            # Check if the dominant color is too light
+                            if dominant_color.lightness() > QColor(200, 200,
+                                                                   200).lightness() and second_dominant_color.lightness() < QColor(
+                                    200, 200, 200).lightness():
+                                # Use the second dominant color instead
+                                dominant_color = second_dominant_color
+
+                            elif dominant_color.lightness() > QColor(200, 200,
+                                                                     200).lightness() and second_dominant_color.lightness() > QColor(
+                                    200, 200, 200).lightness():
+                                # Darken the dominant color
+                                dominant_color = dominant_color.darker(150)
+
+                            light_palette.setColor(QPalette.Link, dominant_color)
+                            self.light_theme()
 
                         # Create a star icon at the top left corner on the movie poster
                         star_icon = QIcon("star.svg")
@@ -3653,6 +3807,35 @@ class ModernApp(QMainWindow):
     # Change the theme to light
     def light_theme(self):
         app.setPalette(light_palette)
+
+        # Delete existing scroll area widgets
+        if hasattr(self, 'result_scroll_area'):
+            self.result_scroll_area.deleteLater()
+        if hasattr(self, 'description_scroll_area'):
+            self.description_scroll_area.deleteLater()
+
+        # Create scroll areas for the result label and description label
+        self.result_scroll_area = QtWidgets.QScrollArea()
+        self.result_scroll_area.setWidgetResizable(True)
+        self.result_scroll_area.setFixedHeight(450)
+        self.result_scroll_area.setWidget(self.result_label)
+
+        self.poster_layout.addWidget(self.result_scroll_area)
+
+        # Add the description label to a scroll area
+        self.description_scroll_area = QtWidgets.QScrollArea()
+        self.description_scroll_area.setWidgetResizable(True)
+        self.description_scroll_area.setFixedHeight(250)
+        self.description_scroll_area.setWidget(self.description_label)
+
+        self.main_layout.addWidget(self.description_scroll_area)
+
+        # Move container widget and find book button to the bottom
+        self.main_layout.removeWidget(self.container)
+        self.main_layout.removeWidget(self.find_movie_button)
+        self.main_layout.addWidget(self.container)
+        self.main_layout.addWidget(self.find_movie_button)
+
         self.theme = "light"
 
         if self.star_color != "yellow" or self.star_color == "white":
@@ -3662,7 +3845,36 @@ class ModernApp(QMainWindow):
     # Change the theme to dark
     def dark_theme(self):
         app.setPalette(dark_palette)
-        self.theme == "dark"
+
+        # Delete existing scroll area widgets
+        if hasattr(self, 'result_scroll_area'):
+            self.result_scroll_area.deleteLater()
+        if hasattr(self, 'description_scroll_area'):
+            self.description_scroll_area.deleteLater()
+
+        # Create scroll areas for the result label and description label
+        self.result_scroll_area = QtWidgets.QScrollArea()
+        self.result_scroll_area.setWidgetResizable(True)
+        self.result_scroll_area.setFixedHeight(450)
+        self.result_scroll_area.setWidget(self.result_label)
+
+        self.poster_layout.addWidget(self.result_scroll_area)
+
+        # Add the description label to a scroll area
+        self.description_scroll_area = QtWidgets.QScrollArea()
+        self.description_scroll_area.setWidgetResizable(True)
+        self.description_scroll_area.setFixedHeight(250)
+        self.description_scroll_area.setWidget(self.description_label)
+
+        self.main_layout.addWidget(self.description_scroll_area)
+
+        # Move container widget and find book button to the bottom
+        self.main_layout.removeWidget(self.container)
+        self.main_layout.removeWidget(self.find_movie_button)
+        self.main_layout.addWidget(self.container)
+        self.main_layout.addWidget(self.find_movie_button)
+
+        self.theme = "dark"
 
         if self.star_color != "yellow" or self.star_color == "black":
             self.star_color = "white"
