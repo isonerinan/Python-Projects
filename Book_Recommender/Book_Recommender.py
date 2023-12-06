@@ -546,6 +546,9 @@ class BookRecommendationApp(QMainWindow):
                 # Join the places into a string, separated by commas, and with <a> tags
                 places = ", ".join([f"<a href='{place_url}'>{place}</a> ({place_year})" for place, place_url, place_year in zip(place_names, place_urls, place_years)])
 
+                # If there is a "(null)", remove it
+                places = places.replace(" (null)", "")
+
                 # Print extracted values
                 print(f'Language: {book_language}')
                 print(f'ISBN: {isbn}')
