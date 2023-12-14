@@ -575,7 +575,7 @@ class StatisticsWindow(QDialog):
             return "N/A"    # Return "N/A" if there are no ratings
 
     def see_all_years(self, chronological_years, year_stats):
-        # Create a new QDialog to show all the directors
+        # Create a new QDialog to show all years
         dialog = QDialog()
         dialog.setWindowTitle("All Years")
 
@@ -611,18 +611,8 @@ class StatisticsWindow(QDialog):
 
             # Love formula graph
             love_formula_graph_button = QPushButton("Your Favorite Years Graph")
-            love_formula_graph_button.clicked.connect(lambda: self.show_love_formula_graph(chronological_years))
+            love_formula_graph_button.clicked.connect(lambda: self.show_years_graph(chronological_years))
             graph_buttons_layout.addWidget(love_formula_graph_button)
-
-            # Average rating graph
-            avg_rating_graph_button = QPushButton("Average Rating Per Year Graph")
-            avg_rating_graph_button.clicked.connect(lambda: self.show_avg_rating_graph(chronological_years))
-            graph_buttons_layout.addWidget(avg_rating_graph_button)
-
-            # Title count graph
-            title_count_graph_button = QPushButton("Title Count Per Year Graph")
-            title_count_graph_button.clicked.connect(lambda: self.show_title_count_graph(chronological_years))
-            graph_buttons_layout.addWidget(title_count_graph_button)
 
             layout.addLayout(graph_buttons_layout)
 
@@ -634,7 +624,7 @@ class StatisticsWindow(QDialog):
         # Connect the sorting function to the header labels
         dialog.exec_()
 
-    def show_love_formula_graph(self, chronological_years):
+    def show_years_graph(self, chronological_years):
         # Create a new QDialog to show all the directors
         dialog = QDialog()
         dialog.setWindowTitle("All Years")
@@ -650,11 +640,29 @@ class StatisticsWindow(QDialog):
         # If there are any years, show them in a graph
         if chronological_years:
             # Create a list of years and love formulas
+            title_counts = [year[1][1] for year in chronological_years]
+            avg_ratings = [year[1][0] for year in chronological_years]
             love_formulas = [year[1][2] for year in chronological_years]
 
             years = [year[0] for year in chronological_years]
 
-            # Create the figures and the axes
+            # Fill in the missing years
+            for year in range(min(years), max(years) + 1):
+                if year not in years:
+                    years.append(year)
+                    title_counts.append(0)
+                    avg_ratings.append(0)
+                    love_formulas.append(0)
+
+            # Sort newly added years and normalized values
+            years, title_counts, avg_ratings, love_formulas = zip(*sorted(zip(years, title_counts, avg_ratings, love_formulas)))
+
+            # Normalize title_counts, avg_ratings and love_formulas to be between 0 and 100 (for better visualization)
+            normalized_title_counts = [100 * (title_count / max(title_counts)) for title_count in title_counts]
+            normalized_avg_ratings = [100 * (avg_rating / max(avg_ratings)) for avg_rating in avg_ratings]
+            normalized_love_formulas = [100 * (love_formula / max(love_formulas)) for love_formula in love_formulas]
+
+            # Set up the figure and axes
             fig, ax = plt.subplots()
 
             # Set the title
@@ -662,24 +670,25 @@ class StatisticsWindow(QDialog):
 
             # Set the x and y labels
             ax.set_xlabel("Year")
-            ax.set_ylabel("Your Love")
+            ax.set_ylabel("Your Year Statistics")
+
+            # Find the maximum value of the normalized values
+            max_value = max(max(normalized_title_counts), max(normalized_avg_ratings), max(normalized_love_formulas))
 
             # Set the x and y ticks
             ax.set_xticks(years)
-            ax.set_yticks(np.arange(0, max(love_formulas) + 1, max(love_formulas) / 15))
+            ax.set_yticks(np.arange(0, 100, 5))
 
-            # Set the x and y limits
-            ax.set_xlim(min(years) - 1, max(years) + 1)
-            ax.set_ylim(0, max(love_formulas) + 1)
-
-            # Plot the bar chart
-            ax.bar(years, love_formulas, color="#FFC107")
+            # Plot average rating and love formula as side by side bar charts, title count as a line chart
+            ax.bar(years, normalized_avg_ratings, color="#4fbeff", width=0.4, align="edge")
+            ax.bar(years, normalized_love_formulas, color="#fcba03", width=-0.4, align="edge")
+            ax.plot(years, normalized_title_counts, color="#940000")
 
             # Rotate the x ticks
             plt.xticks(rotation=60)
 
-            # Add a legend
-            ax.legend(["Your Love"])
+            # Add legend
+            ax.legend(["Number of Rated Titles", "Average Rating for the Year", "Your Love for the Year"], loc="best")
 
             # Embed the plot in the dialog
             canvas = plt.gcf().canvas
@@ -705,202 +714,27 @@ class StatisticsWindow(QDialog):
                     if year in years:
                         year_index = years.index(year)
 
-                        # Get the love formula of the year
-                        love_formula = love_formulas[year_index]
-
-                        print(f"years[year_index]: {years[year_index]}\thovered: {year}\tlove_formula: {love_formula}")
-
-                    # If not, set the love formula to 0
-                    else:
-                        love_formula = 0
-
-                    graph_text_label.setText(f"Your love for {year}: {love_formula:.2f}")
-                    app.processEvents()
-
-            # Connect the hover function to the mouse move event
-            canvas.mpl_connect("motion_notify_event", hover)
-
-        else:
-            no_years_label = QLabel("You have no favorite years.")
-            layout.addWidget(no_years_label)
-
-        layout.addWidget(graph_text_label)
-        dialog.setLayout(layout)
-        # Connect the sorting function to the header labels
-        dialog.exec_()
-
-    def show_avg_rating_graph(self, chronological_years):
-        # Create a new QDialog to show all the directors
-        dialog = QDialog()
-        dialog.setWindowTitle("All Years")
-
-        # Set the window size to a reasonable size so that the table is visible
-        dialog.resize(1400, 800)
-
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        graph_text_label = QLabel("Hover over the bars to see the average rating of each year.")
-
-        # If there are any years, show them in a graph
-        if chronological_years:
-            # Create a list of years and average ratings
-            avg_ratings = [year[1][0] for year in chronological_years]
-
-            years = [year[0] for year in chronological_years]
-
-            # Create the figures and the axes
-            fig, ax = plt.subplots()
-
-            # Set the title
-            ax.set_title("Average Rating Per Year")
-
-            # Set the x and y labels
-            ax.set_xlabel("Year")
-            ax.set_ylabel("Average Rating")
-
-            # Set the x and y ticks
-            ax.set_xticks(years)
-            ax.set_yticks(np.arange(0, 11, 1))
-
-            # Set the x and y limits
-            ax.set_xlim(min(years) - 1, max(years) + 1)
-            ax.set_ylim(0, 11)
-
-            # Plot the bar chart
-            ax.bar(years, avg_ratings, color="#FFC107")
-
-            # Rotate the x ticks
-            plt.xticks(rotation=60)
-
-            # Add a legend
-            ax.legend(["Average Rating"])
-
-            # Embed the plot in the dialog
-            canvas = plt.gcf().canvas
-            canvas.draw()
-            plt.close(fig)
-            plt.show()
-            # Extend into the whole row
-            layout.addWidget(canvas)
-            # Stretch the canvas to the whole row and column
-            layout.setStretch(0, 1)
-
-            # Hover over the bars to see the average rating
-            def hover(event):
-                # If the mouse is over a bar
-                if event.xdata is not None and event.ydata is not None:
-                    # Get the position of the cursor
-                    cursor_pos = (event.x, event.y)
-
-                    # Get the index of the bar
-                    year = int(event.xdata)
-
-                    # Check if the hovered year is in the years list, if yes, get the index of the year in years
-                    if year in years:
-                        year_index = years.index(year)
+                        # Get the title count of the year
+                        title_count = title_counts[year_index]
 
                         # Get the average rating of the year
                         avg_rating = avg_ratings[year_index]
 
+                        # Get the love formula of the year
+                        love_formula = love_formulas[year_index]
+
+                        print(f"years[year_index]: {years[year_index]}\thovered: {year}\tlove_formula: {love_formula}")
                         print(f"years[year_index]: {years[year_index]}\thovered: {year}\tavg_rating: {avg_rating}")
-
-                    # If not, set the average rating to 0
-                    else:
-                        avg_rating = 0
-
-                    graph_text_label.setText(f"Average Rating in {year}: {avg_rating:.2f}")
-                    app.processEvents()
-
-            # Connect the hover function to the mouse move event
-            canvas.mpl_connect("motion_notify_event", hover)
-
-        else:
-            no_years_label = QLabel("You have no favorite years.")
-            layout.addWidget(no_years_label)
-
-        layout.addWidget(graph_text_label)
-        dialog.setLayout(layout)
-        # Connect the sorting function to the header labels
-        dialog.exec_()
-
-    def show_title_count_graph(self, chronological_years):
-        # Create a new QDialog to show all the directors
-        dialog = QDialog()
-        dialog.setWindowTitle("All Years")
-
-        # Set the window size to a reasonable size so that the table is visible
-        dialog.resize(1400, 800)
-
-        layout = QVBoxLayout()
-
-        graph_text_label = QLabel("Hover over the bars to see the number of titles rated in each year.")
-
-        # If there are any years, show them in a graph
-        if chronological_years:
-            # Create a list of years and title counts
-            title_counts = [year[1][1] for year in chronological_years]
-
-            years = [year[0] for year in chronological_years]
-
-            # Create the figures and the axes
-            fig, ax = plt.subplots()
-
-            # Set the title
-            ax.set_title("Title Count Per Year")
-
-            # Set the x and y labels
-            ax.set_xlabel("Year")
-            ax.set_ylabel("Title Count")
-
-            # Set the x and y ticks
-            ax.set_xticks(years)
-            ax.set_yticks(np.arange(0, max(title_counts) + 1, 1))
-
-            # Set the x and y limits
-            ax.set_xlim(min(years) - 1, max(years) + 1)
-            ax.set_ylim(0, max(title_counts) + 1)
-
-            # Plot the bar chart
-            ax.bar(years, title_counts, color="#FFC107")
-
-            # Rotate the x ticks
-            plt.xticks(rotation=60)
-
-            # Add a legend
-            ax.legend(["Title Count"])
-
-            # Embed the plot in the dialog
-            canvas = plt.gcf().canvas
-            canvas.draw()
-            plt.close(fig)
-            plt.show()
-
-            layout.addWidget(canvas)
-            # Stretch the canvas to the whole row and column
-            layout.setStretch(0, 1)
-
-            # Hover over the bars to see the title count
-            def hover(event):
-                # If the mouse is over a bar
-                if event.xdata is not None and event.ydata is not None:
-                    # Get the index of the bar
-                    year = int(event.xdata)
-
-                    # Check if the hovered year is in the years list, if yes, get the index of the year in years
-                    if year in years:
-                        year_index = years.index(year)
-
-                        # Get the title count of the year
-                        title_count = title_counts[year_index]
-
                         print(f"years[year_index]: {years[year_index]}\thovered: {year}\ttitle_count: {title_count}")
 
-                    # If not, set the title count to 0
+                    # If not, set the love formula, average rating and title count to 0
                     else:
+                        love_formula = 0
+                        avg_rating = 0
                         title_count = 0
 
-                    graph_text_label.setText(f"Title Count in {year}: {title_count}")
+
+                    graph_text_label.setText(f"<h3>{year}:</h3>\t<b>Your Love:</b> {love_formula:.2f}\t<b>Average Rating:</b> {avg_rating:.2f}\t<b>Rated Titles:</b> {title_count}")
                     app.processEvents()
 
             # Connect the hover function to the mouse move event
@@ -3173,6 +3007,7 @@ class ModernApp(QMainWindow):
                             pixmap = pixmap.scaled(350, 350, Qt.KeepAspectRatio)
 
                             # Set the pixmap to the poster_label
+                            self.poster_label.setScaledContents(True)
                             self.poster_label.setPixmap(pixmap)
 
                             # Create a star icon at the top left corner on the movie poster
@@ -3415,17 +3250,22 @@ class ModernApp(QMainWindow):
                             dark_palette.setColor(QPalette.Window, new_window_color)
 
                             # Check if the dominant color is too dark
-                            if dominant_color.lightness() < QColor(100, 100,
-                                                                   100).lightness() and second_dominant_color.lightness() > QColor(
-                                    100, 100, 100).lightness():
+                            if (dominant_color.lightness() < QColor(100, 100, 100).lightness() < second_dominant_color.lightness()):
                                 # Use the second dominant color instead
                                 dominant_color = second_dominant_color
 
-                            elif dominant_color.lightness() < QColor(100, 100,
-                                                                     100).lightness() and second_dominant_color.lightness() < QColor(
-                                    100, 100, 100).lightness():
+                            elif (dominant_color.lightness() < QColor(100, 100, 100).lightness()
+                                  and second_dominant_color.value() < QColor(100, 100, 100).lightness()):
                                 # Lighten the dominant color
-                                dominant_color = dominant_color.lighter(150)
+                                dominant_color = dominant_color.lighter(500)
+
+                            else:
+                                # Lighten the dominant color until it is light enough
+                                while dominant_color.lightness() < QColor(100, 100, 100).lightness():
+                                    dominant_color = dominant_color.lighter(150)
+
+                            print("New Dominant Color:", dominant_color.name())
+                            print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(), dominant_color.blue())
 
                             dark_palette.setColor(QPalette.Link, dominant_color)
                             self.dark_theme()
@@ -3438,17 +3278,22 @@ class ModernApp(QMainWindow):
                             light_palette.setColor(QPalette.Window, new_window_color)
 
                             # Check if the dominant color is too light
-                            if dominant_color.lightness() > QColor(200, 200,
-                                                                   200).lightness() and second_dominant_color.lightness() < QColor(
-                                    200, 200, 200).lightness():
+                            if (dominant_color.lightness() > QColor(200, 200, 200).lightness() > second_dominant_color.lightness()):
                                 # Use the second dominant color instead
                                 dominant_color = second_dominant_color
 
-                            elif dominant_color.lightness() > QColor(200, 200,
-                                                                     200).lightness() and second_dominant_color.lightness() > QColor(
-                                    200, 200, 200).lightness():
+                            elif (dominant_color.lightness() > QColor(200, 200, 200).lightness()
+                                  and second_dominant_color.lightness() > QColor(200, 200, 200).lightness()):
                                 # Darken the dominant color
-                                dominant_color = dominant_color.darker(150)
+                                dominant_color = dominant_color.darker(500)
+
+                            else:
+                                # Darken the dominant color until it is dark enough
+                                while dominant_color.lightness() > QColor(200, 200, 200).lightness():
+                                    dominant_color = dominant_color.darker(150)
+
+                            print(" New Dominant Color:", dominant_color.name())
+                            print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(), dominant_color.blue())
 
                             light_palette.setColor(QPalette.Link, dominant_color)
                             self.light_theme()
@@ -3932,7 +3777,7 @@ class ModernApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>Watchable: IMDB Recommender</h1>"
-                    "<h3>Version 3.8.1</h3>"
+                    "<h3>Version 4.0</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
