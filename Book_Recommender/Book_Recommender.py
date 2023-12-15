@@ -430,13 +430,24 @@ class BookRecommendationApp(QMainWindow):
                     dark_palette.setColor(QPalette.Window, new_window_color)
 
                     # Check if the dominant color is too dark
-                    if dominant_color.lightness() < QColor(100, 100, 100).lightness() and second_dominant_color.lightness() > QColor(100, 100, 100).lightness():
+                    if (dominant_color.lightness() < QColor(100, 100,
+                                                            100).lightness() < second_dominant_color.lightness()):
                         # Use the second dominant color instead
                         dominant_color = second_dominant_color
 
-                    elif dominant_color.lightness() < QColor(100, 100, 100).lightness() and second_dominant_color.lightness() < QColor(100, 100, 100).lightness():
+                    elif (dominant_color.lightness() < QColor(100, 100, 100).lightness()
+                          and second_dominant_color.value() < QColor(100, 100, 100).lightness()):
                         # Lighten the dominant color
-                        dominant_color = dominant_color.lighter(150)
+                        dominant_color = dominant_color.lighter(500)
+
+                    else:
+                        # Lighten the dominant color until it is light enough
+                        while dominant_color.lightness() < QColor(100, 100, 100).lightness():
+                            dominant_color = dominant_color.lighter(150)
+
+                    print("New Dominant Color:", dominant_color.name())
+                    print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+                          dominant_color.blue())
 
                     dark_palette.setColor(QPalette.Link, dominant_color)
                     self.dark_theme()
@@ -449,13 +460,24 @@ class BookRecommendationApp(QMainWindow):
                     light_palette.setColor(QPalette.Window, new_window_color)
 
                     # Check if the dominant color is too light
-                    if dominant_color.lightness() > QColor(200, 200, 200).lightness() and second_dominant_color.lightness() < QColor(200, 200, 200).lightness():
+                    if (dominant_color.lightness() > QColor(200, 200,
+                                                            200).lightness() > second_dominant_color.lightness()):
                         # Use the second dominant color instead
                         dominant_color = second_dominant_color
 
-                    elif dominant_color.lightness() > QColor(200, 200, 200).lightness() and second_dominant_color.lightness() > QColor(200, 200, 200).lightness():
+                    elif (dominant_color.lightness() > QColor(200, 200, 200).lightness()
+                          and second_dominant_color.lightness() > QColor(200, 200, 200).lightness()):
                         # Darken the dominant color
-                        dominant_color = dominant_color.darker(150)
+                        dominant_color = dominant_color.darker(500)
+
+                    else:
+                        # Darken the dominant color until it is dark enough
+                        while dominant_color.lightness() > QColor(200, 200, 200).lightness():
+                            dominant_color = dominant_color.darker(150)
+
+                    print(" New Dominant Color:", dominant_color.name())
+                    print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+                          dominant_color.blue())
 
                     light_palette.setColor(QPalette.Link, dominant_color)
                     self.light_theme()
