@@ -2605,6 +2605,9 @@ class ModernApp(QMainWindow):
         self.poster_label.setAlignment(Qt.AlignCenter)
         self.poster_label.setStyleSheet("padding: 10px;")
         self.poster_label.setMinimumWidth(300)
+        self.poster_label.setMinimumHeight(450)
+        self.poster_label.setMaximumWidth(500)
+        self.poster_label.setMaximumHeight(750)
         self.poster_layout.addWidget(self.poster_label)
 
         self.result_label = QLabel("Welcome to Watchable!<br>Your recommendation will appear here.")
@@ -3003,12 +3006,137 @@ class ModernApp(QMainWindow):
                             pixmap = QPixmap()
                             pixmap.loadFromData(requests.get(poster_url).content)
 
-                            # Scale the pixmap so it wouldn't be too big or too small
-                            pixmap = pixmap.scaled(350, 350, Qt.KeepAspectRatio)
-
                             # Set the pixmap to the poster_label
-                            self.poster_label.setScaledContents(True)
-                            self.poster_label.setPixmap(pixmap)
+                            self.poster_label.setPixmap(pixmap.scaled(self.poster_label.size(), Qt.KeepAspectRatio))
+                            self.poster_label.show()
+
+                            # Find the majority color of the poster image
+                            # Convert the pixmap to a QImage
+                            image = pixmap.toImage()
+
+                            # Get the image dimensions
+                            width = image.width()
+                            height = image.height()
+
+                            # Create a dictionary to store the colors and their counts
+                            color_counts = {}
+
+                            # Iterate through the image and add the colors to the list
+                            # (Similar colors should be counted as one color)
+                            # (The more centered the pixel is, the more important it is)
+                            # (Use Gaussian distribution to calculate the importance of the pixel)
+                            # (Similarity threshold: 10)
+                            similarity_threshold = 10
+
+                            # Iterate through the image and add the colors to the dictionary
+                            for x in range(width):
+                                for y in range(height):
+                                    # Get the color at the current pixel
+                                    color = QColor(image.pixel(x, y))
+
+                                    # Convert QColor to tuple of RGBA values
+                                    color_tuple = (color.red(), color.green(), color.blue(), color.alpha())
+
+                                    # Calculate the importance of the pixel using Gaussian distribution
+                                    importance = math.exp(-(x - width / 2) ** 2 / (2 * similarity_threshold ** 2)) * \
+                                                 math.exp(-(y - height / 2) ** 2 / (2 * similarity_threshold ** 2))
+
+                                    # Add the color to the dictionary, considering its importance
+                                    if color_tuple in color_counts:
+                                        color_counts[color_tuple] += importance
+                                    else:
+                                        color_counts[color_tuple] = importance
+
+                            # Find the color with the highest count
+                            dominant_color_tuple = max(color_counts, key=color_counts.get)
+
+                            # Find the color with second highest count
+                            second_dominant_color_tuple = max(color_counts, key=lambda x: color_counts[
+                                x] if x != dominant_color_tuple else 0)
+
+                            # Convert the tuples back to a QColor object
+                            dominant_color = QColor(*dominant_color_tuple)
+                            second_dominant_color = QColor(*second_dominant_color_tuple)
+
+                            print("Dominant Color:", dominant_color.name())
+                            print("Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+                                  dominant_color.blue())
+                            print("Second Dominant Color:", second_dominant_color.name())
+                            print("Second Dominant Color RGB:", second_dominant_color.red(),
+                                  second_dominant_color.green(),
+                                  second_dominant_color.blue())
+
+                            # Find the average color
+                            average_color_tuple = (0, 0, 0, 0)
+                            for color_tuple in color_counts:
+                                average_color_tuple = tuple(map(sum, zip(average_color_tuple, color_tuple)))
+                            average_color_tuple = tuple(
+                                [int(color / len(color_counts)) for color in average_color_tuple])
+                            average_color = QColor(*average_color_tuple)
+                            print("Average Color:", average_color.name())
+                            print("Average Color RGB:", average_color.red(), average_color.green(),
+                                  average_color.blue())
+
+                            # Check if we are in dark mode
+                            if self.theme == "dark":
+                                new_window_color = QColor(int(25 * 0.8 + average_color.red() * 0.2),
+                                                          int(25 * 0.8 + average_color.green() * 0.2),
+                                                          int(25 * 0.8 + average_color.blue() * 0.2))
+                                print("New Window Color:", new_window_color.name())
+                                dark_palette.setColor(QPalette.Window, new_window_color)
+
+                                # Check if the dominant color is too dark
+                                if (dominant_color.lightness() < QColor(100, 100,
+                                                                        100).lightness() < second_dominant_color.lightness()):
+                                    # Use the second dominant color instead
+                                    dominant_color = second_dominant_color
+
+                                elif (dominant_color.lightness() < QColor(100, 100, 100).lightness()
+                                      and second_dominant_color.value() < QColor(100, 100, 100).lightness()):
+                                    # Lighten the dominant color
+                                    dominant_color = dominant_color.lighter(500)
+
+                                else:
+                                    # Lighten the dominant color until it is light enough
+                                    while dominant_color.lightness() < QColor(100, 100, 100).lightness():
+                                        dominant_color = dominant_color.lighter(150)
+
+                                print("New Dominant Color:", dominant_color.name())
+                                print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+                                      dominant_color.blue())
+
+                                dark_palette.setColor(QPalette.Link, dominant_color)
+                                self.dark_theme()
+
+                            elif self.theme == "light":
+                                new_window_color = QColor(int(255 * 0.8 + average_color.red() * 0.2),
+                                                          int(255 * 0.8 + average_color.green() * 0.2),
+                                                          int(255 * 0.8 + average_color.blue() * 0.2))
+                                print("New Window Color:", new_window_color.name())
+                                light_palette.setColor(QPalette.Window, new_window_color)
+
+                                # Check if the dominant color is too light
+                                if (dominant_color.lightness() > QColor(200, 200,
+                                                                        200).lightness() > second_dominant_color.lightness()):
+                                    # Use the second dominant color instead
+                                    dominant_color = second_dominant_color
+
+                                elif (dominant_color.lightness() > QColor(200, 200, 200).lightness()
+                                      and second_dominant_color.lightness() > QColor(200, 200, 200).lightness()):
+                                    # Darken the dominant color
+                                    dominant_color = dominant_color.darker(500)
+
+                                else:
+                                    # Darken the dominant color until it is dark enough
+                                    while dominant_color.lightness() > QColor(200, 200, 200).lightness():
+                                        dominant_color = dominant_color.darker(150)
+
+                                print(" New Dominant Color:", dominant_color.name())
+                                print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+                                      dominant_color.blue())
+
+                                light_palette.setColor(QPalette.Link, dominant_color)
+                                self.light_theme()
 
                             # Create a star icon at the top left corner on the movie poster
                             star_icon = QIcon("star.svg")
@@ -3175,7 +3303,7 @@ class ModernApp(QMainWindow):
                         pixmap.loadFromData(requests.get(poster_url).content)
 
                         # Set the pixmap to the poster_label
-                        self.poster_label.setPixmap(pixmap)
+                        self.poster_label.setPixmap(pixmap.scaled(self.poster_label.size(), Qt.KeepAspectRatio))
 
                         # Find the majority color of the poster image
                         # Convert the pixmap to a QImage
