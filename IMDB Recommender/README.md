@@ -111,7 +111,7 @@ If you want to keep track of the shows you are currently watching, we've got you
 - Repeat this process whenever you would like to update your ratings history
 
 ### Getting Recommendation From Custom User Lists
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/ce4a477a-45e2-4a37-a863-52fd2ebf71cf)
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/1413cb87-75c7-4fa7-b815-6022df890fc5)
 
 If, for whatever reason, you decided to give a shot to someone else's taste in movies and found a user list (or maybe your friend shared their list with you?), you can just copy the link (example: https://www.imdb.com/list/ls521086952/) and paste it to the search bar at the bottom of the window and click the "Search" button.
 
