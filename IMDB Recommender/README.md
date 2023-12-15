@@ -17,6 +17,11 @@ The program can take a publicly available user link list as an input and randoml
 
 You can filter the minimum IMDB rating, maximum runtime and desired genre so that the recommendations will be more relevant.
 
+## Details on Recommendation
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/38604a7c-e7a2-4187-90ac-96b3b5ad2a56)
+
+By clicking "More About This Title" button after getting a recommendation, you can check the plot details, keywords, certificate ratings in different countries and parent guide, so that you can decide to watch it or not.
+
 ## Rating History Check
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/39b3b9d4-311c-4b19-8a45-22b6ff6f51df)
 
