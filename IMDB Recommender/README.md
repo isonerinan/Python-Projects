@@ -75,11 +75,11 @@ If you want to keep track of the shows you are currently watching, we've got you
 
 # HOW TO USE
 ## Downloads
-![image](https://github.com/isonerinan/Python-Projects/assets/38159563/3725a159-7791-4101-83a9-bfcec8e55ccd)
+![image](https://github.com/isonerinan/Python-Projects/assets/38159563/faa63971-96c4-4b87-b4bb-c4d346d37c57)
 
-- Download [IMDB_Recommender_v3.1.zip](https://github.com/isonerinan/Python-Projects/releases/download/v3.1/IMDB_Recommender_v3.1.zip) and extract wherever you like.
-- Download [star.svg](https://github.com/isonerinan/Python-Projects/blob/27cfd4181afd54c833545aa73f0aec42dcdd4c74/IMDB%20Recommender/star.svg)
-- Make sure they are in the same directory.
+- Go to [Releases](https://github.com/isonerinan/Python-Projects/releases) and download the version you desire by clicking the ZIP file (always the last version is recommended)
+- Unzip the contents wherever you like
+- Clicking the "IMDB_Recommender.exe" file should work without any problems
 
 ## Imports
 ![image](https://github.com/isonerinan/Python-Projects/assets/38159563/94601f23-37f9-4dab-ad4f-01eec4a624d7)
