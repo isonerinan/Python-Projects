@@ -688,7 +688,7 @@ class StatisticsWindow(QDialog):
             plt.xticks(rotation=60)
 
             # Add legend
-            ax.legend(["Number of Rated Titles", "Average Rating for the Year", "Your Love for the Year"], loc="best")
+            ax.legend(["Average Rating for the Year", "Your Love for the Year", "Number of Rated Titles"], loc="best")
 
             # Embed the plot in the dialog
             canvas = plt.gcf().canvas
