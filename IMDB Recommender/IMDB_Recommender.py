@@ -681,8 +681,8 @@ class StatisticsWindow(QDialog):
 
             # Plot average rating and love formula as side by side bar charts, title count as a line chart
             ax.bar(years, normalized_avg_ratings, color="#4fbeff", width=0.4, align="edge")
-            ax.plot(years, normalized_love_formulas, color="#fcba03")
-            ax.bar(years, normalized_title_counts, color="#940000", width=-0.4, align="edge")
+            ax.plot(years, normalized_love_formulas, color="#940000", linewidth=1.5)
+            ax.bar(years, normalized_title_counts, color="#fcba03", width=-0.4, align="edge")
 
             # Rotate the x ticks
             plt.xticks(rotation=60)
