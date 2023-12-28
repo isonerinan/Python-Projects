@@ -680,15 +680,15 @@ class StatisticsWindow(QDialog):
             ax.set_yticks(np.arange(0, 100, 5))
 
             # Plot average rating and love formula as side by side bar charts, title count as a line chart
-            ax.bar(years, normalized_avg_ratings, color="#4fbeff", width=0.4, align="edge")
-            ax.plot(years, normalized_love_formulas, color="#940000", linewidth=2.5)
-            ax.bar(years, normalized_title_counts, color="#fcba03", width=-0.4, align="edge")
+            ax.bar(years, normalized_avg_ratings, color="#4fbeff", width=0.4, align="edge", label="Average Rating For the Year")
+            ax.plot(years, normalized_love_formulas, color="#940000", linewidth=2.5, label="Your Love For the Year")
+            ax.bar(years, normalized_title_counts, color="#fcba03", width=-0.4, align="edge", label="Number of Rated Titles")
 
             # Rotate the x ticks
             plt.xticks(rotation=60)
 
             # Add legend
-            ax.legend(["Average Rating for the Year", "Your Love for the Year", "Number of Rated Titles"], loc="best")
+            ax.legend(loc="best")
 
             # Embed the plot in the dialog
             canvas = plt.gcf().canvas
