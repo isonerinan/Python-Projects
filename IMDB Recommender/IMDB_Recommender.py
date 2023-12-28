@@ -11,7 +11,7 @@ import random
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
-    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget, QScrollArea
+    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget, QScrollArea, QAbstractItemView
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor, QFont
 from PyQt5.QtSvg import QSvgRenderer
@@ -681,8 +681,8 @@ class StatisticsWindow(QDialog):
 
             # Plot average rating and love formula as side by side bar charts, title count as a line chart
             ax.bar(years, normalized_avg_ratings, color="#4fbeff", width=0.4, align="edge")
-            ax.bar(years, normalized_love_formulas, color="#fcba03", width=-0.4, align="edge")
-            ax.plot(years, normalized_title_counts, color="#940000")
+            ax.plot(years, normalized_love_formulas, color="#fcba03", width=-0.4, align="edge")
+            ax.bar(years, normalized_title_counts, color="#940000")
 
             # Rotate the x ticks
             plt.xticks(rotation=60)
@@ -1519,6 +1519,9 @@ class StatisticsWindow(QDialog):
 
         tv_series_data = {}
 
+        # Check the rewatch count of each TV series
+        rewatched_series = self.get_rewatch_counts()
+
         # Loop through the ratings_data list
         for item in ratings_data:
 
@@ -1532,13 +1535,17 @@ class StatisticsWindow(QDialog):
                         'Your Rating': 0,
                         'Average Episode Rating': 0.0,
                         'Love Formula': 0.0,
-                        'Episode Count': 0  # Initialize episode count
+                        'Episode Count': 0,  # Initialize episode count
+                        'Rewatch Count': 1  # Initialize rewatch count
                     }
 
                 # Update TV series rating
                 tv_series_data[series_name]['Your Rating'] = rating
                 tv_series_data[series_name]['Average Episode Rating'] += 0.0
                 tv_series_data[series_name]['Episode Count'] += 0
+
+                if series_name in rewatched_series:
+                    tv_series_data[series_name]['Rewatch Count'] = rewatched_series[series_name]
 
             # Check if the title type is "tvEpisode"
             elif item['Title Type'] == "tvEpisode":
@@ -1585,13 +1592,18 @@ class StatisticsWindow(QDialog):
                         'Your Rating': 0,
                         'Average Episode Rating': 0.0,
                         'Love Formula': 0.0,
-                        'Episode Count': 0  # Initialize episode count
+                        'Episode Count': 0,  # Initialize episode count
+                        'Rewatch Count': 1  # Initialize rewatch count
                     }
 
                 # Update episode rating
                 tv_series_data[series_name]['Your Rating'] += 0
                 tv_series_data[series_name]['Average Episode Rating'] += float(item['Your Rating'])
                 tv_series_data[series_name]['Episode Count'] += 1
+
+                if series_name in rewatched_series:
+                    tv_series_data[series_name]['Rewatch Count'] = rewatched_series[series_name]
+
 
         # Select a random TV series from the dictionary and show it
         random_series = random.choice(list(tv_series_data.keys()))
@@ -1651,17 +1663,27 @@ class StatisticsWindow(QDialog):
 
         # Calculate average episode ratings and love formulas
         for series_name, data in tv_series_data.items():
+            # If the TV series has at least one episode, calculate the average episode rating
             if data['Episode Count'] > 0:
                 data['Average Episode Rating'] /= data['Episode Count']
 
             if data['Episode Count'] != 0 and data['Your Rating'] != 0:
-                love_formula = (
+                if data['Episode Count'] > 1:
+                    love_formula = (
+                            # Geometric mean of user's rating for the series and average episode rating
+                            # Weighted by the number of episodes rated by the user
+                            math.sqrt((data['Average Episode Rating'] ** 5) *
+                                      (data['Your Rating'] ** 5)) *
+                            (data['Episode Count'] ** 1.3) / 1000
+                    )
+                else:
+                    love_formula = (
                         # Geometric mean of user's rating for the series and average episode rating
                         # Weighted by the number of episodes rated by the user
-                        math.sqrt((data['Average Episode Rating'] ** 5) *
-                                  (data['Your Rating'] ** 5)) *
-                        (data['Episode Count'] ** 1.3) / 1000
-                )
+                            math.sqrt((data['Average Episode Rating'] ** 5) *
+                                      (data['Your Rating'] ** 5)) *
+                            ((data['Episode Count'] + 0.5) ** 1.3) / 1000
+                    )
 
             elif data['Episode Count'] != 0 and data['Your Rating'] == 0:
                 love_formula = (
@@ -1674,6 +1696,9 @@ class StatisticsWindow(QDialog):
                         (data['Your Rating'] ** 5) / 1000
                 )
 
+            if data['Rewatch Count'] > 0:
+                love_formula *= math.sqrt(data['Rewatch Count'])
+
             data['Love Formula'] = love_formula
 
         # Sort the TV series by love formula in descending order
@@ -1684,7 +1709,7 @@ class StatisticsWindow(QDialog):
         )
 
         # Return the sorted data in the desired format
-        formatted_data = [(series_name, (data['Your Rating'], data['Average Episode Rating'], data['Episode Count'], data['Love Formula'])) for
+        formatted_data = [(series_name, (data['Your Rating'], data['Average Episode Rating'], data['Episode Count'], data['Rewatch Count'], data['Love Formula'])) for
                           series_name, data in sorted_series]
 
         return formatted_data if formatted_data else "N/A"
@@ -1701,10 +1726,13 @@ class StatisticsWindow(QDialog):
 
         # If there are too many TV series, show them in a table
         if favorite_tv_series:
-            table = SortableTable(len(favorite_tv_series), 5)
-            table.setHorizontalHeaderLabels(["TV Show", "Series Rating", "Average Episode Rating", "Episodes Rated By You", "Your Love For Them"])
-            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-            table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            self.table = SortableTable(len(favorite_tv_series), 6)
+            self.table.setHorizontalHeaderLabels(["TV Show", "Series Rating", "Average Episode Rating", "Episodes Rated By You", "Watch Count", "Your Love For Them"])
+            self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            self.table.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+            # Make the column "Rewatch Count" editable
+            self.table.setEditTriggers(QAbstractItemView.DoubleClicked)
 
             for row, (series, info) in enumerate(favorite_tv_series):
                 # Convert data to strings
@@ -1712,24 +1740,75 @@ class StatisticsWindow(QDialog):
                 series_rating_str = f"{int(info[0])}"
                 avg_rating_str = f"{info[1]:.2f}"
                 episode_count_str = str(info[2])
-                your_love_str = f"{info[3]:.4f}"
+                rewatch_count_str = str(info[3])
+                your_love_str = f"{info[4]:.4f}"
 
                 # Create QTableWidgetItem objects from the strings
-                table.setItem(row, 0, QTableWidgetItem(series_str))
-                table.setItem(row, 1, QTableWidgetItem(series_rating_str))
-                table.setItem(row, 2, QTableWidgetItem(avg_rating_str))
-                table.setItem(row, 3, QTableWidgetItem(episode_count_str))
-                table.setItem(row, 4, QTableWidgetItem(your_love_str))
+                self.table.setItem(row, 0, QTableWidgetItem(series_str))
+                self.table.setItem(row, 1, QTableWidgetItem(series_rating_str))
+                self.table.setItem(row, 2, QTableWidgetItem(avg_rating_str))
+                self.table.setItem(row, 3, QTableWidgetItem(episode_count_str))
+                self.table.setItem(row, 4, QTableWidgetItem(rewatch_count_str))
+                self.table.setItem(row, 5, QTableWidgetItem(your_love_str))
 
-            layout.addWidget(table)
+            layout.addWidget(self.table)
 
         else:
             no_tv_series_label = QLabel("You have no favorite TV shows.")
             layout.addWidget(no_tv_series_label)
 
+        # Add a button to save the rewatch counts
+        save_button = QPushButton("Save Changes")
+        save_button.clicked.connect(self.save_rewatch_counts)
+        layout.addWidget(save_button)
+
         dialog.setLayout(layout)
         # Connect the sorting function to the header labels
         dialog.exec_()
+
+    # Save the rewatch counts to rewatch.csv
+    def save_rewatch_counts(self):
+        # Create a list to store the rewatch counts
+        rewatch_counts = []
+
+        # Loop through the rows in the table
+        for row in range(self.table.rowCount()):
+            # Get the title and rewatch count
+            title = self.table.item(row, 0).text()
+            rewatch_count = self.table.item(row, 4).text()
+
+            # Add the title and rewatch count to the list
+            rewatch_counts.append((title, rewatch_count))
+
+        # Write the rewatch counts to rewatch.csv (separated by semicolon)
+        with open("rewatch.csv", "w") as file:
+            file.write("Title;Rewatch Count\n")
+            for title, rewatch_count in rewatch_counts:
+                file.write(f"{title};{rewatch_count}\n")
+
+    # Get the rewatch counts for each title from rewatch.csv
+    def get_rewatch_counts(self):
+        # Check if rewatch.csv exists
+        if os.path.exists("rewatch.csv"):
+            # Open rewatch.csv and add the titles to the list (items are separated by semicolon)
+            with open("rewatch.csv", "r") as file:
+                rewatch_data = list(csv.DictReader(file, delimiter=";"))
+
+            print(rewatch_data)
+
+            # Create a dictionary to store the rewatch counts
+            rewatch_counts = {}
+
+            # Loop through the rewatch_data list
+            for item in rewatch_data:
+                # Extract title and rewatch count
+                title = item['Title']
+                rewatch_counts[title] = int(item['Rewatch Count'])
+
+            return rewatch_counts
+        else:
+            return {}    # Return 0 for rewatch count when there are no rewatch counts
+
 
 class NowWatchingWindow(QDialog):
     def __init__(self, parent=None):
