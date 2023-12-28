@@ -383,7 +383,7 @@ class StatisticsWindow(QDialog):
 
         # Iterate through the favorite directors and add them to QLabel widgets
         for tv, info in favorite_tv_series[:5]:
-            tv_label = QLabel(f"<b>{tv}:</b> {info[0]}/10 ({info[1]:.2f}/10 average episode rating in {info[2]} episodes) with {info[3]:.2f} ❤️")
+            tv_label = QLabel(f"<b>{tv}:</b> {info[0]}/10 ({info[1]:.2f}/10 average episode rating in {info[2]} episodes) with {info[-1]:.2f} ❤️")
             tv_label.setAlignment(Qt.AlignCenter)
             tv_labels_layout.addWidget(tv_label)
 
@@ -681,8 +681,8 @@ class StatisticsWindow(QDialog):
 
             # Plot average rating and love formula as side by side bar charts, title count as a line chart
             ax.bar(years, normalized_avg_ratings, color="#4fbeff", width=0.4, align="edge")
-            ax.plot(years, normalized_love_formulas, color="#fcba03", width=-0.4, align="edge")
-            ax.bar(years, normalized_title_counts, color="#940000")
+            ax.plot(years, normalized_love_formulas, color="#fcba03")
+            ax.bar(years, normalized_title_counts, color="#940000", width=-0.4, align="edge")
 
             # Rotate the x ticks
             plt.xticks(rotation=60)
