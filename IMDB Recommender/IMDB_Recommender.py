@@ -3,7 +3,9 @@ import shutil
 import sys
 import os
 import webbrowser
+from datetime import datetime
 
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import csv
@@ -28,6 +30,131 @@ headers = {
 browser = mechanize.Browser()
 browser.set_handle_robots(False)
 browser.addheaders = [headers]
+
+def smooth_color_change(image):
+    # Get the image dimensions
+    width = image.width()
+    height = image.height()
+
+    # Create a dictionary to store the colors and their counts
+    color_counts = {}
+
+    # Iterate through the image and add the colors to the list
+    # (Similar colors should be counted as one color)
+    # (The more centered the pixel is, the more important it is)
+    # (Use Gaussian distribution to calculate the importance of the pixel)
+    # (Similarity threshold: 10)
+    similarity_threshold = 10
+
+    # Iterate through the image and add the colors to the dictionary
+    for x in range(width):
+        for y in range(height):
+            # Get the color at the current pixel
+            color = QColor(image.pixel(x, y))
+
+            # Convert QColor to tuple of RGBA values
+            color_tuple = (color.red(), color.green(), color.blue(), color.alpha())
+
+            # Calculate the importance of the pixel using Gaussian distribution
+            importance = math.exp(-(x - width / 2) ** 2 / (2 * similarity_threshold ** 2)) * \
+                         math.exp(-(y - height / 2) ** 2 / (2 * similarity_threshold ** 2))
+
+            # Add the color to the dictionary, considering its importance
+            if color_tuple in color_counts:
+                color_counts[color_tuple] += importance
+            else:
+                color_counts[color_tuple] = importance
+
+    # Find the color with the highest count
+    dominant_color_tuple = max(color_counts, key=color_counts.get)
+
+    # Find the color with second highest count
+    second_dominant_color_tuple = max(color_counts, key=lambda x: color_counts[
+        x] if x != dominant_color_tuple else 0)
+
+    # Convert the tuples back to a QColor object
+    dominant_color = QColor(*dominant_color_tuple)
+    second_dominant_color = QColor(*second_dominant_color_tuple)
+
+    print("Dominant Color:", dominant_color.name())
+    print("Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+          dominant_color.blue())
+    print("Second Dominant Color:", second_dominant_color.name())
+    print("Second Dominant Color RGB:", second_dominant_color.red(),
+          second_dominant_color.green(),
+          second_dominant_color.blue())
+
+    # Find the average color
+    average_color_tuple = (0, 0, 0, 0)
+    for color_tuple in color_counts:
+        average_color_tuple = tuple(map(sum, zip(average_color_tuple, color_tuple)))
+    average_color_tuple = tuple(
+        [int(color / len(color_counts)) for color in average_color_tuple])
+    average_color = QColor(*average_color_tuple)
+    print("Average Color:", average_color.name())
+    print("Average Color RGB:", average_color.red(), average_color.green(),
+          average_color.blue())
+
+    # Check if we are in dark mode
+    if window.theme == "dark":
+        new_window_color = QColor(int(25 * 0.8 + average_color.red() * 0.2),
+                                  int(25 * 0.8 + average_color.green() * 0.2),
+                                  int(25 * 0.8 + average_color.blue() * 0.2))
+        print("New Window Color:", new_window_color.name())
+        dark_palette.setColor(QPalette.Window, new_window_color)
+
+        # Check if the dominant color is too dark
+        if (dominant_color.lightness() < QColor(100, 100,
+                                                100).lightness() < second_dominant_color.lightness()):
+            # Use the second dominant color instead
+            dominant_color = second_dominant_color
+
+        elif (dominant_color.lightness() < QColor(100, 100, 100).lightness()
+              and second_dominant_color.value() < QColor(100, 100, 100).lightness()):
+            # Lighten the dominant color
+            dominant_color = dominant_color.lighter(500)
+
+        else:
+            # Lighten the dominant color until it is light enough
+            while dominant_color.lightness() < QColor(100, 100, 100).lightness():
+                dominant_color = dominant_color.lighter(150)
+
+        print("New Dominant Color:", dominant_color.name())
+        print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+              dominant_color.blue())
+
+        dark_palette.setColor(QPalette.Link, dominant_color)
+        window.dark_theme()
+
+    elif window.theme == "light":
+        new_window_color = QColor(int(255 * 0.8 + average_color.red() * 0.2),
+                                  int(255 * 0.8 + average_color.green() * 0.2),
+                                  int(255 * 0.8 + average_color.blue() * 0.2))
+        print("New Window Color:", new_window_color.name())
+        light_palette.setColor(QPalette.Window, new_window_color)
+
+        # Check if the dominant color is too light
+        if (dominant_color.lightness() > QColor(200, 200,
+                                                200).lightness() > second_dominant_color.lightness()):
+            # Use the second dominant color instead
+            dominant_color = second_dominant_color
+
+        elif (dominant_color.lightness() > QColor(200, 200, 200).lightness()
+              and second_dominant_color.lightness() > QColor(200, 200, 200).lightness()):
+            # Darken the dominant color
+            dominant_color = dominant_color.darker(500)
+
+        else:
+            # Darken the dominant color until it is dark enough
+            while dominant_color.lightness() > QColor(200, 200, 200).lightness():
+                dominant_color = dominant_color.darker(150)
+
+        print(" New Dominant Color:", dominant_color.name())
+        print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
+              dominant_color.blue())
+
+        light_palette.setColor(QPalette.Link, dominant_color)
+        window.light_theme()
 
 # Custom QDialog class for the Preferences dialog
 class PreferencesDialog(QDialog):
@@ -2455,6 +2582,631 @@ class SortableTable(QTableWidget):
 
         self.sorting_order = Qt.AscendingOrder if self.sorting_order == Qt.DescendingOrder else Qt.DescendingOrder
 
+class YearReviewWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Year Review")
+        self.resize(800, 500)
+
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
+
+        # Create a top-level layout for the main content
+        self.content_layout = QVBoxLayout()
+        self.main_layout.addLayout(self.content_layout)
+
+        # Detect the user's active years from ratings.csv
+        self.active_years = self.detect_active_years()
+
+        # Create a layout for combo box and show button
+        combo_button_layout = QHBoxLayout()
+        self.content_layout.addLayout(combo_button_layout)
+
+        # Create a "Year" combo box and add the active years to it
+        self.year_combo = QComboBox()
+        self.year_combo.addItems(self.active_years)
+
+        # Center every item in the combo box
+        self.year_combo.setEditable(True)
+        self.year_combo.lineEdit().setAlignment(Qt.AlignCenter)
+
+        # Make the combo box searchable
+        self.year_combo.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        self.year_combo.completer().setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+
+        combo_button_layout.addWidget(self.year_combo)
+
+        # Create a "Show" button
+        self.review_button = QPushButton("Review My Year")
+        self.review_button.clicked.connect(self.review)
+        combo_button_layout.addWidget(self.review_button)
+
+        # Create a header label
+        self.header_label = QLabel("Welcome to your year review!\n"
+                                 "Let's see what you watched, and how much you loved them.")
+        self.header_label.setAlignment(Qt.AlignCenter)
+        self.header_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        self.content_layout.addWidget(self.header_label)
+
+        # Create a horizontal layout for the image and the details
+        self.year_details_layout = QHBoxLayout()
+        self.content_layout.addLayout(self.year_details_layout)
+
+        # Create a label to show the image
+        self.image_label = QLabel()
+        self.image_label.setAlignment(Qt.AlignCenter)
+        self.year_details_layout.addWidget(self.image_label)
+
+        self.description_label = QLabel()
+        self.description_label.setAlignment(Qt.AlignCenter)
+        self.description_label.setStyleSheet("font-size: 20px;")
+        self.year_details_layout.addWidget(self.description_label)
+        # Enable rich text for the description label so that we can change the font size, boldness, etc.
+        self.description_label.setOpenExternalLinks(True)
+
+        # Hide the image and the description label
+        self.image_label.hide()
+        self.description_label.hide()
+
+        # Create a layout for previous and next buttons
+        previous_next_layout = QHBoxLayout()
+        self.content_layout.addLayout(previous_next_layout)
+
+        # Create a "Previous" button
+        self.previous_button = QPushButton("Previous")
+        self.previous_button.clicked.connect(self.previous)
+        previous_next_layout.addWidget(self.previous_button)
+
+        # Make the "Previous" button disabled by default
+        self.previous_button.setEnabled(False)
+
+        # Create a "Next" button
+        self.next_button = QPushButton("How many titles did you watch? >")
+        self.next_button.clicked.connect(self.next)
+        previous_next_layout.addWidget(self.next_button)
+
+        # Hide the previous and next buttons
+        self.previous_button.hide()
+        self.next_button.hide()
+        self.page = 0
+
+
+
+    # Class Functions
+    def detect_active_years(self):
+        # Open ratings.csv and add the years to the list (items are separated by semicolon)
+        with open("ratings.csv", "r") as file:
+            ratings_data = list(csv.DictReader(file, delimiter=","))
+
+        # Create a list to store the years
+        years = []
+
+        # Using pandas, infer the date type of the "Date Rated" column
+        ratings_data = pd.DataFrame(ratings_data)
+        ratings_data['Date Rated'] = pd.to_datetime(ratings_data['Date Rated'])
+
+        # Detect the years from the "Date Rated" column
+        ratings_data['Date Rated'] = ratings_data['Date Rated'].dt.strftime('%Y')
+
+        # Convert the "Date Rated" column to a list
+        years = ratings_data['Date Rated'].tolist()
+
+        # Remove duplicates from the list
+        years = list(set(years))
+
+        # Sort the list in descending order
+        years.sort(reverse=True)
+
+        return years
+
+    def review(self):
+        # Show the next button
+        self.next_button.show()
+
+        # Get the selected year
+        self.year = int(self.year_combo.currentText())
+
+        print(self.year)
+
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv('ratings.csv')
+
+        print("df")
+        print(df)
+
+        # Filter the data so that only the selected year remains in the Date Rated column
+        self.filtered_data = df[df['Date Rated'].str.contains(f'{self.year}')]
+
+        # Convert the 'Date Rated' column to datetime for easy comparison
+        self.filtered_data['Date Rated'] = pd.to_datetime(self.filtered_data['Date Rated'], format='%Y-%m-%d')
+
+        # Filter the data for the first three months of the year (January, February, March)
+        self.first_three_months_data = self.filtered_data[(self.filtered_data['Date Rated'] >= pd.to_datetime(f'{self.year}-01-01', format='%Y-%m-%d'))
+                                                & (self.filtered_data['Date Rated'] <= pd.to_datetime(f'{self.year}-03-31', format='%Y-%m-%d'))]
+
+        # Filter the data for the last three months of the year (October, November, December)
+        self.last_three_months_data = self.filtered_data[(self.filtered_data['Date Rated'] >= pd.to_datetime(f'{self.year}-10-01', format='%Y-%m-%d'))
+                                               & (self.filtered_data['Date Rated'] <= pd.to_datetime(f'{self.year}-12-31', format='%Y-%m-%d'))]
+
+        # Check if there are any titles in the last three months
+        if not self.last_three_months_data.empty:
+            # Display the title of one random selection
+            selected_title = self.last_three_months_data.sample()['Title'].values[0]
+            print(f"You ended the year with some good choices, such as: {selected_title}")
+        else:
+            print(f"No titles found in the last three months of {self.year}.")
+
+        #####################################
+
+        # Get the number of titles watched in each month
+        self.titles_watched_in_each_month = self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Title'].count().to_dict()
+
+        # Sort the dictionary by the keys (January, February, March, etc.)
+        self.titles_watched_in_each_month = dict(sorted(self.titles_watched_in_each_month.items(), key=lambda x: datetime.strptime(x[0], "%B")))
+
+        #####################################
+
+        # Get the average rating for the year
+        self.average_rating = self.filtered_data['Your Rating'].mean()
+
+        # Get the genres and their counts, and store them in a dictionary
+        self.genres = {}
+        for index, row in self.filtered_data.iterrows():
+            # Get the genres
+            genres = row['Genres'].split(", ")
+
+            # Get the rating
+            rating = row['Your Rating']
+
+            # Loop through the genres
+            for genre in genres:
+                # Check if the genre is already in the dictionary
+                if genre in self.genres:
+                    # Increment the count by 1
+                    self.genres[genre][0] += 1
+
+                    # Add the rating to the list of ratings
+                    self.genres[genre][1].append(rating)
+
+                else:
+                    # Add the genre to the dictionary
+                    self.genres[genre] = [1, [rating]]
+
+        # Loop through the dictionary and get the average rating for each genre
+        for key, value in self.genres.items():
+            # Calculate the average rating
+            self.genres[key][1] = sum(value[1]) / len(value[1])
+
+        # Calculate the love formula for each genre (count^1.3 * average rating^5)
+        for key, value in self.genres.items():
+            self.genres[key] = (value[0], value[1], value[0] ** 1.3 * value[1] ** 5)
+
+        # Sort the dictionary by the love formula
+        self.genres = dict(sorted(self.genres.items(), key=lambda x: x[1], reverse=True))
+
+        #####################################
+
+        # Get the title types and counts, and store them in a dictionary
+        title_types = self.filtered_data['Title Type'].value_counts().to_dict()
+
+        # Create a list of strings for title types and their counts
+        self.title_types_list = [f"<b>{key}:</b> {value}" for key, value in title_types.items()]
+
+        #####################################
+
+        # Get the total runtime for the year
+        self.total_runtime = self.filtered_data['Runtime (mins)'].sum()
+
+        # Get the month with the highest runtime
+        self.month_with_highest_runtime = self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Runtime (mins)'].sum().idxmax()
+
+        # Get the month with the lowest runtime
+        self.month_with_lowest_runtime = self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Runtime (mins)'].sum().idxmin()
+
+        # Get the month with the most titles watched
+        self.month_with_most_titles = self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Title'].count().idxmax()
+
+        # Get the month with the least titles watched
+        self.month_with_least_titles = self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Title'].count().idxmin()
+
+        # Get the month with the highest and lowest average rating
+        self.month_with_highest_average_rating = self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Your Rating'].mean().idxmax()
+        self.month_with_lowest_average_rating = self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Your Rating'].mean().idxmin()
+
+        #####################################
+
+        # Update the page
+        self.page = 1
+        self.update_page()
+
+
+    def previous(self):
+        if self.page == 0:
+            self.previous_button.setEnabled(False)
+            return
+
+        self.page -= 1
+        self.update_page()
+
+    def next(self):
+        self.page += 1
+        self.update_page()
+
+    def update_page(self):
+        match(self.page):
+            case 0: # Welcome page
+                self.previous_button.setEnabled(False)
+                self.previous_button.hide()
+                self.description_label.hide()
+                self.header_label.setText("Welcome to your year review!\n"
+                                          "Let's see what you watched, and how much you loved them.")
+                self.previous_button.setText("-")
+                self.next_button.setText("How many titles did you watch? >")
+
+            case 1: # Titles watched in each genre
+                self.next_button.show()
+                self.description_label.show()
+                self.previous_button.setEnabled(True)
+                self.previous_button.show()
+                self.header_label.setText(f"<h1>\"{len(self.filtered_data)}\"</h1>")
+                self.previous_button.setText("< To the beginning")
+                self.next_button.setText("Your activity throughout the year >")
+
+                # Add the title types and their counts to the description label
+                self.description_label.setText(f"You watched a total of <b>{len(self.filtered_data)}</b> titles in {self.year}:<br><br>"
+                                               + "<br>".join(self.title_types_list))
+
+
+                # Delete the plot widget if it exists
+                try:
+                    self.plot_widget.deleteLater()
+                    self.plot_widget_layout.deleteLater()
+                except:
+                    pass
+
+            case 2: # Titles watched in each month
+                self.header_label.setText("Quite the busy year, huh?")
+                self.previous_button.setText("< How many titles did you watch?")
+                self.next_button.setText("Where did all the time go? >")
+                self.description_label.hide()
+                self.image_label.hide()
+
+                # Graph the number of titles watched in each month and show it in the description label
+                # Set up the figure and axes
+                fig, ax = plt.subplots()
+
+                # Set the title
+                ax.set_title("Number of Titles Watched in Each Month")
+
+                # Set the x and y labels
+                ax.set_xlabel("Month")
+                ax.set_ylabel("Number of Titles")
+
+                # Plot the data
+                ax.bar(self.titles_watched_in_each_month.keys(), self.titles_watched_in_each_month.values())
+
+                # Rotate the x ticks
+                plt.xticks(rotation=60)
+
+                # Embed the plot in the dialog
+                self.canvas = plt.gcf().canvas
+                self.canvas.draw()
+                plt.close(fig)
+                plt.show()
+
+                # Create a widget to contain the plot and add it to the layout
+                self.plot_widget = QWidget()
+                self.plot_widget_layout = QVBoxLayout()
+                self.plot_widget_layout.addWidget(self.canvas)
+                self.plot_widget.setLayout(self.plot_widget_layout)
+
+                self.year_details_layout.addWidget(self.plot_widget)
+                # Stretch the plot widget to fill the entire row and column
+                self.year_details_layout.setStretch(0, 1)
+                self.year_details_layout.setStretch(1, 1)
+
+                # Set the header label maximum height to 100
+                self.header_label.setMaximumHeight(100)
+
+            case 3: # Busiest month, least busy month
+                self.header_label.setText(f"<h1>\"{int(self.total_runtime)}\"</h1>")
+                self.previous_button.setText("< Your activity throughout the year")
+                self.next_button.setText("When did you have your BEST and WORST times? >")
+                self.description_label.show()
+
+                # Delete the plot widget if it exists
+                try:
+                    self.plot_widget.deleteLater()
+                    self.plot_widget_layout.deleteLater()
+                except:
+                    pass
+
+                self.description_label.setText(f"You spent a total of <b>{int(self.total_runtime)}</b> minutes watching titles in {self.year}.<br><br>"
+                                               f"Your busiest month was <b>{self.month_with_highest_runtime}</b>, where you spent <b>{int(self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Runtime (mins)'].sum().max())}</b> minutes watching titles.<br><br>"
+                                               f"Your least busy month was <b>{self.month_with_lowest_runtime}</b>, where you spent <b>{int(self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Runtime (mins)'].sum().min())}</b> minutes watching titles.<br><br>"
+                                               f"Your favorite month was <b>{self.month_with_most_titles}</b>, where you watched <b>{int(self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Title'].count().max())}</b> titles.<br><br>"
+                                               f"Your least favorite month was <b>{self.month_with_least_titles}</b>, where you watched <b>{int(self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Title'].count().min())}</b> titles.<br><br>")
+
+            case 4: # Favorite and least favorite month
+                self.header_label.setText(f"<h1>You had your ups and downs.</h1>")
+                self.previous_button.setText("< Where did all the time go?")
+                self.next_button.setText("How did you start the year? >")
+                self.description_label.show()
+
+                # Choose a random title from the favorite month
+                favorite_month_titles = self.filtered_data[self.filtered_data['Date Rated'].dt.strftime('%B') == self.month_with_highest_average_rating]['Title'].tolist()
+                favorite_month_title = random.choice(favorite_month_titles)
+
+                # Get the URL of the selected title
+                favorite_month_title_url = self.filtered_data[self.filtered_data['Title'] == favorite_month_title]['URL'].values[0]
+
+                # Get the rating of the selected title
+                favorite_month_title_rating = self.filtered_data[self.filtered_data['Title'] == favorite_month_title]['Your Rating'].values[0]
+
+                # Get the poster URL of the selected title
+                soup = BeautifulSoup(browser.open(favorite_month_title_url).read(), 'html.parser')
+
+                # Get the movie poster URL from the IMDb page
+                poster_image = soup.find('img', class_='ipc-image')
+
+                if poster_image:
+                    poster_url = poster_image['src']
+                    print(poster_url)
+
+                    # Get the biggest poster image by changing the url
+                    # For example:
+                    # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                    # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                    # Remove everything except ".jpg" after "@@"
+                    if "@@" in poster_url:
+                        poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                    else:
+                        poster_url = poster_url.split("_")[0] + "jpg"
+
+                    # Create a pixmap from the poster image URL
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(requests.get(poster_url).content)
+
+                    # Set the pixmap to the poster_label
+                    self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                    self.image_label.show()
+
+                    # Find the majority color of the poster image
+                    # Convert the pixmap to a QImage
+                    image = pixmap.toImage()
+
+                    smooth_color_change(image)
+
+
+                self.description_label.setText(f"Your average rating for {self.year} was <b>{self.average_rating:.2f}</b>/10.<br><br>"
+                                               f"You definitely loved <b>{self.month_with_highest_average_rating}</b>, which got an average rating of <b>{self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Your Rating'].mean().max():.2f}</b>/10 from you.<br>"
+                                               f"Your least enjoyable period probably was <b>{self.month_with_lowest_average_rating}</b>, where your average rating was <b>{self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Your Rating'].mean().min():.2f}</b>/10<br><br>"
+                                               f"You watched <b>{favorite_month_title}</b> in {self.month_with_highest_average_rating}, and you rated it <b>{favorite_month_title_rating}</b>/10. Maybe you should watch it again?")
+
+
+            case 5: # Start of the year
+                self.header_label.setText("<h1>A lot can happen in three months.</h1>")
+                self.previous_button.setText("< When did you have your BEST and WORST times?")
+                self.next_button.setText("How did you end the year? >")
+                self.description_label.show()
+
+                # Check if there are any titles in the first three months
+                if not self.first_three_months_data.empty:
+                    # Display the title and url of one random selection
+                    selected_title = self.first_three_months_data.sample()['Title'].values[0]
+
+                    # Get the URL of the selected title
+                    selected_title_url = \
+                    self.first_three_months_data[self.first_three_months_data['Title'] == selected_title][
+                        'URL'].values[0]
+
+                    # Get the rating of the selected title
+                    selected_title_rating = \
+                    self.first_three_months_data[self.first_three_months_data['Title'] == selected_title][
+                        'Your Rating'].values[0]
+
+                    # Get the poster URL of the selected title
+                    soup = BeautifulSoup(browser.open(selected_title_url).read(), 'html.parser')
+
+                    # Get the movie poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                        self.description_label.setText(f"Do you remember watching <b>{selected_title}</b> at the start of {self.year}?<br>"
+                                                       f"You rated it <b>{selected_title_rating}</b>/10.<br><br>"
+                                                       f"Along with that, you watched <b>{len(self.first_three_months_data)} titles</b> in the first three months of {self.year}.")
+
+                else:
+                    self.description_label.setText("No titles found in the first three months of the year.")
+                    self.image_label.hide()
+
+
+            case 6: # End of the year
+                self.header_label.setText("<h1>Cheers to the year that was.</h1>")
+                self.previous_button.setText("< How did you start the year?")
+                self.next_button.setText("What were your favorite genres? >")
+                self.description_label.show()
+
+                # Check if there are any titles in the last three months
+                if not self.last_three_months_data.empty:
+                    # Display the title and url of one random selection
+                    selected_title = self.last_three_months_data.sample()['Title'].values[0]
+
+                    # Get the URL of the selected title
+                    selected_title_url = \
+                    self.last_three_months_data[self.last_three_months_data['Title'] == selected_title][
+                        'URL'].values[0]
+
+                    # Get the rating of the selected title
+                    selected_title_rating = \
+                    self.last_three_months_data[self.last_three_months_data['Title'] == selected_title][
+                        'Your Rating'].values[0]
+
+                    # Get the poster URL of the selected title
+                    soup = BeautifulSoup(browser.open(selected_title_url).read(), 'html.parser')
+
+                    # Get the movie poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                        self.description_label.setText(f"Do you remember watching <b>{selected_title}</b> at the end of {self.year}?<br>"
+                                                       f"You rated it <b>{selected_title_rating}</b>/10.<br><br>"
+                                                       f"Along with that, you watched <b>{len(self.last_three_months_data)} titles</b> in the last three months of {self.year}.")
+
+                else:
+                    self.description_label.setText("No titles found in the last three months of the year.")
+                    self.image_label.hide()
+
+            case 7: # Favorite genres
+                self.header_label.setText(f"<h1>The best genres of {self.year}, according to you.</h1>")
+                self.previous_button.setText("< How did you end the year?")
+                self.next_button.setText("What were your favorite TV shows? >")
+
+                print(self.genres)
+
+                # Get the favorite genre and filter the data
+                favorite_genre = list(self.genres.keys())[0]
+
+                print(favorite_genre)
+
+                self.filtered_data = self.filtered_data[self.filtered_data['Genres'].str.contains(favorite_genre)]
+
+                print(self.filtered_data)
+
+                # Choose a random title from the favorite genre
+                favorite_genre_titles = self.filtered_data[self.filtered_data['Genres'].str.contains(favorite_genre)]['Title'].tolist()
+                favorite_genre_title = random.choice(favorite_genre_titles)
+
+                print(favorite_genre_title)
+
+                # Get the URL of the selected title
+                favorite_genre_title_url = self.filtered_data[self.filtered_data['Title'] == favorite_genre_title]['URL'].values[0]
+
+                print(favorite_genre_title_url)
+
+                # Get the rating of the selected title
+                favorite_genre_title_rating = self.filtered_data[self.filtered_data['Title'] == favorite_genre_title]['Your Rating'].values[0]
+
+                print(favorite_genre_title_rating)
+
+                # Get the poster URL of the selected title
+                soup = BeautifulSoup(browser.open(favorite_genre_title_url).read(), 'html.parser')
+
+                # Get the movie poster URL from the IMDb page
+                poster_image = soup.find('img', class_='ipc-image')
+
+                if poster_image:
+                    poster_url = poster_image['src']
+                    print(poster_url)
+
+                    # Get the biggest poster image by changing the url
+                    # For example:
+                    # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                    # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                    # Remove everything except ".jpg" after "@@"
+                    if "@@" in poster_url:
+                        poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                    else:
+                        poster_url = poster_url.split("_")[0] + "jpg"
+
+                    # Create a pixmap from the poster image URL
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(requests.get(poster_url).content)
+
+                    # Set the pixmap to the poster_label
+                    self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                    self.image_label.show()
+
+                    # Find the majority color of the poster image
+                    # Convert the pixmap to a QImage
+                    image = pixmap.toImage()
+
+                    smooth_color_change(image)
+
+                self.description_label.setText(f"Your favorite genre was <b>{favorite_genre}</b>, and you watched <b>{len(self.filtered_data)}</b> titles in that genre.<br>"
+                                               f"<b>{favorite_genre_title}</b> was one of them, and you rated it <b>{favorite_genre_title_rating}</b>/10.<br><br>")
+
+                # Add the genres, their counts, and their average ratings and the love formula to the description label (only the top 5)
+                self.description_label.setText(self.description_label.text() + f"<br><br><b>Your Top 5 Genres for {self.year}:</b><br>"
+                                               + "<br>".join([f"<b>{key}:</b> {value[0]} titles, {value[1]:.2f}/10 average rating, {value[2]:.2f} love formula" for key, value in list(self.genres.items())[:5]]))
+
+                self.description_label.show()
+
+
+
+            case 8: # Favorite TV shows
+                self.header_label.setText("page5")
+                self.previous_button.setText("< What were your favorite genres?")
+                self.next_button.setText("Who was your favorite director? >")
+
+            case 9: # Favorite director
+                self.header_label.setText("page6")
+                self.previous_button.setText("< What were your favorite TV shows?")
+                self.next_button.setText("Who was your favorite actor? >")
+
+            case 10: # Favorite actor
+                self.header_label.setText("page7")
+                self.previous_button.setText("< Who was your favorite director?")
+
+
 
 class ModernApp(QMainWindow):
     def __init__(self):
@@ -2512,8 +3264,12 @@ class ModernApp(QMainWindow):
         now_watching_action = QAction("Now Watching", self)
         now_watching_action.triggered.connect(self.now_watching)
 
+        year_review_action = QAction("Year Review", self)
+        year_review_action.triggered.connect(self.year_review)
+
         menu_bar.addAction(statistics_action)
         menu_bar.addAction(now_watching_action)
+        menu_bar.addAction(year_review_action)
         menu_bar.addAction(help_action)
         menu_bar.addAction(about_action)
 
@@ -3073,13 +3829,18 @@ class ModernApp(QMainWindow):
 
                         if poster_image:
                             poster_url = poster_image['src']
+                            print(poster_url)
 
                             # Get the biggest poster image by changing the url
                             # For example:
                             # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
                             # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
                             # Remove everything except ".jpg" after "@@"
-                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+                            if "@@" in poster_url:
+                                poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                            else:
+                                poster_url = poster_url.split("_")[0] + "jpg"
 
                             # Create a pixmap from the poster image URL
                             pixmap = QPixmap()
@@ -3093,129 +3854,7 @@ class ModernApp(QMainWindow):
                             # Convert the pixmap to a QImage
                             image = pixmap.toImage()
 
-                            # Get the image dimensions
-                            width = image.width()
-                            height = image.height()
-
-                            # Create a dictionary to store the colors and their counts
-                            color_counts = {}
-
-                            # Iterate through the image and add the colors to the list
-                            # (Similar colors should be counted as one color)
-                            # (The more centered the pixel is, the more important it is)
-                            # (Use Gaussian distribution to calculate the importance of the pixel)
-                            # (Similarity threshold: 10)
-                            similarity_threshold = 10
-
-                            # Iterate through the image and add the colors to the dictionary
-                            for x in range(width):
-                                for y in range(height):
-                                    # Get the color at the current pixel
-                                    color = QColor(image.pixel(x, y))
-
-                                    # Convert QColor to tuple of RGBA values
-                                    color_tuple = (color.red(), color.green(), color.blue(), color.alpha())
-
-                                    # Calculate the importance of the pixel using Gaussian distribution
-                                    importance = math.exp(-(x - width / 2) ** 2 / (2 * similarity_threshold ** 2)) * \
-                                                 math.exp(-(y - height / 2) ** 2 / (2 * similarity_threshold ** 2))
-
-                                    # Add the color to the dictionary, considering its importance
-                                    if color_tuple in color_counts:
-                                        color_counts[color_tuple] += importance
-                                    else:
-                                        color_counts[color_tuple] = importance
-
-                            # Find the color with the highest count
-                            dominant_color_tuple = max(color_counts, key=color_counts.get)
-
-                            # Find the color with second highest count
-                            second_dominant_color_tuple = max(color_counts, key=lambda x: color_counts[
-                                x] if x != dominant_color_tuple else 0)
-
-                            # Convert the tuples back to a QColor object
-                            dominant_color = QColor(*dominant_color_tuple)
-                            second_dominant_color = QColor(*second_dominant_color_tuple)
-
-                            print("Dominant Color:", dominant_color.name())
-                            print("Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
-                                  dominant_color.blue())
-                            print("Second Dominant Color:", second_dominant_color.name())
-                            print("Second Dominant Color RGB:", second_dominant_color.red(),
-                                  second_dominant_color.green(),
-                                  second_dominant_color.blue())
-
-                            # Find the average color
-                            average_color_tuple = (0, 0, 0, 0)
-                            for color_tuple in color_counts:
-                                average_color_tuple = tuple(map(sum, zip(average_color_tuple, color_tuple)))
-                            average_color_tuple = tuple(
-                                [int(color / len(color_counts)) for color in average_color_tuple])
-                            average_color = QColor(*average_color_tuple)
-                            print("Average Color:", average_color.name())
-                            print("Average Color RGB:", average_color.red(), average_color.green(),
-                                  average_color.blue())
-
-                            # Check if we are in dark mode
-                            if self.theme == "dark":
-                                new_window_color = QColor(int(25 * 0.8 + average_color.red() * 0.2),
-                                                          int(25 * 0.8 + average_color.green() * 0.2),
-                                                          int(25 * 0.8 + average_color.blue() * 0.2))
-                                print("New Window Color:", new_window_color.name())
-                                dark_palette.setColor(QPalette.Window, new_window_color)
-
-                                # Check if the dominant color is too dark
-                                if (dominant_color.lightness() < QColor(100, 100,
-                                                                        100).lightness() < second_dominant_color.lightness()):
-                                    # Use the second dominant color instead
-                                    dominant_color = second_dominant_color
-
-                                elif (dominant_color.lightness() < QColor(100, 100, 100).lightness()
-                                      and second_dominant_color.value() < QColor(100, 100, 100).lightness()):
-                                    # Lighten the dominant color
-                                    dominant_color = dominant_color.lighter(500)
-
-                                else:
-                                    # Lighten the dominant color until it is light enough
-                                    while dominant_color.lightness() < QColor(100, 100, 100).lightness():
-                                        dominant_color = dominant_color.lighter(150)
-
-                                print("New Dominant Color:", dominant_color.name())
-                                print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
-                                      dominant_color.blue())
-
-                                dark_palette.setColor(QPalette.Link, dominant_color)
-                                self.dark_theme()
-
-                            elif self.theme == "light":
-                                new_window_color = QColor(int(255 * 0.8 + average_color.red() * 0.2),
-                                                          int(255 * 0.8 + average_color.green() * 0.2),
-                                                          int(255 * 0.8 + average_color.blue() * 0.2))
-                                print("New Window Color:", new_window_color.name())
-                                light_palette.setColor(QPalette.Window, new_window_color)
-
-                                # Check if the dominant color is too light
-                                if (dominant_color.lightness() > QColor(200, 200,
-                                                                        200).lightness() > second_dominant_color.lightness()):
-                                    # Use the second dominant color instead
-                                    dominant_color = second_dominant_color
-
-                                elif (dominant_color.lightness() > QColor(200, 200, 200).lightness()
-                                      and second_dominant_color.lightness() > QColor(200, 200, 200).lightness()):
-                                    # Darken the dominant color
-                                    dominant_color = dominant_color.darker(500)
-
-                                else:
-                                    # Darken the dominant color until it is dark enough
-                                    while dominant_color.lightness() > QColor(200, 200, 200).lightness():
-                                        dominant_color = dominant_color.darker(150)
-
-                                print(" New Dominant Color:", dominant_color.name())
-                                print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
-                                      dominant_color.blue())
-
-                                light_palette.setColor(QPalette.Link, dominant_color)
-                                self.light_theme()
+                            smooth_color_change(image)
 
                             # Create a star icon at the top left corner on the movie poster
                             star_icon = QIcon("star.svg")
@@ -3376,6 +4015,18 @@ class ModernApp(QMainWindow):
 
                     if poster_image:
                         poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
 
                         # Create a pixmap from the poster image URL
                         pixmap = QPixmap()
@@ -3388,122 +4039,7 @@ class ModernApp(QMainWindow):
                         # Convert the pixmap to a QImage
                         image = pixmap.toImage()
 
-                        # Get the image dimensions
-                        width = image.width()
-                        height = image.height()
-
-                        # Create a dictionary to store the colors and their counts
-                        color_counts = {}
-
-                        # Iterate through the image and add the colors to the list
-                        # (Similar colors should be counted as one color)
-                        # (The more centered the pixel is, the more important it is)
-                        # (Use Gaussian distribution to calculate the importance of the pixel)
-                        # (Similarity threshold: 10)
-                        similarity_threshold = 10
-
-                        # Iterate through the image and add the colors to the dictionary
-                        for x in range(width):
-                            for y in range(height):
-                                # Get the color at the current pixel
-                                color = QColor(image.pixel(x, y))
-
-                                # Convert QColor to tuple of RGBA values
-                                color_tuple = (color.red(), color.green(), color.blue(), color.alpha())
-
-                                # Calculate the importance of the pixel using Gaussian distribution
-                                importance = math.exp(-(x - width / 2) ** 2 / (2 * similarity_threshold ** 2)) * \
-                                             math.exp(-(y - height / 2) ** 2 / (2 * similarity_threshold ** 2))
-
-                                # Add the color to the dictionary, considering its importance
-                                if color_tuple in color_counts:
-                                    color_counts[color_tuple] += importance
-                                else:
-                                    color_counts[color_tuple] = importance
-
-                        # Find the color with the highest count
-                        dominant_color_tuple = max(color_counts, key=color_counts.get)
-
-                        # Find the color with second highest count
-                        second_dominant_color_tuple = max(color_counts, key=lambda x: color_counts[
-                            x] if x != dominant_color_tuple else 0)
-
-                        # Convert the tuples back to a QColor object
-                        dominant_color = QColor(*dominant_color_tuple)
-                        second_dominant_color = QColor(*second_dominant_color_tuple)
-
-                        print("Dominant Color:", dominant_color.name())
-                        print("Dominant Color RGB:", dominant_color.red(), dominant_color.green(),
-                              dominant_color.blue())
-                        print("Second Dominant Color:", second_dominant_color.name())
-                        print("Second Dominant Color RGB:", second_dominant_color.red(), second_dominant_color.green(),
-                              second_dominant_color.blue())
-
-                        # Find the average color
-                        average_color_tuple = (0, 0, 0, 0)
-                        for color_tuple in color_counts:
-                            average_color_tuple = tuple(map(sum, zip(average_color_tuple, color_tuple)))
-                        average_color_tuple = tuple([int(color / len(color_counts)) for color in average_color_tuple])
-                        average_color = QColor(*average_color_tuple)
-                        print("Average Color:", average_color.name())
-                        print("Average Color RGB:", average_color.red(), average_color.green(), average_color.blue())
-
-                        # Check if we are in dark mode
-                        if self.theme == "dark":
-                            new_window_color = QColor(int(25 * 0.8 + average_color.red() * 0.2),
-                                                      int(25 * 0.8 + average_color.green() * 0.2),
-                                                      int(25 * 0.8 + average_color.blue() * 0.2))
-                            print("New Window Color:", new_window_color.name())
-                            dark_palette.setColor(QPalette.Window, new_window_color)
-
-                            # Check if the dominant color is too dark
-                            if (dominant_color.lightness() < QColor(100, 100, 100).lightness() < second_dominant_color.lightness()):
-                                # Use the second dominant color instead
-                                dominant_color = second_dominant_color
-
-                            elif (dominant_color.lightness() < QColor(100, 100, 100).lightness()
-                                  and second_dominant_color.value() < QColor(100, 100, 100).lightness()):
-                                # Lighten the dominant color
-                                dominant_color = dominant_color.lighter(500)
-
-                            else:
-                                # Lighten the dominant color until it is light enough
-                                while dominant_color.lightness() < QColor(100, 100, 100).lightness():
-                                    dominant_color = dominant_color.lighter(150)
-
-                            print("New Dominant Color:", dominant_color.name())
-                            print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(), dominant_color.blue())
-
-                            dark_palette.setColor(QPalette.Link, dominant_color)
-                            self.dark_theme()
-
-                        elif self.theme == "light":
-                            new_window_color = QColor(int(255 * 0.8 + average_color.red() * 0.2),
-                                                      int(255 * 0.8 + average_color.green() * 0.2),
-                                                      int(255 * 0.8 + average_color.blue() * 0.2))
-                            print("New Window Color:", new_window_color.name())
-                            light_palette.setColor(QPalette.Window, new_window_color)
-
-                            # Check if the dominant color is too light
-                            if (dominant_color.lightness() > QColor(200, 200, 200).lightness() > second_dominant_color.lightness()):
-                                # Use the second dominant color instead
-                                dominant_color = second_dominant_color
-
-                            elif (dominant_color.lightness() > QColor(200, 200, 200).lightness()
-                                  and second_dominant_color.lightness() > QColor(200, 200, 200).lightness()):
-                                # Darken the dominant color
-                                dominant_color = dominant_color.darker(500)
-
-                            else:
-                                # Darken the dominant color until it is dark enough
-                                while dominant_color.lightness() > QColor(200, 200, 200).lightness():
-                                    dominant_color = dominant_color.darker(150)
-
-                            print(" New Dominant Color:", dominant_color.name())
-                            print("New Dominant Color RGB:", dominant_color.red(), dominant_color.green(), dominant_color.blue())
-
-                            light_palette.setColor(QPalette.Link, dominant_color)
-                            self.light_theme()
+                        smooth_color_change(image)
 
                         # Create a star icon at the top left corner on the movie poster
                         star_icon = QIcon("star.svg")
@@ -3991,6 +4527,15 @@ class ModernApp(QMainWindow):
                     "<a href='https://www.instagram.com/isonerinan'>Instagram</a><br><br>"
                     "<a href='https://www.twitter.com/isonerinan'>Twitter</a>")
         msg.exec_()
+
+    # Show the years summary review window
+    def year_review(self):
+        # Create and display the statistics dialog
+        year_review_window = YearReviewWindow()
+        year_review_window.exec_()
+
+        # Change the cursor back to the default cursor
+        QApplication.restoreOverrideCursor()
 
     # Show the now watching dialog
     def now_watching(self):
