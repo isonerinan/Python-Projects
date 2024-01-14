@@ -3193,24 +3193,27 @@ class YearReviewWindow(QDialog):
             case 8: # Favorite TV shows
                 random_genres, favorite_tv_shows = self.favorite_tv_shows()
 
-                print(favorite_tv_shows)
+                if random_genres is None and favorite_tv_shows is None:
+                    self.description_label.setText("No TV shows found in the selected year.")
+                    self.image_label.hide()
 
-                self.header_label.setText(f"From {random_genres[0]} to {random_genres[1]}, these are the TV shows that you enjoyed the most this year.")
-                self.previous_button.setText("< What were your favorite genres?")
-                self.next_button.setText("Who was your favorite director? >")
+                else:
+                    self.header_label.setText(f"From {random_genres[0]} to {random_genres[1]}, these are the TV shows that you enjoyed the most this year.")
+                    self.previous_button.setText("< What were your favorite genres?")
+                    self.next_button.setText("Who was your favorite director? >")
 
-                # Get the average rating for the tv shows in the selected year
-                self.average_tv_shows_rating = self.tv_shows_data['Your Rating'].mean()
+                    # Get the average rating for the tv shows in the selected year
+                    self.average_tv_shows_rating = self.tv_shows_data['Your Rating'].mean()
 
-                self.description_label.setText(f"You watched a total of <b>{len(self.tv_shows_data)} TV shows</b> in {self.year} "
-                                               f"with an average rating of {self.average_tv_shows_rating:.2f}.<br><br>")
+                    self.description_label.setText(f"You watched a total of <b>{len(favorite_tv_shows)} TV shows</b> in {self.year} "
+                                                   f"with an average rating of {self.average_tv_shows_rating:.2f}.<br><br>")
 
-                # Add the TV shows, their average ratings, episode counts, and love formulas to the description label (only the top 5)
-                self.description_label.setText(
-                    self.description_label.text() + f"<br><br><b>Your Top 5 TV Shows for {self.year}:</b><br>"
-                    + "<br>".join([f"<b>{show['Name']}:</b> {show['Your Rating']}/10, {show['Episode Count']} episodes,"
-                                   f"{show['Average Episode Rating']:.2f}/10 average episode rating, {show['Love Formula']:.2f} ❤️"
-                                   for show in favorite_tv_shows[:5]]))
+                    # Add the TV shows, their average ratings, episode counts, and love formulas to the description label (only the top 5)
+                    self.description_label.setText(
+                        self.description_label.text() + f"<br><br><b>Your Top 5 TV Shows for {self.year}:</b><br>"
+                        + "<br>".join([f"<b>{show['Name']}:</b> {show['Your Rating']}/10, {show['Episode Count']} episodes, "
+                                       f"{show['Average Episode Rating']:.2f}/10 average episode rating, {show['Love Formula']:.2f} ❤️"
+                                       for show in favorite_tv_shows[:5]]))
 
             case 9: # Favorite director
                 self.header_label.setText("page6")
@@ -3225,92 +3228,97 @@ class YearReviewWindow(QDialog):
         # Filter the data so that only the TV shows remain (filtered_data is already filtered to the selected year)
         self.tv_shows_data = self.filtered_data[self.filtered_data['Title Type'] == "tvSeries"]
 
-        # Create a dictionary to store the TV show names, their average ratings, their episode counts, and their average episode ratings
-        tv_shows = {}
-
-        # Loop through the TV shows
-        for index, row in self.tv_shows_data.iterrows():
-            # Get the TV show name
-            tv_show = row['Title']
-
-            # Get the TV show rating
-            tv_show_rating = row['Your Rating']
-
-            # Check if the TV show is already in the dictionary
-            # If not, create a new entry
-            if tv_show not in tv_shows:
-                tv_shows[tv_show] = {
-                    'Name': tv_show,
-                    'Your Rating': tv_show_rating,
-                    'Episode Count': 0,
-                    'Average Episode Rating': 0,
-                    'Love Formula': 0
-                }
-
         # Filter the data so that only the TV episodes remain (filtered_data is already filtered to the selected year)
         self.tv_episodes_data = self.filtered_data[self.filtered_data['Title Type'] == "tvEpisode"]
 
-        # Loop through the TV episodes
-        for index, row in self.tv_episodes_data.iterrows():
-            # Get the TV show name
-            tv_show = row['Title']
+        if self.tv_shows_data.empty and self.tv_episodes_data.empty:
+            return None, None
 
-            # Split the title into series name and episode name
-            # There are four possibilities:
-            # "Series Name: Episode Name",
-            # "Series Name: 'Episode Name: Episode Part'",
-            # "'IP Name: Series Name': Episode Name",
-            # "'IP Name: Series Name': 'Episode Name: Episode Part'"
-            title_split = tv_show.split(":")
+        # Create a dictionary to store the TV show names, their average ratings, their episode counts, and their average episode ratings
+        tv_shows = {}
 
-            # Determine how many colons are in the title and act accordingly
-            num_colons = len(title_split)
+        if not self.tv_shows_data.empty:
+            # Loop through the TV shows
+            for index, row in self.tv_shows_data.iterrows():
+                # Get the TV show name
+                tv_show = row['Title']
 
-            if num_colons == 2:
-                # Format: "Series Name: Episode Name"
-                tv_show = title_split[0]
-            elif num_colons == 3:
-                print(title_split)
-                # Format: "Series Name: 'Episode Name: Episode Part'" or "'IP Name: Series Name': Episode Name"
-                # Check the URL to determine which format it is
-                title_url = row['URL']
+                # Get the TV show rating
+                tv_show_rating = row['Your Rating']
 
-                # Get the HTML content of the title URL
-                title_html = requests.get(title_url, headers=headers).text
+                # Check if the TV show is already in the dictionary
+                # If not, create a new entry
+                if tv_show not in tv_shows:
+                    tv_shows[tv_show] = {
+                        'Name': tv_show,
+                        'Your Rating': tv_show_rating,
+                        'Episode Count': 0,
+                        'Average Episode Rating': 0,
+                        'Love Formula': 0
+                    }
 
-                # Create a BeautifulSoup object from the HTML content
-                title_soup = BeautifulSoup(title_html, 'html.parser')
+        if not self.tv_episodes_data.empty:
+            # Loop through the TV episodes
+            for index, row in self.tv_episodes_data.iterrows():
+                # Get the TV show name
+                tv_show = row['Title']
 
-                # Get the title from the HTML content
-                tv_show = title_soup.find("div", class_="bTLVGY").a.text
+                # Split the title into series name and episode name
+                # There are four possibilities:
+                # "Series Name: Episode Name",
+                # "Series Name: 'Episode Name: Episode Part'",
+                # "'IP Name: Series Name': Episode Name",
+                # "'IP Name: Series Name': 'Episode Name: Episode Part'"
+                title_split = tv_show.split(":")
 
-            elif num_colons == 4:
-                # Format: "'IP Name: Series Name': 'Episode Name: Episode Part'"
-                tv_show = title_split[0] + ":" + title_split[1]
-            else:
-                # Handle unexpected formats
-                continue  # Skip this item
+                # Determine how many colons are in the title and act accordingly
+                num_colons = len(title_split)
 
-            # Get the TV episode rating
-            tv_episode_rating = row['Your Rating']
+                if num_colons == 2:
+                    # Format: "Series Name: Episode Name"
+                    tv_show = title_split[0]
+                elif num_colons == 3:
+                    print(title_split)
+                    # Format: "Series Name: 'Episode Name: Episode Part'" or "'IP Name: Series Name': Episode Name"
+                    # Check the URL to determine which format it is
+                    title_url = row['URL']
 
-            # Check if the TV show is in the dictionary
-            # If not, create a new entry
-            if tv_show not in tv_shows:
-                tv_shows[tv_show] = {
-                    'Name': tv_show,
-                    'Your Rating': 0,
-                    'Episode Count': 1,
-                    'Average Episode Rating': tv_episode_rating,
-                    'Love Formula': 0
-                }
+                    # Get the HTML content of the title URL
+                    title_html = requests.get(title_url, headers=headers).text
 
-            else:
-                # Increment the episode count
-                tv_shows[tv_show]['Episode Count'] += 1
+                    # Create a BeautifulSoup object from the HTML content
+                    title_soup = BeautifulSoup(title_html, 'html.parser')
 
-                # Add the episode rating to the total
-                tv_shows[tv_show]['Average Episode Rating'] += tv_episode_rating
+                    # Get the title from the HTML content
+                    tv_show = title_soup.find("div", class_="bTLVGY").a.text
+
+                elif num_colons == 4:
+                    # Format: "'IP Name: Series Name': 'Episode Name: Episode Part'"
+                    tv_show = title_split[0] + ":" + title_split[1]
+                else:
+                    # Handle unexpected formats
+                    continue  # Skip this item
+
+                # Get the TV episode rating
+                tv_episode_rating = row['Your Rating']
+
+                # Check if the TV show is in the dictionary
+                # If not, create a new entry
+                if tv_show not in tv_shows:
+                    tv_shows[tv_show] = {
+                        'Name': tv_show,
+                        'Your Rating': 0,
+                        'Episode Count': 1,
+                        'Average Episode Rating': tv_episode_rating,
+                        'Love Formula': 0
+                    }
+
+                else:
+                    # Increment the episode count
+                    tv_shows[tv_show]['Episode Count'] += 1
+
+                    # Add the episode rating to the total
+                    tv_shows[tv_show]['Average Episode Rating'] += tv_episode_rating
 
         # Loop through the dictionary and get the average episode rating for each TV show
         for key, value in tv_shows.items():
@@ -3346,8 +3354,8 @@ class YearReviewWindow(QDialog):
         # Create a list of dictionaries from the dictionary
         tv_shows = [value for key, value in tv_shows.items()]
 
-        # Get a list of unique genres from the 'Genres' column
-        unique_genres = self.tv_shows_data['Genres'].unique()
+        # Get a list of unique genres from the 'Genres' columns of tv_shows_data and tv_episodes_data
+        unique_genres = np.append(self.tv_shows_data['Genres'].unique(), self.tv_episodes_data['Genres'].unique())
 
         # If any of the genres have multiple genres, split them and add them to the list
         for genre in unique_genres:
@@ -3355,21 +3363,21 @@ class YearReviewWindow(QDialog):
                 unique_genres = np.append(unique_genres, genre.split(", "))
                 unique_genres = np.delete(unique_genres, np.where(unique_genres == genre))
 
+
         # Remove the empty string from the list
         unique_genres = np.delete(unique_genres, np.where(unique_genres == ""))
 
         # Remove the duplicates from the list
         unique_genres = np.unique(unique_genres)
 
-        print(unique_genres)
-
         # Choose two random genres from the list
-        random_genres = np.random.choice(unique_genres, size=2, replace=False)
+        if len(unique_genres) >= 2:
+            random_genres = np.random.choice(unique_genres, size=2, replace=False)
 
         if tv_shows:
             return random_genres, tv_shows
         else:
-            return ["", ""], {}
+            return None, None
 
 
 
