@@ -2921,7 +2921,15 @@ class YearReviewWindow(QDialog):
                 except:
                     pass
 
-                self.description_label.setText(f"You spent a total of <b>{int(self.total_runtime)}</b> minutes watching titles in {self.year}.<br><br>"
+                # Convert the total runtime to days, hours, and minutes
+                if self.total_runtime >= 1440:
+                    time_watched = f"{int(self.total_runtime // 1440)} days, {int(self.total_runtime % 1440 // 60)} hours, and {int(self.total_runtime % 1440 % 60)} minutes"
+                elif self.total_runtime >= 60:
+                    time_watched = f"{self.total_runtime // 60} hours and {self.total_runtime % 60} minutes"
+                else:
+                    time_watched = f"{self.total_runtime} minutes"
+
+                self.description_label.setText(f"You spent a total of <b>{time_watched}</b> watching movies and TV in {self.year}.<br><br>"
                                                f"Your busiest month was <b>{self.month_with_highest_runtime}</b>, where you spent <b>{int(self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Runtime (mins)'].sum().max())}</b> minutes watching titles.<br><br>"
                                                f"Your least busy month was <b>{self.month_with_lowest_runtime}</b>, where you spent <b>{int(self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Runtime (mins)'].sum().min())}</b> minutes watching titles.<br><br>"
                                                f"Your favorite month was <b>{self.month_with_most_titles}</b>, where you watched <b>{int(self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Title'].count().max())}</b> titles.<br><br>"
@@ -3119,32 +3127,20 @@ class YearReviewWindow(QDialog):
                 self.previous_button.setText("< How did you end the year?")
                 self.next_button.setText("What were your favorite TV shows? >")
 
-                print(self.genres)
-
                 # Get the favorite genre and filter the data
                 favorite_genre = list(self.genres.keys())[0]
 
-                print(favorite_genre)
-
                 self.filtered_data = self.filtered_data[self.filtered_data['Genres'].str.contains(favorite_genre)]
-
-                print(self.filtered_data)
 
                 # Choose a random title from the favorite genre
                 favorite_genre_titles = self.filtered_data[self.filtered_data['Genres'].str.contains(favorite_genre)]['Title'].tolist()
                 favorite_genre_title = random.choice(favorite_genre_titles)
 
-                print(favorite_genre_title)
-
                 # Get the URL of the selected title
                 favorite_genre_title_url = self.filtered_data[self.filtered_data['Title'] == favorite_genre_title]['URL'].values[0]
 
-                print(favorite_genre_title_url)
-
                 # Get the rating of the selected title
                 favorite_genre_title_rating = self.filtered_data[self.filtered_data['Title'] == favorite_genre_title]['Your Rating'].values[0]
-
-                print(favorite_genre_title_rating)
 
                 # Get the poster URL of the selected title
                 soup = BeautifulSoup(browser.open(favorite_genre_title_url).read(), 'html.parser')
@@ -3154,7 +3150,6 @@ class YearReviewWindow(QDialog):
 
                 if poster_image:
                     poster_url = poster_image['src']
-                    print(poster_url)
 
                     # Get the biggest poster image by changing the url
                     # For example:
@@ -3198,7 +3193,7 @@ class YearReviewWindow(QDialog):
                     self.image_label.hide()
 
                 else:
-                    self.header_label.setText(f"From {random_genres[0]} to {random_genres[1]}, these are the TV shows that you enjoyed the most this year.")
+                    self.header_label.setText(f"<h1>From {random_genres[0]} to {random_genres[1]}, these are the TV shows that you enjoyed the most this year.</h1>")
                     self.previous_button.setText("< What were your favorite genres?")
                     self.next_button.setText("Who was your favorite director? >")
 
@@ -3214,6 +3209,55 @@ class YearReviewWindow(QDialog):
                         + "<br>".join([f"<b>{show['Name']}:</b> {show['Your Rating']}/10, {show['Episode Count']} episodes, "
                                        f"{show['Average Episode Rating']:.2f}/10 average episode rating, {show['Love Formula']:.2f} ❤️"
                                        for show in favorite_tv_shows[:5]]))
+
+                    # Choose a random TV show from the list
+                    random_tv_show = random.choice(favorite_tv_shows)
+
+                    # Get the URL of the selected TV show
+                    title_match = self.tv_shows_data[self.tv_shows_data['Title'] == random_tv_show['Name']]
+                    if not title_match.empty:
+                        random_tv_show_url = title_match['URL'].values[0]
+                    else:
+                        print(f"No TV show found with title {random_tv_show['Name']}")
+                        random_tv_show_url = None
+                        self.image_label.hide()
+
+                    if random_tv_show_url is not None:
+                        self.image_label.show()
+                        # Get the poster URL of the selected TV show
+                        soup = BeautifulSoup(browser.open(random_tv_show_url).read(), 'html.parser')
+
+                        # Get the movie poster URL from the IMDb page
+                        poster_image = soup.find('img', class_='ipc-image')
+
+                        if poster_image:
+                            poster_url = poster_image['src']
+                            print(poster_url)
+
+                            # Get the biggest poster image by changing the url
+                            # For example:
+                            # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                            # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                            # Remove everything except ".jpg" after "@@"
+                            if "@@" in poster_url:
+                                poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                            else:
+                                poster_url = poster_url.split("_")[0] + "jpg"
+
+                            # Create a pixmap from the poster image URL
+                            pixmap = QPixmap()
+                            pixmap.loadFromData(requests.get(poster_url).content)
+
+                            # Set the pixmap to the poster_label
+                            self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                            self.image_label.show()
+
+                            # Find the majority color of the poster image
+                            # Convert the pixmap to a QImage
+                            image = pixmap.toImage()
+
+                            smooth_color_change(image)
 
             case 9: # Favorite director
                 self.header_label.setText("page6")
@@ -4693,7 +4737,7 @@ class ModernApp(QMainWindow):
         msg.setIcon(QMessageBox.Information)
         msg.setWindowTitle("About")
         msg.setText("<h1>Watchable: IMDB Recommender</h1>"
-                    "<h3>Version 4.0</h3>"
+                    "<h3>Version 5.0</h3>"
                     "<b>Created by:</b> İbrahim Soner İNAN<br><br>"
                     "<a href='https://github.com/isonerinan'>GitHub</a><br><br>"
                     "<a href='https://www.linkedin.com/in/isonerinan'>LinkedIn</a><br><br>"
