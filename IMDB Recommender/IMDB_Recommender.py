@@ -2,11 +2,13 @@ import math
 import shutil
 import sys
 import os
+import urllib
 import webbrowser
 from datetime import datetime
 
 import pandas as pd
 import requests
+from googlesearch import search
 from bs4 import BeautifulSoup
 import csv
 import random
@@ -38,6 +40,12 @@ def smooth_color_change(image):
 
     # Create a dictionary to store the colors and their counts
     color_counts = {}
+
+    # If the image is too big, resize it
+    if width > 1000 or height > 1000:
+        image = image.scaled(1000, 1000, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        width = image.width()
+        height = image.height()
 
     # Iterate through the image and add the colors to the list
     # (Similar colors should be counted as one color)
@@ -3213,14 +3221,9 @@ class YearReviewWindow(QDialog):
                     # Choose a random TV show from the list
                     random_tv_show = random.choice(favorite_tv_shows)
 
-                    # Get the URL of the selected TV show
-                    title_match = self.tv_shows_data[self.tv_shows_data['Title'] == random_tv_show['Name']]
-                    if not title_match.empty:
-                        random_tv_show_url = title_match['URL'].values[0]
-                    else:
-                        print(f"No TV show found with title {random_tv_show['Name']}")
-                        random_tv_show_url = None
-                        self.image_label.hide()
+                    # Get the URL of the selected TV show, if it exists.
+                    # If there are multiple URLs in the list, choose one randomly
+                    random_tv_show_url = random.choice(random_tv_show['URL'])
 
                     if random_tv_show_url is not None:
                         self.image_label.show()
@@ -3260,13 +3263,34 @@ class YearReviewWindow(QDialog):
                             smooth_color_change(image)
 
             case 9: # Favorite director
-                self.header_label.setText("page6")
+                self.header_label.setText(f"<h1>These are the movie directors that inspired you in {self.year}.</h1>")
                 self.previous_button.setText("< What were your favorite TV shows?")
                 self.next_button.setText("Who was your favorite actor? >")
 
+                # Get the favorite director and filter the data
+                favorite_directors = self.favorite_directors()
+
+                if favorite_directors is None:
+                    self.description_label.setText("No directors found in the selected year.")
+                    self.image_label.hide()
+
+                else:
+                    # Show the top 5 directors in the description label
+                    self.description_label.setText(f"You watched a total of <b>{len(favorite_directors)} movies</b> in {self.year}.<br><br>"
+                                                    f"<b>Your Top 5 Directors for {self.year}:</b><br>"
+                                                    + "<br>".join([f"<b>{director['Name']}:</b> {director['Your Rating']}/10, {director['Movie Count']} movies, "
+                                                                   f"{director['Average Movie Rating']:.2f}/10 average movie rating, {director['Love Formula']:.2f} ❤️"
+                                                                   for director in favorite_directors[:5]]))
+
+                    # Choose the first director from the list
+                    top_director = favorite_directors[0]
+
+
             case 10: # Favorite actor
-                self.header_label.setText("page7")
+                self.header_label.setText(f"<h1>Actors</h1>")
                 self.previous_button.setText("< Who was your favorite director?")
+
+
 
     def favorite_tv_shows(self):
         # Filter the data so that only the TV shows remain (filtered_data is already filtered to the selected year)
@@ -3298,7 +3322,8 @@ class YearReviewWindow(QDialog):
                         'Your Rating': tv_show_rating,
                         'Episode Count': 0,
                         'Average Episode Rating': 0,
-                        'Love Formula': 0
+                        'Love Formula': 0,
+                        'URL': [row['URL']]
                     }
 
         if not self.tv_episodes_data.empty:
@@ -3306,6 +3331,7 @@ class YearReviewWindow(QDialog):
             for index, row in self.tv_episodes_data.iterrows():
                 # Get the TV show name
                 tv_show = row['Title']
+                title_url = row['URL']
 
                 # Split the title into series name and episode name
                 # There are four possibilities:
@@ -3324,8 +3350,6 @@ class YearReviewWindow(QDialog):
                 elif num_colons == 3:
                     print(title_split)
                     # Format: "Series Name: 'Episode Name: Episode Part'" or "'IP Name: Series Name': Episode Name"
-                    # Check the URL to determine which format it is
-                    title_url = row['URL']
 
                     # Get the HTML content of the title URL
                     title_html = requests.get(title_url, headers=headers).text
@@ -3354,7 +3378,8 @@ class YearReviewWindow(QDialog):
                         'Your Rating': 0,
                         'Episode Count': 1,
                         'Average Episode Rating': tv_episode_rating,
-                        'Love Formula': 0
+                        'Love Formula': 0,
+                        'URL': [row['URL']]
                     }
 
                 else:
@@ -3363,6 +3388,10 @@ class YearReviewWindow(QDialog):
 
                     # Add the episode rating to the total
                     tv_shows[tv_show]['Average Episode Rating'] += tv_episode_rating
+
+                    # Add the URL to the list
+                    tv_shows[tv_show]['URL'].append(row['URL'])
+
 
         # Loop through the dictionary and get the average episode rating for each TV show
         for key, value in tv_shows.items():
@@ -3422,6 +3451,63 @@ class YearReviewWindow(QDialog):
             return random_genres, tv_shows
         else:
             return None, None
+
+    def favorite_directors(self):
+        # Filter the data so that only the movies remain (filtered_data is already filtered to the selected year)
+        self.movies_data = self.filtered_data[self.filtered_data['Title Type'] == "movie"]
+
+        # Create a dictionary to store the director names, their average ratings, and their movie counts
+        directors = {}
+
+        # Loop through the movies
+        for index, row in self.movies_data.iterrows():
+            # Get the director name
+            director = row['Directors']
+
+            # Get the movie rating
+            movie_rating = row['Your Rating']
+
+            # Check if the director is already in the dictionary
+            # If not, create a new entry
+            if director not in directors:
+                directors[director] = {
+                    'Name': director,
+                    'Your Rating': movie_rating,
+                    'Movie Count': 1,
+                    'Average Movie Rating': movie_rating,
+                    'Love Formula': 0
+                }
+
+            else:
+                # Increment the movie count
+                directors[director]['Movie Count'] += 1
+
+                # Add the movie rating to the total
+                directors[director]['Average Movie Rating'] += movie_rating
+
+        # Loop through the dictionary and get the average movie rating for each director
+        for key, value in directors.items():
+            # Calculate the average movie rating if the movie count is not 0
+            if value['Movie Count'] != 0:
+                directors[key]['Average Movie Rating'] /= value['Movie Count']
+
+            # Calculate the love formula for each director (movie count^1.3 * average movie rating^5 / 1000)
+            directors[key]['Love Formula'] = (math.sqrt((value['Average Movie Rating'] ** 5) *
+                                                        (value['Your Rating'] ** 5)) *
+                                              (value['Movie Count'] ** 1.3) / 1000)
+
+        # Sort the dictionary by the love formula
+        directors = dict(sorted(directors.items(), key=lambda x: x[1]['Love Formula'], reverse=True))
+
+        # Create a list of dictionaries from the dictionary
+        directors = [value for key, value in directors.items()]
+
+        return directors if directors else None
+
+    def favorite_actors(self):
+        actors = {}
+
+
 
 
 
@@ -4726,8 +4812,8 @@ class ModernApp(QMainWindow):
         msg.setText(
             "This program allows you to randomly select a movie or TV series from your IMDb watchlist or any of your IMDb lists.<br><br>"
             "For more information on how to use this program, please visit:<br><br>"
-            "<a href='https://github.com/isonerinan/Python-Projects/tree/8d8131e42e8525747c1aaa511f09287187d4f8dc/IMDB%20Recommender'>"
-            "https://github.com/isonerinan/Python-Projects/tree/8d8131e42e8525747c1aaa511f09287187d4f8dc/IMDB%20Recommender</a>")
+            "<a href='https://github.com/isonerinan/Python-Projects/tree/main/IMDB%20Recommender'>"
+            "https://github.com/isonerinan/Python-Projects/tree/main/IMDB%20Recommender</a>")
 
         msg.exec_()
 
