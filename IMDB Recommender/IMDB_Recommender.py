@@ -456,9 +456,15 @@ class StatisticsWindow(QDialog):
         # Create a QVBoxLayout to add QLabel widgets
         actor_labels_layout = QVBoxLayout()
 
-        # Iterate through the favorite actors and add them to QLabel widgets
-        for actor, info in favorite_actors[:5]:
-            actor_label = QLabel(f"<b>{actor}:</b> {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
+        try:
+            # Iterate through the favorite actors and add them to QLabel widgets
+            for actor, info in favorite_actors[:5]:
+                actor_label = QLabel(f"<b>{actor}:</b> {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
+                actor_label.setAlignment(Qt.AlignCenter)
+                actor_labels_layout.addWidget(actor_label)
+
+        except:
+            actor_label = QLabel(favorite_actors)
             actor_label.setAlignment(Qt.AlignCenter)
             actor_labels_layout.addWidget(actor_label)
 
@@ -486,7 +492,7 @@ class StatisticsWindow(QDialog):
         # Create a QVBoxLayout to add QLabel widgets
         genre_labels_layout = QVBoxLayout()
 
-        # Iterate through the favorite directors and add them to QLabel widgets
+        # Iterate through the favorite genres and add them to QLabel widgets
         for genre, info in favorite_genres[:5]:
             genre_label = QLabel(f"<b>{genre}:</b> {info[0]:.2f}/10 ({info[1]} titles) with {info[2]:.2f} ❤️")
             genre_label.setAlignment(Qt.AlignCenter)
@@ -516,7 +522,7 @@ class StatisticsWindow(QDialog):
         # Create a QVBoxLayout to add QLabel widgets
         tv_labels_layout = QVBoxLayout()
 
-        # Iterate through the favorite directors and add them to QLabel widgets
+        # Iterate through the favorite series and add them to QLabel widgets
         for tv, info in favorite_tv_series[:5]:
             tv_label = QLabel(f"<b>{tv}:</b> {info[0]}/10 ({info[1]:.2f}/10 average episode rating in {info[2]} episodes) with {info[-1]:.2f} ❤️")
             tv_label.setAlignment(Qt.AlignCenter)
@@ -1498,10 +1504,12 @@ class StatisticsWindow(QDialog):
 
                     return sorted_actors
                 else:
-                    return "N/A"
+                    return []
 
-        except mechanize.URLError as e:
-            print(f"An error occurred: {e}")
+        except:
+            sorted_actors = (f"An error occurred.\n"
+                             f"Please check if your Ratings are public and try again.")
+            return sorted_actors
 
     def see_all_actors(self, favorite_actors):
         # Create a new QDialog to show all the actors
@@ -2630,8 +2638,9 @@ class YearReviewWindow(QDialog):
         combo_button_layout.addWidget(self.review_button)
 
         # Create a header label
-        self.header_label = QLabel("Welcome to your year review!\n"
-                                 "Let's see what you watched, and how much you loved them.")
+        self.header_label = QLabel("<h2>Welcome to your year review!</h2>"
+                                   "<h3>Let's see what you watched, and how much you loved them.</h3>")
+        self.header_label.setWordWrap(True)
         self.header_label.setAlignment(Qt.AlignCenter)
         self.header_label.setStyleSheet("font-size: 20px; font-weight: bold;")
         self.content_layout.addWidget(self.header_label)
@@ -2645,12 +2654,14 @@ class YearReviewWindow(QDialog):
         self.image_label.setAlignment(Qt.AlignCenter)
         self.year_details_layout.addWidget(self.image_label)
 
-        self.description_label = QLabel()
+        self.description_label = QLabel("-")
+        self.description_label.setWordWrap(True)
         self.description_label.setAlignment(Qt.AlignCenter)
-        self.description_label.setStyleSheet("font-size: 20px;")
-        self.year_details_layout.addWidget(self.description_label)
         # Enable rich text for the description label so that we can change the font size, boldness, etc.
         self.description_label.setOpenExternalLinks(True)
+        self.description_label.setFixedHeight(500)
+        self.description_label.setMinimumWidth(200)
+        self.year_details_layout.addWidget(self.description_label)
 
         # Hide the image and the description label
         self.image_label.hide()
@@ -2662,6 +2673,7 @@ class YearReviewWindow(QDialog):
 
         # Create a "Previous" button
         self.previous_button = QPushButton("Previous")
+        self.previous_button.setMinimumWidth(50)
         self.previous_button.clicked.connect(self.previous)
         previous_next_layout.addWidget(self.previous_button)
 
@@ -2670,6 +2682,7 @@ class YearReviewWindow(QDialog):
 
         # Create a "Next" button
         self.next_button = QPushButton("How many titles did you watch? >")
+        self.next_button.setMinimumWidth(50)
         self.next_button.clicked.connect(self.next)
         previous_next_layout.addWidget(self.next_button)
 
@@ -2724,6 +2737,8 @@ class YearReviewWindow(QDialog):
 
         # Filter the data so that only the selected year remains in the Date Rated column
         self.filtered_data = df[df['Date Rated'].str.contains(f'{self.year}')]
+        print("filtered_data")
+        print(self.filtered_data)
 
         # Convert the 'Date Rated' column to datetime for easy comparison
         self.filtered_data['Date Rated'] = pd.to_datetime(self.filtered_data['Date Rated'], format='%Y-%m-%d')
@@ -2873,7 +2888,7 @@ class YearReviewWindow(QDialog):
                     pass
 
             case 2: # Titles watched in each month
-                self.header_label.setText("Quite the busy year, huh?")
+                self.header_label.setText("<h1>Quite the busy year, huh?</h1>")
                 self.previous_button.setText("< How many titles did you watch?")
                 self.next_button.setText("Where did all the time go? >")
                 self.description_label.hide()
@@ -3138,8 +3153,6 @@ class YearReviewWindow(QDialog):
                 # Get the favorite genre and filter the data
                 favorite_genre = list(self.genres.keys())[0]
 
-                self.filtered_data = self.filtered_data[self.filtered_data['Genres'].str.contains(favorite_genre)]
-
                 # Choose a random title from the favorite genre
                 favorite_genre_titles = self.filtered_data[self.filtered_data['Genres'].str.contains(favorite_genre)]['Title'].tolist()
                 favorite_genre_title = random.choice(favorite_genre_titles)
@@ -3266,6 +3279,7 @@ class YearReviewWindow(QDialog):
                 self.header_label.setText(f"<h1>These are the movie directors that inspired you in {self.year}.</h1>")
                 self.previous_button.setText("< What were your favorite TV shows?")
                 self.next_button.setText("Who was your favorite actor? >")
+                self.next_button.show()
 
                 # Get the favorite director and filter the data
                 favorite_directors = self.favorite_directors()
@@ -3278,17 +3292,157 @@ class YearReviewWindow(QDialog):
                     # Show the top 5 directors in the description label
                     self.description_label.setText(f"You watched a total of <b>{len(favorite_directors)} movies</b> in {self.year}.<br><br>"
                                                     f"<b>Your Top 5 Directors for {self.year}:</b><br>"
-                                                    + "<br>".join([f"<b>{director['Name']}:</b> {director['Your Rating']}/10, {director['Movie Count']} movies, "
+                                                    + "<br>".join([f"<b>{director['Name']}:</b> {director['Movie Count']} movies, "
                                                                    f"{director['Average Movie Rating']:.2f}/10 average movie rating, {director['Love Formula']:.2f} ❤️"
                                                                    for director in favorite_directors[:5]]))
 
                     # Choose the first director from the list
                     top_director = favorite_directors[0]
 
+                    # If the director's name contains a comma, remove everything after the comma
+                    if "," in top_director['Name']:
+                        top_director['Name'] = top_director['Name'].split(",")[0]
+
+                    # Replace spaces with %20 in the director's name
+                    top_director['Name'] = top_director['Name'].replace(" ", "%20")
+
+                    # Search on IMDB
+                    search_url = f"https://www.imdb.com/find?q={top_director['Name']}&ref_=nv_sr_sm"
+                    print(search_url)
+
+                    # Get the HTML content of the search URL
+                    search_html = requests.get(search_url, headers=headers).text
+
+                    # Create a BeautifulSoup object from the HTML content
+                    search_soup = BeautifulSoup(search_html, 'html.parser')
+
+                    # Get the first result
+                    first_result = search_soup.find("div", class_="ipc-metadata-list-summary-item__tc").a['href']
+
+                    # Get the director's page URL
+                    director_url = f"https://www.imdb.com{first_result}"
+
+                    # Get the poster URL of the selected director
+                    soup = BeautifulSoup(browser.open(director_url).read(), 'html.parser')
+
+                    # Get the director's poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
 
             case 10: # Favorite actor
                 self.header_label.setText(f"<h1>Actors</h1>")
+                self.description_label.setText(f"Calculating your favorite actors for {self.year}...")
                 self.previous_button.setText("< Who was your favorite director?")
+                self.next_button.setEnabled(False)
+                self.next_button.setText("-")
+                self.next_button.hide()
+                app.processEvents()
+
+
+                actors = self.favorite_actors()
+                print(actors)
+
+
+                # Show the top 5 actors in the description label
+                self.description_label.setText(f"You watched a total of <b>{len(actors)} movies</b> in {self.year}.<br><br>"
+                                               f"<b>Your Top 5 Actors for {self.year}:</b><br>"
+                                               + "<br>".join([f"<b>{actor[0]}:</b> {actor[1][1]} movies, "
+                                                              f"{actor[1][0]:.2f}/10 average movie rating, {actor[1][2]:.2f} ❤️"
+                                                              for actor in actors[:5]]))
+
+                # Choose the first actor from the list
+                top_actor = actors[0]
+                print(top_actor)
+
+                # If the actor's name contains a comma, remove everything after the comma
+                if "," in top_actor[0]:
+                    top_actor[0] = top_actor[0].split(",")[0]
+
+                # Get the name of the actor
+                actor_name = top_actor[0]
+
+                # Replace spaces with %20 in the actor's name
+                actor_name = actor_name.replace(" ", "%20")
+
+                # Search on IMDB
+                search_url = f"https://www.imdb.com/find?q={actor_name}&ref_=nv_sr_sm"
+                print(search_url)
+
+                # Get the HTML content of the search URL
+                search_html = requests.get(search_url, headers=headers).text
+
+                # Create a BeautifulSoup object from the HTML content
+                search_soup = BeautifulSoup(search_html, 'html.parser')
+
+                # Get the first result
+                first_result = search_soup.find("div", class_="ipc-metadata-list-summary-item__tc").a['href']
+
+                # Get the actor's page URL
+                actor_url = f"https://www.imdb.com{first_result}"
+
+                # Get the poster URL of the selected director
+                soup = BeautifulSoup(browser.open(actor_url).read(), 'html.parser')
+
+                # Get the actor's poster URL from the IMDb page
+                poster_image = soup.find('img', class_='ipc-image')
+
+                if poster_image:
+                    poster_url = poster_image['src']
+                    print(poster_url)
+
+                    # Get the biggest poster image by changing the url
+                    # For example:
+                    # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                    # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                    # Remove everything except ".jpg" after "@@"
+                    if "@@" in poster_url:
+                        poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                    else:
+                        poster_url = poster_url.split("_")[0] + "jpg"
+
+                    # Create a pixmap from the poster image URL
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(requests.get(poster_url).content)
+
+                    # Set the pixmap to the poster_label
+                    self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                    self.image_label.show()
+
+                    # Find the majority color of the poster image
+                    # Convert the pixmap to a QImage
+                    image = pixmap.toImage()
+
+                    smooth_color_change(image)
 
 
 
@@ -3456,6 +3610,9 @@ class YearReviewWindow(QDialog):
         # Filter the data so that only the movies remain (filtered_data is already filtered to the selected year)
         self.movies_data = self.filtered_data[self.filtered_data['Title Type'] == "movie"]
 
+        print(self.filtered_data)
+        print(self.movies_data)
+
         # Create a dictionary to store the director names, their average ratings, and their movie counts
         directors = {}
 
@@ -3472,7 +3629,6 @@ class YearReviewWindow(QDialog):
             if director not in directors:
                 directors[director] = {
                     'Name': director,
-                    'Your Rating': movie_rating,
                     'Movie Count': 1,
                     'Average Movie Rating': movie_rating,
                     'Love Formula': 0
@@ -3492,8 +3648,7 @@ class YearReviewWindow(QDialog):
                 directors[key]['Average Movie Rating'] /= value['Movie Count']
 
             # Calculate the love formula for each director (movie count^1.3 * average movie rating^5 / 1000)
-            directors[key]['Love Formula'] = (math.sqrt((value['Average Movie Rating'] ** 5) *
-                                                        (value['Your Rating'] ** 5)) *
+            directors[key]['Love Formula'] = (math.sqrt((value['Average Movie Rating'] ** 5)) *
                                               (value['Movie Count'] ** 1.3) / 1000)
 
         # Sort the dictionary by the love formula
@@ -3505,11 +3660,182 @@ class YearReviewWindow(QDialog):
         return directors if directors else None
 
     def favorite_actors(self):
-        actors = {}
+        actor_ratings = {}
+        actor_title_counts = {}
+        actor_titles = {}
+
+        yearFound = False
+        breakFlag = False
+
+        lists_link, watchlist_link = window.checkPreferences()
+        print(lists_link)
+
+        # Strip away the part after "?"
+        lists_link = lists_link.split("?")[0]
+        print(lists_link)
+
+        ratings_link = lists_link.replace("lists", f"ratings?sort=date_added,desc&ratingFilter=0&mode=detail&ref_=undefined&lastPosition=0")
+        print(ratings_link)
+
+        # Send an HTTP GET request to fetch the ratings page
+        try:
+            # Open the URL
+            response = browser.open(ratings_link)
+
+            html_content = response.read()
+
+            # Get the HTML content
+            soup = BeautifulSoup(html_content, 'html.parser')
+
+            # Extract the movie or TV series details from the list
+            movie_details = soup.select('.lister-item-content')
+
+            # Check how many titles are there in the list
+            list_details = soup.select(".lister-list-length")
+            number_of_titles_str = list_details[0].text.strip()
+            print(number_of_titles_str)
+
+            # Use a regular expression to extract the integer
+            match = re.search(r'\d+', number_of_titles_str)
+            print(match)
+
+            if match:
+                # The group(0) will contain the first matched integer
+                number_of_titles = int(match.group(0))
+                print(number_of_titles)
+
+            # Calculate the page count
+            page_count = math.ceil(number_of_titles / 100)
+            print(page_count)
+
+            # Loop through the pages
+            for page in range(0, page_count + 1):
+                # Check if the breakFlag is set to True
+                if breakFlag:
+                    print("breakFlag is True")
+                    break
+
+                for movie in movie_details:
+                    # Get the title
+                    title_element = movie.select_one(".lister-item-header")
+                    title = title_element.text.strip()
+                    print(title)
+
+                    # Extract the title type
+                    isEpisode_element = movie.find("small", class_="text-primary")
+                    if isEpisode_element:
+                        isEpisode = isEpisode_element.text.strip()
+                    else:
+                        isEpisode = ""
+
+                    print(isEpisode)
+
+                    # Find the <p> tag with the text 'Rated on'
+                    rating_date_tag = soup.find('p', text=lambda t: t and 'Rated on' in t)
+                    print(rating_date_tag)
+
+                    # Extract the rating year from the tag
+                    rating_year = int(rating_date_tag.text.split(" ")[-1])
+                    print(rating_year)
+
+                    # Check if the rating year is the same as the selected year
+                    if rating_year == self.year:
+                        # yearFound flag is set to True
+                        yearFound = True
+                        print("yearFound is True")
+
+                        # Check if the title type is not an episode
+                        if "Episode:" not in isEpisode:
+                            # Extract actors and rating
+                            # Find the <p> element with directors and actors
+                            p_element = movie.select("p.text-muted a")
+                            print(p_element)
+
+                            # Extract the actors from the text of each item in the list
+                            actors = [actor.text.strip() for actor in p_element if "dir" not in actor['href']]
+                            print(actors)
+
+                            # Get the rating and directors from ratings.csv and remove directors from actors
+                            with open('ratings.csv', 'r') as file:
+                                ratings_data = list(csv.DictReader(file))
+
+                                # Loop through the ratings_data list
+                                for item in ratings_data:
+                                    # Check if the title type is "movie"
+                                    if item['Title Type'] == "movie":
+                                        # Extract title and rating
+                                        rating = int(item['Your Rating'])
+
+                                        # Check if the title is the same as the current title
+                                        if title == item['Title']:
+                                            # Extract directors
+                                            directors = item['Directors'].split(", ")
+
+                                            # Remove directors from actors
+                                            actors = [actor for actor in actors if actor not in directors]
+
+                                            break
+
+                            # Loop through the actors
+                            for actor in actors:
+                                # Check if the actor is already in the dictionary
+                                if actor in actor_ratings:
+                                    # Add the rating to the existing actor
+                                    actor_ratings[actor] += rating
+                                    actor_title_counts[actor] += 1
+                                    actor_titles[actor].append(title)
+                                else:
+                                    # Add the actor to the dictionary
+                                    actor_ratings[actor] = rating
+                                    actor_title_counts[actor] = 1
+                                    actor_titles[actor] = [title]
+
+                    else:
+                        if yearFound:
+                            print("yearFound is True")
+                            # This means we have found the year, and now we are in the previous year
+                            breakFlag = True
+                            break
 
 
+                # Next page
+                next_page = soup.find('a', class_='flat-button lister-page-next next-page')
+                print(next_page)
 
+                if next_page:
+                    next_page_url = f'https://www.imdb.com{next_page["href"]}'
+                    print(next_page_url)
+                    response = browser.open(next_page_url)
+                    html_content = response.read()
+                    soup = BeautifulSoup(html_content, 'html.parser')
+                    movie_details = soup.select('.lister-item-content')
 
+            # Check if there are any ratings
+            if actor_ratings:
+                # Calculate the average rating for each actor
+                actor_average_ratings = {
+                    actor: actor_ratings[actor] / actor_title_counts[actor]
+                    for actor in actor_ratings
+                }
+
+                # Calculate the love_formula for each actor
+                actor_love_formulas = {
+                    actor: (avg_rating, actor_title_counts[actor],
+                            ((avg_rating ** 5) * (actor_title_counts[actor] ** 1.3)) / 1000)
+                    for actor, avg_rating in actor_average_ratings.items()
+                }
+
+                # Sort the actors by the love_formula in descending order
+                sorted_actors = sorted(actor_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
+
+                return sorted_actors
+            else:
+                print("No ratings found")
+                return []
+
+        except mechanize.URLError as e:
+            print("URL Error: ", e)
+            return []
 
 class ModernApp(QMainWindow):
     def __init__(self):
@@ -4113,7 +4439,7 @@ class ModernApp(QMainWindow):
                             self.description_label.setText(f"{description}")
 
                         # Check if result label is too long
-                        if len(self.result_label.text()) > 140:
+                        if len(self.result_label.text()):
                             # Add result label to the scroll area
                             self.result_scroll_area.setWidget(self.result_label)
                             self.result_scroll_area.show()
