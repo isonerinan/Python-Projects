@@ -3716,6 +3716,10 @@ class YearReviewWindow(QDialog):
                     break
 
                 for movie in movie_details:
+                    if breakFlag:
+                        print("breakFlag is True")
+                        break
+
                     # Get the title
                     title_element = movie.select_one(".lister-item-header")
                     title = title_element.text.strip()
@@ -3731,7 +3735,7 @@ class YearReviewWindow(QDialog):
                     print(isEpisode)
 
                     # Find the <p> tag with the text 'Rated on'
-                    rating_date_tag = soup.find('p', text=lambda t: t and 'Rated on' in t)
+                    rating_date_tag = movie.find('p', text=lambda t: t and 'Rated on' in t)
                     print(rating_date_tag)
 
                     # Extract the rating year from the tag
@@ -3776,19 +3780,19 @@ class YearReviewWindow(QDialog):
 
                                             break
 
-                            # Loop through the actors
-                            for actor in actors:
-                                # Check if the actor is already in the dictionary
-                                if actor in actor_ratings:
-                                    # Add the rating to the existing actor
-                                    actor_ratings[actor] += rating
-                                    actor_title_counts[actor] += 1
-                                    actor_titles[actor].append(title)
-                                else:
-                                    # Add the actor to the dictionary
-                                    actor_ratings[actor] = rating
-                                    actor_title_counts[actor] = 1
-                                    actor_titles[actor] = [title]
+                                # Loop through the actors
+                                for actor in actors:
+                                    # Check if the actor is already in the dictionary
+                                    if actor in actor_ratings:
+                                        # Add the rating to the existing actor
+                                        actor_ratings[actor] += rating
+                                        actor_title_counts[actor] += 1
+                                        actor_titles[actor].append(title)
+                                    else:
+                                        # Add the actor to the dictionary
+                                        actor_ratings[actor] = rating
+                                        actor_title_counts[actor] = 1
+                                        actor_titles[actor] = [title]
 
                     else:
                         if yearFound:
@@ -3796,6 +3800,7 @@ class YearReviewWindow(QDialog):
                             # This means we have found the year, and now we are in the previous year
                             breakFlag = True
                             break
+                        break
 
 
                 # Next page
@@ -4439,7 +4444,7 @@ class ModernApp(QMainWindow):
                             self.description_label.setText(f"{description}")
 
                         # Check if result label is too long
-                        if len(self.result_label.text()):
+                        if len(self.result_label.text()) > 140:
                             # Add result label to the scroll area
                             self.result_scroll_area.setWidget(self.result_label)
                             self.result_scroll_area.show()
