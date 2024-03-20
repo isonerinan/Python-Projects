@@ -26,6 +26,36 @@ def get_lichess_games(username, token):
         print(f"Failed to fetch games. Status code: {response.status_code}")
         return None
 
+def download_chess_com_game_archives(username):
+    url = f"https://api.chess.com/pub/player/{username}/games/archives"
+    headers = {"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "User-Agent": f"username: {username}"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        archives = response.json()["archives"]
+        return archives
+    else:
+        print(f"Failed to fetch game archives. Status code: {response.status_code}")
+        return None
+
+def download_chess_com_games_from_archive(archive_url, username):
+    headers = {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "User-Agent": f"username: {username}"
+        }
+
+    response = requests.get(archive_url, headers=headers)
+
+    if response.status_code == 200:
+        games = response.json()
+        return games
+    else:
+        print(f"Failed to fetch games from archive. Status code: {response.status_code}")
+        return None
+
 def calculate_elo_change(game, username):
     if game["players"]["white"]["user"]["name"] == username:
         return game["players"]["white"]["ratingDiff"]
@@ -43,7 +73,11 @@ def load_games(username):
         games = json.load(f)
         return games
 
-def stats_rapid(games, username):
+def stats_rapid_lichess(games, username, account_choice):
+    # Check if the user wants to see stats for Lichess
+    if account_choice != 1 and account_choice != 2:
+        return
+
     rapid_wins = 0
     rapid_losses = 0
     rapid_draws = 0
@@ -83,7 +117,11 @@ def stats_rapid(games, username):
 
     return {"rapid_games": len(rapid_games), "rapid_wins": rapid_wins, "rapid_draws": rapid_draws, "rapid_losses": rapid_losses}
 
-def stats_blitz(games, username):
+def stats_blitz_lichess(games, username, account_choice):
+    # Check if the user wants to see stats for Lichess
+    if account_choice != 1 and account_choice != 2:
+        return
+
     blitz_wins = 0
     blitz_losses = 0
     blitz_draws = 0
@@ -123,7 +161,11 @@ def stats_blitz(games, username):
 
     return {"blitz_games": len(blitz_games), "blitz_wins": blitz_wins, "blitz_draws": blitz_draws, "blitz_losses": blitz_losses}
 
-def stats_bullet(games, username):
+def stats_bullet_lichess(games, username, account_choice):
+    # Check if the user wants to see stats for Lichess
+    if account_choice != 1 and account_choice != 2:
+        return
+
     bullet_wins = 0
     bullet_losses = 0
     bullet_draws = 0
@@ -163,7 +205,11 @@ def stats_bullet(games, username):
 
     return {"bullet_games": len(bullet_games), "bullet_wins": bullet_wins, "bullet_draws": bullet_draws, "bullet_losses": bullet_losses}
 
-def stats_classical(games, username):
+def stats_classical_lichess(games, username, account_choice):
+    # Check if the user wants to see stats for Lichess
+    if account_choice != 1 and account_choice != 2:
+        return
+
     classical_wins = 0
     classical_losses = 0
     classical_draws = 0
@@ -203,7 +249,11 @@ def stats_classical(games, username):
 
     return {"classical_games": len(classical_games), "classical_wins": classical_wins, "classical_draws": classical_draws, "classical_losses": classical_losses}
 
-def stats_correspondence(games, username):
+def stats_correspondence_lichess(games, username, account_choice):
+    # Check if the user wants to see stats for Lichess
+    if account_choice != 1 and account_choice != 2:
+        return
+
     correspondence_wins = 0
     correspondence_losses = 0
     correspondence_draws = 0
@@ -243,7 +293,11 @@ def stats_correspondence(games, username):
 
     return {"correspondence_games": len(correspondence_games), "correspondence_wins": correspondence_wins, "correspondence_draws": correspondence_draws, "correspondence_losses": correspondence_losses}
 
-def stats_ultrabullet(games, username):
+def stats_ultrabullet_lichess(games, username, account_choice):
+    # Check if the user wants to see stats for Lichess
+    if account_choice != 1 and account_choice != 2:
+        return
+
     ultrabullet_wins = 0
     ultrabullet_losses = 0
     ultrabullet_draws = 0
@@ -283,7 +337,12 @@ def stats_ultrabullet(games, username):
 
     return {"ultrabullet_games": len(ultrabullet_games), "ultrabullet_wins": ultrabullet_wins, "ultrabullet_draws": ultrabullet_draws, "ultrabullet_losses": ultrabullet_losses}
 
-def stats_all(games, username):
+def stats_all_lichess(games, username, account_choice):
+    # Check if the user wants to see stats for Lichess
+    if account_choice != 1 and account_choice != 2:
+        print(account_choice != 1 and account_choice != 2)
+        return
+
     wins = 0
     losses = 0
     draws = 0
@@ -321,6 +380,81 @@ def stats_all(games, username):
 
     return {"games": len(games), "wins": wins, "draws": draws, "losses": losses}
 
+def download_lichess_games(lichess_username, lichess_token, account_choice):
+    # Check if the user wants to download games from Lichess.org
+    if account_choice != 1 and account_choice != 2:
+        return
+
+    print("Downloading games from Lichess.org.")
+    # Retrieve and process games from Lichess.org
+    lichess_games = get_lichess_games(lichess_username, lichess_token)
+    save_games(lichess_games, lichess_username + "_lichess")
+
+    lichess_game_count = len(lichess_games)
+    print(f"Total games (Lichess): {lichess_game_count}")
+def download_chess_com_games(chess_com_username, account_choice):
+    # Check if the user wants to download games from Chess.com
+    if account_choice != 1 and account_choice != 3:
+        return
+
+    print("Downloading games from Chess.com.")
+    # Retrieve and process games from Chess.com
+    archives = download_chess_com_game_archives(chess_com_username)
+
+    if archives is not None:
+        chess_com_games = {"games": []}
+
+        for archive_url in archives:
+            # Download games from the archive
+            temp_games = download_chess_com_games_from_archive(archive_url, chess_com_username)
+
+            # Append games to the list in temp_games
+            chess_com_games["games"].extend(temp_games["games"])
+
+        # Save the merged games to a file
+        save_games(chess_com_games, chess_com_username + "_chess_com")
+
+        chess_com_game_count = len(chess_com_games["games"])
+        print(f"Total games (Chess.com): {chess_com_game_count}")
+
+    else:
+        print("No archives found.")
+
+def stats_all_chess_com(chess_com_games, chess_com_username, account_choice):
+    # Check if the user wants to see stats for Chess.com
+    if account_choice != 1 and account_choice != 3:
+        return
+
+    pass
+
+def stats_rapid_chess_com(chess_com_games, chess_com_username, account_choice):
+    # Check if the user wants to see stats for Chess.com
+    if account_choice != 1 and account_choice != 3:
+        return
+
+    pass
+
+def stats_blitz_chess_com(chess_com_games, chess_com_username, account_choice):
+    # Check if the user wants to see stats for Chess.com
+    if account_choice != 1 and account_choice != 3:
+        return
+
+    pass
+
+def stats_bullet_chess_com(chess_com_games, chess_com_username, account_choice):
+    # Check if the user wants to see stats for Chess.com
+    if account_choice != 1 and account_choice != 3:
+        return
+
+    pass
+
+def stats_daily_chess_com(chess_com_games, chess_com_username, account_choice):
+    # Check if the user wants to see stats for Chess.com
+    if account_choice != 1 and account_choice != 3:
+        return
+
+    pass
+
 
 def main():
     load_dotenv()
@@ -328,52 +462,83 @@ def main():
     # Replace these with your actual usernames and tokens
     lichess_username = os.getenv("LICHESS_USERNAME")
     lichess_token = os.getenv("LICHESS_API_TOKEN")
-
-    # Retrieve and process games from Lichess.org
-    lichess_games = get_lichess_games(lichess_username, lichess_token)
-    save_games(lichess_games, lichess_username)
-
-    game_count = len(lichess_games)
-    print(f"Total games: {game_count}")
+    chess_com_username = os.getenv("CHESS_COM_USERNAME")
 
     # Main loop
     while True:
-        if lichess_games is not None:
+        # Ask the user which account they want to see stats for
+        print("Which account would you like to see stats for?"
+              "\n1. All accounts"
+              "\n2. Lichess"
+              "\n3. Chess.com"
+              "\n4. Exit")
+        account_choice = int(input("Enter the number of your choice: "))
+
+        if account_choice == 1 or account_choice == 2 or account_choice == 3:
+            download_lichess_games(lichess_username, lichess_token, account_choice)
+            download_chess_com_games(chess_com_username, account_choice)
+            try:
+                print("Loading Lichess games...")
+                lichess_games = load_games(lichess_username + "_lichess")
+            except:
+                print("No Lichess games found.")
+
+            try:
+                print("Loading Chess.com games...")
+                chess_com_games = load_games(chess_com_username + "_chess_com")
+            except:
+                print("No Chess.com games found.")
+
+
+        elif account_choice == 4:
+            quit()
+
+        else:
+            print("Invalid choice. Please try again.")
+            continue
+
+        # Inner loop
+        while True:
             # Ask the user for their desired stats
             print("Which stats would you like to see?"
                   "\n1. All"
                   "\n2. Rapid"
                   "\n3. Blitz"
                   "\n4. Bullet"
-                  "\n5. Classical"
-                  "\n6. Correspondence"
-                  "\n7. Ultrabullet"
-                  "\n8. Exit")
-            stats_choice = input("Enter the number of your choice: ")
+                  "\n5. Classical (Lichess only)"
+                  "\n6. Correspondence/Daily"
+                  "\n7. Ultrabullet (Lichess only)"
+                  "\n8. Change accounts"
+                  "\n9. Exit")
+            stats_choice = int(input("Enter the number of your choice: "))
 
-            match(stats_choice):
-                case "1":
-                    stats_all(lichess_games, lichess_username)
-                case "2":
-                    stats_rapid(lichess_games, lichess_username)
-                case "3":
-                    stats_blitz(lichess_games, lichess_username)
-                case "4":
-                    stats_bullet(lichess_games, lichess_username)
-                case "5":
-                    stats_classical(lichess_games, lichess_username)
-                case "6":
-                    stats_correspondence(lichess_games, lichess_username)
-                case "7":
-                    stats_ultrabullet(lichess_games, lichess_username)
-                case "8":
+            match (stats_choice):
+                case 1:
+                    stats_all_lichess(lichess_games, lichess_username, account_choice)
+                    stats_all_chess_com(chess_com_games, chess_com_username, account_choice)
+                case 2:
+                    stats_rapid_lichess(lichess_games, lichess_username, account_choice)
+                    stats_rapid_chess_com(chess_com_games, chess_com_username, account_choice)
+                case 3:
+                    stats_blitz_lichess(lichess_games, lichess_username, account_choice)
+                    stats_blitz_chess_com(chess_com_games, chess_com_username, account_choice)
+                case 4:
+                    stats_bullet_lichess(lichess_games, lichess_username, account_choice)
+                    stats_bullet_chess_com(chess_com_games, chess_com_username, account_choice)
+                case 5:
+                    stats_classical_lichess(lichess_games, lichess_username, account_choice)
+                case 6:
+                    stats_correspondence_lichess(lichess_games, lichess_username, account_choice)
+                    stats_daily_chess_com(chess_com_games, chess_com_username, account_choice)
+                case 7:
+                    stats_ultrabullet_lichess(lichess_games, lichess_username, account_choice)
+                case 8:
                     break
+                case 9:
+                    quit()
                 case _:
                     print("Invalid choice. Please try again.")
 
-        else:
-            print("No Lichess games found.")
-            break
 
 if __name__ == "__main__":
     main()
