@@ -1,0 +1,549 @@
+indicators:
+  accuracy.train:
+    class_name: Scalar
+    is_print: true
+    name: accuracy.train
+  accuracy.valid:
+    class_name: Scalar
+    is_print: true
+    name: accuracy.valid
+  grad.model.conv1.bias.l1:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv1.bias.l1
+  grad.model.conv1.bias.l2:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv1.bias.l2
+  grad.model.conv1.bias.mean:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv1.bias.mean
+  grad.model.conv1.weight.l1:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv1.weight.l1
+  grad.model.conv1.weight.l2:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv1.weight.l2
+  grad.model.conv1.weight.mean:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv1.weight.mean
+  grad.model.conv2.bias.l1:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv2.bias.l1
+  grad.model.conv2.bias.l2:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv2.bias.l2
+  grad.model.conv2.bias.mean:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv2.bias.mean
+  grad.model.conv2.weight.l1:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv2.weight.l1
+  grad.model.conv2.weight.l2:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv2.weight.l2
+  grad.model.conv2.weight.mean:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.conv2.weight.mean
+  grad.model.fc1.bias.l1:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc1.bias.l1
+  grad.model.fc1.bias.l2:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc1.bias.l2
+  grad.model.fc1.bias.mean:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc1.bias.mean
+  grad.model.fc1.weight.l1:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc1.weight.l1
+  grad.model.fc1.weight.l2:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc1.weight.l2
+  grad.model.fc1.weight.mean:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc1.weight.mean
+  grad.model.fc2.bias.l1:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc2.bias.l1
+  grad.model.fc2.bias.l2:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc2.bias.l2
+  grad.model.fc2.bias.mean:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc2.bias.mean
+  grad.model.fc2.weight.l1:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc2.weight.l1
+  grad.model.fc2.weight.l2:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc2.weight.l2
+  grad.model.fc2.weight.mean:
+    class_name: Scalar
+    is_print: false
+    name: grad.model.fc2.weight.mean
+  loss.train:
+    class_name: Queue
+    is_print: true
+    name: loss.train
+    queue_size: 20
+  loss.valid:
+    class_name: Queue
+    is_print: true
+    name: loss.valid
+    queue_size: 20
+  model:
+    class_name: PyTorchModule
+    is_print: true
+    name: model
+  module.model.activation.mean:
+    class_name: Scalar
+    is_print: false
+    name: module.model.activation.mean
+  module.model.activation.var:
+    class_name: Scalar
+    is_print: false
+    name: module.model.activation.var
+  module.model.conv1.mean:
+    class_name: Scalar
+    is_print: false
+    name: module.model.conv1.mean
+  module.model.conv1.var:
+    class_name: Scalar
+    is_print: false
+    name: module.model.conv1.var
+  module.model.conv2.mean:
+    class_name: Scalar
+    is_print: false
+    name: module.model.conv2.mean
+  module.model.conv2.var:
+    class_name: Scalar
+    is_print: false
+    name: module.model.conv2.var
+  module.model.fc1.mean:
+    class_name: Scalar
+    is_print: false
+    name: module.model.fc1.mean
+  module.model.fc1.var:
+    class_name: Scalar
+    is_print: false
+    name: module.model.fc1.var
+  module.model.fc2.mean:
+    class_name: Scalar
+    is_print: false
+    name: module.model.fc2.mean
+  module.model.fc2.var:
+    class_name: Scalar
+    is_print: false
+    name: module.model.fc2.var
+  module.model.full.mean:
+    class_name: Scalar
+    is_print: false
+    name: module.model.full.mean
+  module.model.full.var:
+    class_name: Scalar
+    is_print: false
+    name: module.model.full.var
+  module.model.pool1.mean:
+    class_name: Scalar
+    is_print: false
+    name: module.model.pool1.mean
+  module.model.pool1.var:
+    class_name: Scalar
+    is_print: false
+    name: module.model.pool1.var
+  module.model.pool2.mean:
+    class_name: Scalar
+    is_print: false
+    name: module.model.pool2.mean
+  module.model.pool2.var:
+    class_name: Scalar
+    is_print: false
+    name: module.model.pool2.var
+  optim.optimizer.model.conv1.bias.exp_avg.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.bias.exp_avg.l1
+  optim.optimizer.model.conv1.bias.exp_avg.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.bias.exp_avg.l2
+  optim.optimizer.model.conv1.bias.exp_avg.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.bias.exp_avg.mean
+  optim.optimizer.model.conv1.bias.exp_avg_sq.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.bias.exp_avg_sq.l1
+  optim.optimizer.model.conv1.bias.exp_avg_sq.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.bias.exp_avg_sq.l2
+  optim.optimizer.model.conv1.bias.exp_avg_sq.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.bias.exp_avg_sq.mean
+  optim.optimizer.model.conv1.bias.step:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.bias.step
+  optim.optimizer.model.conv1.weight.exp_avg.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.weight.exp_avg.l1
+  optim.optimizer.model.conv1.weight.exp_avg.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.weight.exp_avg.l2
+  optim.optimizer.model.conv1.weight.exp_avg.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.weight.exp_avg.mean
+  optim.optimizer.model.conv1.weight.exp_avg_sq.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.weight.exp_avg_sq.l1
+  optim.optimizer.model.conv1.weight.exp_avg_sq.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.weight.exp_avg_sq.l2
+  optim.optimizer.model.conv1.weight.exp_avg_sq.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.weight.exp_avg_sq.mean
+  optim.optimizer.model.conv1.weight.step:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv1.weight.step
+  optim.optimizer.model.conv2.bias.exp_avg.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.bias.exp_avg.l1
+  optim.optimizer.model.conv2.bias.exp_avg.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.bias.exp_avg.l2
+  optim.optimizer.model.conv2.bias.exp_avg.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.bias.exp_avg.mean
+  optim.optimizer.model.conv2.bias.exp_avg_sq.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.bias.exp_avg_sq.l1
+  optim.optimizer.model.conv2.bias.exp_avg_sq.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.bias.exp_avg_sq.l2
+  optim.optimizer.model.conv2.bias.exp_avg_sq.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.bias.exp_avg_sq.mean
+  optim.optimizer.model.conv2.bias.step:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.bias.step
+  optim.optimizer.model.conv2.weight.exp_avg.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.weight.exp_avg.l1
+  optim.optimizer.model.conv2.weight.exp_avg.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.weight.exp_avg.l2
+  optim.optimizer.model.conv2.weight.exp_avg.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.weight.exp_avg.mean
+  optim.optimizer.model.conv2.weight.exp_avg_sq.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.weight.exp_avg_sq.l1
+  optim.optimizer.model.conv2.weight.exp_avg_sq.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.weight.exp_avg_sq.l2
+  optim.optimizer.model.conv2.weight.exp_avg_sq.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.weight.exp_avg_sq.mean
+  optim.optimizer.model.conv2.weight.step:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.conv2.weight.step
+  optim.optimizer.model.fc1.bias.exp_avg.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.bias.exp_avg.l1
+  optim.optimizer.model.fc1.bias.exp_avg.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.bias.exp_avg.l2
+  optim.optimizer.model.fc1.bias.exp_avg.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.bias.exp_avg.mean
+  optim.optimizer.model.fc1.bias.exp_avg_sq.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.bias.exp_avg_sq.l1
+  optim.optimizer.model.fc1.bias.exp_avg_sq.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.bias.exp_avg_sq.l2
+  optim.optimizer.model.fc1.bias.exp_avg_sq.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.bias.exp_avg_sq.mean
+  optim.optimizer.model.fc1.bias.step:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.bias.step
+  optim.optimizer.model.fc1.weight.exp_avg.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.weight.exp_avg.l1
+  optim.optimizer.model.fc1.weight.exp_avg.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.weight.exp_avg.l2
+  optim.optimizer.model.fc1.weight.exp_avg.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.weight.exp_avg.mean
+  optim.optimizer.model.fc1.weight.exp_avg_sq.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.weight.exp_avg_sq.l1
+  optim.optimizer.model.fc1.weight.exp_avg_sq.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.weight.exp_avg_sq.l2
+  optim.optimizer.model.fc1.weight.exp_avg_sq.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.weight.exp_avg_sq.mean
+  optim.optimizer.model.fc1.weight.step:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc1.weight.step
+  optim.optimizer.model.fc2.bias.exp_avg.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.bias.exp_avg.l1
+  optim.optimizer.model.fc2.bias.exp_avg.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.bias.exp_avg.l2
+  optim.optimizer.model.fc2.bias.exp_avg.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.bias.exp_avg.mean
+  optim.optimizer.model.fc2.bias.exp_avg_sq.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.bias.exp_avg_sq.l1
+  optim.optimizer.model.fc2.bias.exp_avg_sq.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.bias.exp_avg_sq.l2
+  optim.optimizer.model.fc2.bias.exp_avg_sq.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.bias.exp_avg_sq.mean
+  optim.optimizer.model.fc2.bias.step:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.bias.step
+  optim.optimizer.model.fc2.weight.exp_avg.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.weight.exp_avg.l1
+  optim.optimizer.model.fc2.weight.exp_avg.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.weight.exp_avg.l2
+  optim.optimizer.model.fc2.weight.exp_avg.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.weight.exp_avg.mean
+  optim.optimizer.model.fc2.weight.exp_avg_sq.l1:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.weight.exp_avg_sq.l1
+  optim.optimizer.model.fc2.weight.exp_avg_sq.l2:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.weight.exp_avg_sq.l2
+  optim.optimizer.model.fc2.weight.exp_avg_sq.mean:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.weight.exp_avg_sq.mean
+  optim.optimizer.model.fc2.weight.step:
+    class_name: Scalar
+    is_print: false
+    name: optim.optimizer.model.fc2.weight.step
+  optimizer:
+    class_name: PyTorchOptimizer
+    is_print: true
+    name: optimizer
+  param.model.conv1.bias.l1:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv1.bias.l1
+  param.model.conv1.bias.l2:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv1.bias.l2
+  param.model.conv1.bias.mean:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv1.bias.mean
+  param.model.conv1.weight.l1:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv1.weight.l1
+  param.model.conv1.weight.l2:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv1.weight.l2
+  param.model.conv1.weight.mean:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv1.weight.mean
+  param.model.conv2.bias.l1:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv2.bias.l1
+  param.model.conv2.bias.l2:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv2.bias.l2
+  param.model.conv2.bias.mean:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv2.bias.mean
+  param.model.conv2.weight.l1:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv2.weight.l1
+  param.model.conv2.weight.l2:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv2.weight.l2
+  param.model.conv2.weight.mean:
+    class_name: Scalar
+    is_print: false
+    name: param.model.conv2.weight.mean
+  param.model.fc1.bias.l1:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc1.bias.l1
+  param.model.fc1.bias.l2:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc1.bias.l2
+  param.model.fc1.bias.mean:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc1.bias.mean
+  param.model.fc1.weight.l1:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc1.weight.l1
+  param.model.fc1.weight.l2:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc1.weight.l2
+  param.model.fc1.weight.mean:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc1.weight.mean
+  param.model.fc2.bias.l1:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc2.bias.l1
+  param.model.fc2.bias.l2:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc2.bias.l2
+  param.model.fc2.bias.mean:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc2.bias.mean
+  param.model.fc2.weight.l1:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc2.weight.l1
+  param.model.fc2.weight.l2:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc2.weight.l2
+  param.model.fc2.weight.mean:
+    class_name: Scalar
+    is_print: false
+    name: param.model.fc2.weight.mean
+  time.loop:
+    class_name: Scalar
+    is_print: false
+    name: time.loop
+wildcards:
+  '*':
+    class_name: Scalar
+    is_print: true
+    name: '*'
+  accuracy.*:
+    class_name: Scalar
+    is_print: true
+    name: accuracy.*
+  grad.*:
+    class_name: Scalar
+    is_print: false
+    name: grad.*
+  hp.*:
+    class_name: Scalar
+    is_print: false
+    name: hp.*
+  loss.*:
+    class_name: Queue
+    is_print: true
+    name: loss.*
+    queue_size: 20
+  module.*:
+    class_name: Scalar
+    is_print: false
+    name: module.*
+  optim.*:
+    class_name: Scalar
+    is_print: false
+    name: optim.*
+  param.*:
+    class_name: Scalar
+    is_print: false
+    name: param.*
+  time.*:
+    class_name: Scalar
+    is_print: false
+    name: time.*

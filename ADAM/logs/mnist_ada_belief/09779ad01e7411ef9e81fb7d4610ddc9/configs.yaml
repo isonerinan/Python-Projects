@@ -1,0 +1,593 @@
+accuracy_func:
+  computed: <labml_helpers.metrics.accuracy.Accuracy object at 0x00000127C0BBA320>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: accuracy_func
+  options: []
+  order: 4
+  type: <class 'labml_helpers.metrics.accuracy.Accuracy'>
+  value: null
+dataset_name:
+  computed: MNIST
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: dataset_name
+  options:
+  - MNIST
+  order: 7
+  type: <class 'str'>
+  value: null
+dataset_transforms:
+  computed: "Compose(\n    ToTensor()\n    Normalize(mean=(0.1307,), std=(0.3081,))\n\
+    )"
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: dataset_transforms
+  options:
+  - mnist_transforms
+  order: 9
+  type: <class 'torchvision.transforms.transforms.Compose'>
+  value: null
+device:
+  computed: cpu
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: device
+  options: []
+  order: 2
+  type: <class 'torch.device'>
+  value: null
+device.cuda_device:
+  computed: 0
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: null
+  name: cuda_device
+  options: []
+  order: 3
+  type: <class 'int'>
+  value: null
+device.device:
+  computed: cpu
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: device
+  options:
+  - _device
+  order: 0
+  type: <class 'torch.device'>
+  value: null
+device.device_info:
+  computed: CPU
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: device_info
+  options:
+  - _device_info
+  order: 1
+  type: <class 'labml_helpers.device.DeviceInfo'>
+  value: null
+device.use_cuda:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: null
+  name: use_cuda
+  options: []
+  order: 2
+  type: <class 'bool'>
+  value: null
+epochs:
+  computed: 10
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: epochs
+  options: []
+  order: 22
+  type: <class 'int'>
+  value: null
+inner_iterations:
+  computed: 10
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: inner_iterations
+  options: []
+  order: 12
+  type: <class 'int'>
+  value: 10
+is_loop_on_interrupt:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: is_loop_on_interrupt
+  options: []
+  order: 28
+  type: <class 'bool'>
+  value: null
+is_save_models:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: is_save_models
+  options: []
+  order: 24
+  type: <class 'bool'>
+  value: null
+is_track_time:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: is_track_time
+  options: []
+  order: 14
+  type: <class 'bool'>
+  value: null
+log_new_line_interval:
+  computed: 1
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: log_new_line_interval
+  options: []
+  order: 25
+  type: <class 'int'>
+  value: null
+log_write_interval:
+  computed: 1
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: log_write_interval
+  options: []
+  order: 26
+  type: <class 'int'>
+  value: null
+loop_count:
+  computed: 10
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: loop_count
+  options:
+  - _data_loop_count
+  order: 21
+  type: <class 'int'>
+  value: null
+loop_step:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: loop_step
+  options: []
+  order: 23
+  type: <class 'int'>
+  value: null
+loss_func:
+  computed: CrossEntropyLoss()
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: loss_func
+  options: []
+  order: 29
+  type: <class 'torch.nn.modules.loss.CrossEntropyLoss'>
+  value: null
+mode:
+  computed: <labml_helpers.train_valid.ModeState object at 0x00000127C0BBE748>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: mode
+  options:
+  - from_type
+  order: 3
+  type: <class 'labml_helpers.train_valid.ModeState'>
+  value: null
+model:
+  computed: "Model(\n  (conv1): Conv2d(1, 20, kernel_size=(5, 5), stride=(1, 1))\n\
+    \  (pool1): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)\n\
+    \  (conv2): Conv2d(20, 50, kernel_size=(5, 5), stride=(1, 1))\n  (pool2): MaxPool2d(kernel_size=2,\
+    \ stride=2, padding=0, dilation=1, ceil_mode=False)\n  (fc1): Linear(in_features=800,\
+    \ out_features=500, bias=True)\n  (fc2): Linear(in_features=500, out_features=10,\
+    \ bias=True)\n  (activation): ReLU()\n)"
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: model
+  options:
+  - model
+  order: 1
+  type: <class 'torch.nn.modules.module.Module'>
+  value: null
+optimizer:
+  computed: "Adam (\nParameter Group 0\n    betas: (0.9, 0.999)\n    eps: 1e-08\n\
+    \    lr: 0.00015\n    weight_decay: 0.0\n)"
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: optimizer
+  options:
+  - _optimizer
+  order: 30
+  type: <class 'torch.optim.adam.Adam'>
+  value: null
+optimizer.amsgrad:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: amsgrad
+  options: []
+  order: 1
+  type: <class 'bool'>
+  value: null
+optimizer.betas:
+  computed:
+  - 0.9
+  - 0.999
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: betas
+  options: []
+  order: 4
+  type: typing.Tuple[float, float]
+  value: null
+optimizer.d_model:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: d_model
+  options: []
+  order: -1
+  type: <class 'int'>
+  value: null
+optimizer.degenerate_to_sgd:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: degenerate_to_sgd
+  options: []
+  order: -1
+  type: <class 'bool'>
+  value: null
+optimizer.eps:
+  computed: 1.0e-08
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: eps
+  options: []
+  order: 5
+  type: <class 'float'>
+  value: null
+optimizer.learning_rate:
+  computed: 0.00015
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: learning_rate
+  options: []
+  order: 3
+  type: <class 'float'>
+  value: 0.00015
+optimizer.momentum:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: momentum
+  options: []
+  order: -1
+  type: <class 'float'>
+  value: null
+optimizer.optimized_adam_update:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: optimized_adam_update
+  options: []
+  order: 6
+  type: <class 'bool'>
+  value: null
+optimizer.optimizer:
+  computed: "Adam (\nParameter Group 0\n    betas: (0.9, 0.999)\n    eps: 1e-08\n\
+    \    lr: 0.00015\n    weight_decay: 0.0\n)"
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: optimizer
+  options:
+  - SGD
+  - Adam
+  - AdamW
+  - RAdam
+  - AdaBelief
+  - Noam
+  - Sophia
+  - AdamWarmupCosineDecay
+  order: 0
+  type: <class 'torch.optim.adam.Adam'>
+  value: Adam
+optimizer.parameters:
+  computed: <generator object Module.parameters at 0x00000127C0BBD518>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: parameters
+  options: []
+  order: 2
+  type: <built-in function any>
+  value: <generator object Module.parameters at 0x00000127C0BBD518>
+optimizer.rectify:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: rectify
+  options: []
+  order: -1
+  type: <class 'bool'>
+  value: null
+optimizer.rho:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: rho
+  options: []
+  order: -1
+  type: <class 'float'>
+  value: null
+optimizer.total_steps:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: total_steps
+  options: []
+  order: -1
+  type: <class 'int'>
+  value: null
+optimizer.warmup:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: warmup
+  options: []
+  order: -1
+  type: <class 'int'>
+  value: null
+optimizer.weight_decay:
+  computed: 0.0
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: weight_decay
+  options: []
+  order: 8
+  type: <class 'float'>
+  value: null
+optimizer.weight_decay_absolute:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: weight_decay_absolute
+  options: []
+  order: 10
+  type: <class 'bool'>
+  value: null
+optimizer.weight_decay_obj:
+  computed: <labml_nn.optimizers.WeightDecay object at 0x000001279649FEB8>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: weight_decay_obj
+  options:
+  - L2
+  order: 7
+  type: <class 'labml_nn.optimizers.WeightDecay'>
+  value: null
+optimizer.weight_decouple:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: weight_decouple
+  options: []
+  order: 9
+  type: <class 'bool'>
+  value: null
+save_models_interval:
+  computed: 1
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: save_models_interval
+  options: []
+  order: 27
+  type: <class 'int'>
+  value: null
+set_seed:
+  computed: <labml_helpers.seed.SeedConfigs object at 0x00000127C0BB9630>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: set_seed
+  options: []
+  order: 0
+  type: <class 'labml_helpers.seed.SeedConfigs'>
+  value: null
+set_seed.seed:
+  computed: 5
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: seed
+  options: []
+  order: 1
+  type: <class 'int'>
+  value: null
+set_seed.set:
+  computed: <labml_helpers.seed.SetSeed object at 0x00000127C0F4C940>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: set
+  options:
+  - _set_seed
+  order: 0
+  type: <class 'str'>
+  value: null
+state_modules:
+  computed:
+  - <labml_helpers.metrics.accuracy.Accuracy object at 0x00000127C0BBA320>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: state_modules
+  options: []
+  order: 13
+  type: typing.List[labml_helpers.metrics.StateModule]
+  value:
+  - <labml_helpers.metrics.accuracy.Accuracy object at 0x00000127C0BBA320>
+train_batch_size:
+  computed: 64
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: train_batch_size
+  options: []
+  order: 18
+  type: <class 'int'>
+  value: null
+train_dataset:
+  computed: "Dataset MNIST\n    Number of datapoints: 60000\n    Root location: C:\\\
+    Users\\soner\\PycharmProjects\\ADAM\\data\n    Split: Train\n    StandardTransform\n\
+    Transform: Compose(\n               ToTensor()\n               Normalize(mean=(0.1307,),\
+    \ std=(0.3081,))\n           )"
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: train_dataset
+  options:
+  - mnist_train_dataset
+  order: 17
+  type: torchvision.datasets.mnist.MNIST
+  value: null
+train_loader:
+  computed: <torch.utils.data.dataloader.DataLoader object at 0x00000127C0E57CC0>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: train_loader
+  options:
+  - mnist_train_loader
+  order: 16
+  type: torch.utils.data.dataloader.DataLoader
+  value: null
+train_loader_shuffle:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: train_loader_shuffle
+  options: []
+  order: 19
+  type: <class 'bool'>
+  value: null
+trainer:
+  computed: <labml_helpers.train_valid.Trainer object at 0x00000127C0E57CF8>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: trainer
+  options:
+  - _default_trainer
+  order: 15
+  type: <class 'labml_helpers.train_valid.Trainer'>
+  value: null
+training_loop:
+  computed: LabTrainingLoop
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: training_loop
+  options:
+  - _loop_configs
+  order: 20
+  type: <class 'labml_helpers.training_loop.TrainingLoop'>
+  value: null
+valid_batch_size:
+  computed: 1024
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: valid_batch_size
+  options: []
+  order: 10
+  type: <class 'int'>
+  value: null
+valid_dataset:
+  computed: "Dataset MNIST\n    Number of datapoints: 10000\n    Root location: C:\\\
+    Users\\soner\\PycharmProjects\\ADAM\\data\n    Split: Test\n    StandardTransform\n\
+    Transform: Compose(\n               ToTensor()\n               Normalize(mean=(0.1307,),\
+    \ std=(0.3081,))\n           )"
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: valid_dataset
+  options:
+  - mnist_valid_dataset
+  order: 8
+  type: torchvision.datasets.mnist.MNIST
+  value: null
+valid_loader:
+  computed: <torch.utils.data.dataloader.DataLoader object at 0x00000127C0BC4A90>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: valid_loader
+  options:
+  - mnist_valid_loader
+  order: 6
+  type: torch.utils.data.dataloader.DataLoader
+  value: null
+valid_loader_shuffle:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: valid_loader_shuffle
+  options: []
+  order: 11
+  type: <class 'bool'>
+  value: null
+validator:
+  computed: <labml_helpers.train_valid.Trainer object at 0x00000127C0BC46D8>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: validator
+  options:
+  - _default_validator
+  order: 5
+  type: <class 'labml_helpers.train_valid.Trainer'>
+  value: null

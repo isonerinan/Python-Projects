@@ -1,0 +1,19 @@
+comment: ''
+commit: unknown
+commit_message: ''
+distributed_rank: 0
+distributed_world_size: 0
+is_dirty: false
+load_run: null
+name: mnist_ada_belief
+notes: ''
+python_file: notebook.ipynb
+repo_remotes: []
+start_step: 0
+tags:
+- mnist
+- ada
+- belief
+trial_date: '2024-05-30'
+trial_time: '14:01:59'
+uuid: 09779ad01e7411ef9e81fb7d4610ddc9
