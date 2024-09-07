@@ -4359,10 +4359,16 @@ class ModernApp(QMainWindow):
                 csv_data = [item for item in csv_data if selected_type in item['Title Type']]
                 print(f"Filtered by title type: {selected_type} ({len(csv_data)} titles match)")
 
+            self.result_label.setText(f"Our chefs are adding filters to enhance your selection's flavor...<br><br>"
+                                      f"({len(csv_data)} titles match your preferences)")
+            app.processEvents()
+
             # Check if there's data in the CSV file after filtering
             if csv_data:
-                self.update_result_label(4)
+                self.result_label.setText(f"We're handpicking a special title for you...<br><br>"
+                                          f"({len(csv_data)} titles match your preferences)")
                 app.processEvents()
+
                 # Randomly select a row from the CSV data
                 random_item = random.choice(csv_data)
 
@@ -4533,12 +4539,15 @@ class ModernApp(QMainWindow):
 
     # Get more details about the movie/series
     def more_details(self):
-        # Get the title URL from the result_label
-        title_url = self.result_label.text().split("<a href=\"")[1].split("\"><h1>")[0]
+        try:
+            # Get the title URL from the result_label
+            title_url = self.result_label.text().split("<a href=\"")[1].split("\"><h1>")[0]
 
-        # Create a new window to display the details
-        self.details_window = DetailsWindow(title_url)
-        self.details_window.show()
+            # Create a new window to display the details
+            self.details_window = DetailsWindow(title_url)
+            self.details_window.show()
+        except IndexError:
+            print("No title URL found.")
 
     # Save the movie/series' title and URL to a CSV file name "favorites.csv"
     def save_favorite(self, title, url):
