@@ -2,13 +2,11 @@ import math
 import shutil
 import sys
 import os
-import urllib
 import webbrowser
 from datetime import datetime
 
 import pandas as pd
 import requests
-from googlesearch import search
 from bs4 import BeautifulSoup
 import csv
 import random
@@ -164,16 +162,32 @@ def smooth_color_change(image):
         light_palette.setColor(QPalette.Link, dominant_color)
         window.light_theme()
 
+# Check the preferences file for the user's IMDb user page link and watchlist export link
+def checkPreferences():
+    with open("user_preferences.txt", "r") as file:
+        if os.stat("user_preferences.txt").st_size == 0:
+            return ""
+
+        preferences = file.read()
+        print(preferences)
+        preferences = preferences.split("\n")
+        print(preferences)
+        user_lists_link = preferences[0].split(": ")[1].strip("\"")
+
+        return user_lists_link
+
 # Custom QDialog class for the Preferences dialog
 class PreferencesDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Preferences")
-        # Ask the user to enter their IMDb user page link and watchlist export link
+        # Ask the user to enter their IMDb user page link
         self.user_lists_link_label = QLabel("IMDB User Lists Link:", self)
         self.user_lists_link_input = QLineEdit(self)
-        self.watchlist_link_label = QLabel("Watchlist Export Link:", self)
-        self.watchlist_link_input = QLineEdit(self)
+
+        # Add a button to select the watchlist.csv file
+        self.watchlist_file_label = QLabel("Watchlist File Path:", self)
+        self.watchlist_file_input = QPushButton("Select File", self)
 
         # Add a button to select the ratings.csv file
         self.ratings_file_label = QLabel("Ratings File Path:", self)
@@ -186,8 +200,8 @@ class PreferencesDialog(QDialog):
         layout = QVBoxLayout()
         layout.addWidget(self.user_lists_link_label)
         layout.addWidget(self.user_lists_link_input)
-        layout.addWidget(self.watchlist_link_label)
-        layout.addWidget(self.watchlist_link_input)
+        layout.addWidget(self.watchlist_file_label)
+        layout.addWidget(self.watchlist_file_input)
         layout.addWidget(self.ratings_file_label)
         layout.addWidget(self.ratings_file_input)
         layout.addWidget(button_box)
@@ -196,24 +210,26 @@ class PreferencesDialog(QDialog):
         # Connect the ratings_file_input button to the select_ratings_file function
         self.ratings_file_input.clicked.connect(self.select_ratings_file)
 
+        # Connect the watchlist_file_input button to the select_watchlist_file function
+        self.watchlist_file_input.clicked.connect(self.select_watchlist_file)
+
     def custom_accept(self):
         # Check the user inputs and create a flag
         self.user_lists_link = self.user_lists_link_input.text()
-        self.watchlist_link = self.watchlist_link_input.text()
 
-        input_flag = self.check_input(self.user_lists_link, self.watchlist_link)
+        input_flag = self.check_input(self.user_lists_link)
         print(f"Input flag: {input_flag}")
 
         # Check if "user_preferences.txt" file exists
         if os.path.isfile("user_preferences.txt"):
             # Read the user preferences from the text file
             print("Preferences file exists.")
-            self.old_user_lists_link, self.old_watchlist_link = window.checkPreferences()
-            print(self.old_user_lists_link, self.old_watchlist_link)
+            self.old_user_lists_link = checkPreferences()
+            print("Old link:", self.old_user_lists_link)
 
-            self.old_user_lists_link, self.old_watchlist_link= self.correct_preferences(self.old_user_lists_link, self.old_watchlist_link)
+            self.old_user_lists_link = self.correct_preferences(self.old_user_lists_link)
 
-            preferences_flag = self.check_preferences(self.old_user_lists_link, self.old_watchlist_link)
+            preferences_flag = self.check_preferences(self.old_user_lists_link)
             print(f"Preferences flag: {preferences_flag}")
 
             # Check if the flags give an error
@@ -230,62 +246,45 @@ class PreferencesDialog(QDialog):
             return url.startswith("https://www.imdb.com/")
 
     # Check all the possible combinations of user inputs and flag them
-    def check_input(self, lists_input, watchlist_input):
+    def check_input(self, lists_input):
         # Check and flag if the user inputs are valid URLs
-        if self.check_url(lists_input) and self.check_url(watchlist_input):
+        if self.check_url(lists_input):
             return 0
-        elif lists_input == "" and watchlist_input == "":
+        elif lists_input == "":
             return 1
-        elif self.check_url(lists_input) and watchlist_input == "":
-            return 2
-        elif lists_input == "" and self.check_url(watchlist_input):
-            return 3
-        elif (not self.check_url(lists_input) and lists_input != "") and (not self.check_url(watchlist_input) and watchlist_input != ""):
-            return 4
-        elif (not self.check_url(lists_input) and lists_input != "") and self.check_url(watchlist_input):
-            return 5
-        elif self.check_url(lists_input) and (not self.check_url(watchlist_input) and watchlist_input != ""):
-            return 6
-        elif (not self.check_url(lists_input) and lists_input != "") and watchlist_input == "":
-            return 7
-        elif lists_input == "" and (not self.check_url(watchlist_input) and watchlist_input != ""):
-            return 8
         else:
-            return 9
+            return 2
 
     # Check all the possible combinations of preferences file inputs and flag them
-    def check_preferences(self, lists_pref, watchlist_pref):
-        if self.check_url(lists_pref) and self.check_url(watchlist_pref):
+    def check_preferences(self, lists_pref):
+        if self.check_url(lists_pref):
             return 0
-        elif lists_pref == "" and watchlist_pref == "":
+        elif lists_pref == "":
             return 1
-        elif self.check_url(lists_pref) and watchlist_pref == "":
+        else:
             return 2
-        elif lists_pref == "" and self.check_url(watchlist_pref):
-            return 3
 
     # Correct the user preferences file if there is something wrong with it
-    def correct_preferences(self, lists_pref, watchlist_pref):
+    def correct_preferences(self, lists_pref):
         if not self.check_url(lists_pref):
             lists_pref = ""
 
-        if not self.check_url(watchlist_pref):
-            watchlist_pref = ""
-
-        return lists_pref, watchlist_pref
+        return lists_pref
 
     # Return error message based on the preferences and input flags
     def result(self, preferences_flag, input_flag):
+        # input: 0 - valid, 1 - empty, 2 - invalid
+        # preferences: 0 - valid, 1 - empty, 2 - invalid
         match (preferences_flag, input_flag):
-            case (0, 4) | (1, 1) | (1, 4) | (2, 4) | (2, 7) | (3, 4) | (3, 8):
-                # Show QMessageBox with the error message
-                error_message = QMessageBox()
-                error_message.setWindowTitle("Error")
-                error_message.setText("Please enter a valid URL for both fields.")
-                error_message.setIcon(QMessageBox.Critical)
-                error_message.exec_()
+            case (0, 0) | (1, 0):    # Both valid
+                self.accept()
 
-            case (0, 5) | (0, 7) | (1, 3) | (1, 5) | (2, 5) | (3, 1) | (3, 3) | (3, 5) | (3, 7):
+            case (0, 1):   # Preferences valid, input empty
+                # Do not change the old preferences
+                self.user_lists_link = self.old_user_lists_link
+                self.accept()
+
+            case (0, 2):   # Preferences valid, input invalid
                 # Show QMessageBox with the error message
                 error_message = QMessageBox()
                 error_message.setWindowTitle("Error")
@@ -293,32 +292,34 @@ class PreferencesDialog(QDialog):
                 error_message.setIcon(QMessageBox.Critical)
                 error_message.exec_()
 
-            case (0, 6) | (0, 8) | (1, 2) | (1, 6) | (1, 7) | (1, 8) | (2, 1) | (2, 2) | (2, 6) | (2, 8) | (3, 6):
+            case (1, 1):   # Both empty
                 # Show QMessageBox with the error message
                 error_message = QMessageBox()
                 error_message.setWindowTitle("Error")
-                error_message.setText("Please enter a valid URL for the \"Watchlist Export Link\" field.")
+                error_message.setText("Please do not leave the \"IMDB User Lists Link\" field empty.")
                 error_message.setIcon(QMessageBox.Critical)
                 error_message.exec_()
 
-            case (0, 0) | (1, 0) | (2, 0) | (3, 0):
+            case (1, 2):   # Preferences empty, input invalid
+                # Show QMessageBox with the error message
+                error_message = QMessageBox()
+                error_message.setWindowTitle("Error")
+                error_message.setText("You have entered an invalid URL. Please enter a valid URL for the \"IMDB User Lists Link\" field.")
+                error_message.setIcon(QMessageBox.Critical)
+                error_message.exec_()
+
+            case (2, 0):   # Preferences invalid, input valid
+                # Change the old preferences to the new input
+                self.old_user_lists_link = self.user_lists_link
                 self.accept()
 
-            case (0, 1):
-                self.user_lists_link = self.old_user_lists_link
-                self.watchlist_link = self.old_watchlist_link
-                self.accept()
-
-            case (0, 2) | (3, 2):
-                self.watchlist_link = self.old_watchlist_link
-                self.accept()
-
-            case (0, 3) | (2, 3):
-                self.user_lists_link = self.old_user_lists_link
-                self.accept()
-
-
-
+            case (2, 1) | (2, 2):   # Preferences invalid, input empty or invalid
+                # Show QMessageBox with the error message
+                error_message = QMessageBox()
+                error_message.setWindowTitle("Error")
+                error_message.setText("User preferences are invalid. Please enter a valid URL for the \"IMDB User Lists Link\" field.")
+                error_message.setIcon(QMessageBox.Critical)
+                error_message.exec_()
 
     # Ask user to select the directory for their ratings.csv file
     def select_ratings_file(self):
@@ -334,6 +335,21 @@ class PreferencesDialog(QDialog):
 
             # Update the ratings_file_input text with the ratings.csv file path
             self.ratings_file_input.setText(ratings_file_path)
+
+    # Ask user to select the directory for their watchlist.csv file
+    def select_watchlist_file(self):
+        # Open a file dialog to select the watchlist.csv file
+        watchlist_file_path = QFileDialog.getOpenFileName(self, 'Select watchlist.csv', '', 'CSV files (*.csv)')[0]
+
+        # Check if the user selected a file
+        if watchlist_file_path:
+            # Check if the watchlist.csv file is in the same directory as the script or executable
+            if not os.path.dirname(os.path.realpath(__file__)) + "watchlist.csv" == watchlist_file_path:
+                # If not, copy the watchlist.csv file to the same directory as the script
+                shutil.copy(watchlist_file_path, "watchlist.csv")
+
+            # Update the watchlist_file_input text with the watchlist.csv file path
+            self.watchlist_file_input.setText(watchlist_file_path)
 
 # Custom QDialog class for the Favorites dialog
 class MyFavoritesDialog(QDialog):
@@ -630,9 +646,14 @@ class StatisticsWindow(QDialog):
         for item in ratings_data:
             # Check if the title type is not empty
             if item['Title Type'] != "":
+                print(item['Original Title'])
+                print(item['Year'])
                 # Extract year and rating
-                year = int(item['Year'])
-                rating = float(item['Your Rating'])
+                try:
+                    year = int(item['Year'])
+                    rating = float(item['Your Rating'])
+                except:
+                    continue
 
                 # Check if the year is already in the dictionary
                 if year in year_ratings:
@@ -654,7 +675,7 @@ class StatisticsWindow(QDialog):
             # Calculate the love formula for each year
             year_love_formulas = {
                 year: (avg_rating, year_title_count[year],
-                       ((avg_rating ** 5) * (year_title_count[year] ** 1.3)) / 1000)
+                       ((avg_rating ** 5) * (year_title_count[year] ** 1.2)))
                 for year, avg_rating in year_ratings.items()
             }
 
@@ -798,10 +819,10 @@ class StatisticsWindow(QDialog):
             # Sort newly added years and normalized values
             years, title_counts, avg_ratings, love_formulas = zip(*sorted(zip(years, title_counts, avg_ratings, love_formulas)))
 
-            # Normalize title_counts, avg_ratings and love_formulas to be between 0 and 100 (for better visualization)
-            normalized_title_counts = [100 * (title_count / max(title_counts)) for title_count in title_counts]
-            normalized_avg_ratings = [100 * (avg_rating / max(avg_ratings)) for avg_rating in avg_ratings]
-            normalized_love_formulas = [100 * (love_formula / max(love_formulas)) for love_formula in love_formulas]
+            # Normalize title_counts, avg_ratings and love_formulas to be between 0 and 10 (for better visualization)
+            normalized_title_counts = [10 * (title_count / max(title_counts)) for title_count in title_counts]
+            normalized_avg_ratings = [10 * (avg_rating / max(avg_ratings)) for avg_rating in avg_ratings]
+            normalized_love_formulas = [10 * (love_formula / max(love_formulas)) for love_formula in love_formulas]
 
             # Set up the figure and axes
             fig, ax = plt.subplots()
@@ -818,12 +839,12 @@ class StatisticsWindow(QDialog):
 
             # Set the x and y ticks
             ax.set_xticks(years)
-            ax.set_yticks(np.arange(0, 100, 5))
+            ax.set_yticks(np.arange(0, 10.5, 0.5))
 
-            # Plot average rating and love formula as side by side bar charts, title count as a line chart
-            ax.bar(years, normalized_avg_ratings, color="#4fbeff", width=0.4, align="edge", label="Average Rating For the Year")
+            # Plot average rating as a dotted line, love formula as a solid line and title count as bars
+            ax.plot(years, normalized_avg_ratings, color="#4fbeff", linestyle="--", linewidth=2.5, label="Average Rating")
             ax.plot(years, normalized_love_formulas, color="#940000", linewidth=2.5, label="Your Love For the Year")
-            ax.bar(years, normalized_title_counts, color="#fcba03", width=-0.4, align="edge", label="Number of Rated Titles")
+            ax.bar(years, normalized_title_counts, color="#fcba03", label="Rated Titles")
 
             # Rotate the x ticks
             plt.xticks(rotation=60)
@@ -896,7 +917,7 @@ class StatisticsWindow(QDialog):
         time.sleep(1.5)
 
         # Read the watchlist.csv file into a list
-        with open('watchlist.csv', 'r') as file:
+        with open('watchlist.csv', 'r', encoding='utf-8') as file:
             watchlist_data = list(csv.DictReader(file))
 
         # Calculate the number of movies and series in the watchlist
@@ -917,35 +938,35 @@ class StatisticsWindow(QDialog):
         music_video_count = 0
 
         for item in watchlist_data:
-            if item['Title Type'] == "movie":
+            if item['Title Type'] == "Movie":
                 movie_count += 1
-            elif item['Title Type'] == "tvSeries":
+            elif item['Title Type'] == "TV Series":
                 series_count += 1
-            elif item['Title Type'] == "tvEpisode":
+            elif item['Title Type'] == "TV Episode":
                 episode_count += 1
-            elif item['Title Type'] == "tvMiniSeries":
+            elif item['Title Type'] == "TV Mini Series":
                 mini_series_count += 1
-            elif item['Title Type'] == "short":
+            elif item['Title Type'] == "Short":
                 short_count += 1
-            elif item['Title Type'] == "tvMovie":
+            elif item['Title Type'] == "TV Movie":
                 tv_movie_count += 1
-            elif item['Title Type'] == "tvSpecial":
+            elif item['Title Type'] == "TV Special":
                 tv_special_count += 1
-            elif item['Title Type'] == "video":
+            elif item['Title Type'] == "Video":
                 video_count += 1
-            elif item['Title Type'] == "videoGame":
+            elif item['Title Type'] == "Video Game":
                 video_game_count += 1
-            elif item['Title Type'] == "podcastSeries":
+            elif item['Title Type'] == "Podcast Series":
                 podcast_count += 1
-            elif item['Title Type'] == "podcastEpisode":
+            elif item['Title Type'] == "Podcast Episode":
                 podcast_episode_count += 1
-            elif item['Title Type'] == "tvMiniSeries":
+            elif item['Title Type'] == "TV Mini Series":
                 tv_miniseries_count += 1
-            elif item['Title Type'] == "tvShort":
+            elif item['Title Type'] == "TV Short":
                 tv_short_count += 1
-            elif item['Title Type'] == "documentary":
+            elif item['Title Type'] == "Documentary":
                 documentary_count += 1
-            elif item['Title Type'] == "musicVideo":
+            elif item['Title Type'] == "Music Video":
                 music_video_count += 1
 
         title_count = len(watchlist_data)
@@ -973,13 +994,13 @@ class StatisticsWindow(QDialog):
         # Get the count of each individual genre in the watchlist
         genre_count = {}
         for item in watchlist_data:
-            if item['Title Type'] == "movie" or item['Title Type'] == "tvSeries" or item['Title Type'] == "tvEpisode"\
-                    or item['Title Type'] == "tvMiniSeries" or item['Title Type'] == "short"\
-                    or item['Title Type'] == "tvMovie" or item['Title Type'] == "tvSpecial"\
-                    or item['Title Type'] == "video" or item['Title Type'] == "videoGame"\
-                    or item['Title Type'] == "podcastSeries" or item['Title Type'] == "podcastEpisode"\
-                    or item['Title Type'] == "tvMiniSeries" or item['Title Type'] == "tvShort"\
-                    or item['Title Type'] == "documentary" or item['Title Type'] == "musicVideo":
+            if item['Title Type'] == "Movie" or item['Title Type'] == "TV Series" or item['Title Type'] == "TV Episode"\
+                    or item['Title Type'] == "TV Mini Series" or item['Title Type'] == "Short"\
+                    or item['Title Type'] == "TV Movie" or item['Title Type'] == "TV Special"\
+                    or item['Title Type'] == "Video" or item['Title Type'] == "Video Game"\
+                    or item['Title Type'] == "Podcast Series" or item['Title Type'] == "Podcast Episode"\
+                    or item['Title Type'] == "TV Mini Series" or item['Title Type'] == "TV Short"\
+                    or item['Title Type'] == "Documentary" or item['Title Type'] == "Music Video":
 
                 genres = item['Genres'].split(", ")
 
@@ -1129,8 +1150,8 @@ class StatisticsWindow(QDialog):
 
         # Loop through the ratings_data list
         for item in ratings_data:
-            # Check if the title type is "movie"
-            if item['Title Type'] == "movie":
+            # Check if the title type is "Movie"
+            if item['Title Type'] == "Movie" or item['Title Type'] == "Short" or item['Title Type'] == "TV Movie":
                 # Extract director and rating
                 director = item['Directors']
                 rating = float(item['Your Rating'])
@@ -1140,12 +1161,12 @@ class StatisticsWindow(QDialog):
                     # Add the rating to the existing director
                     director_ratings[director] += rating
                     director_title_counts[director] += 1
-                    director_titles[director].append(item['Title'])
+                    director_titles[director].append(item['Original Title'])
                 else:
                     # Add the director to the dictionary
                     director_ratings[director] = rating
                     director_title_counts[director] = 1
-                    director_titles[director] = [item['Title']]
+                    director_titles[director] = [item['Original Title']]
 
 
         # Check if there are any ratings
@@ -1158,7 +1179,7 @@ class StatisticsWindow(QDialog):
 
             # Calculate the love_formula for each director
             director_love_formulas = {
-                director: (avg_rating, director_title_counts[director], ((avg_rating ** 5) * (director_title_counts[director] ** 1.3)) / 1000)
+                director: (avg_rating, director_title_counts[director], ((avg_rating ** 5) * (director_title_counts[director] ** 1.2)) / 1000)
                 for director, avg_rating in director_average_ratings.items()
             }
 
@@ -1194,7 +1215,11 @@ class StatisticsWindow(QDialog):
                                    f"You have 5 seconds: which {random_director} movie is better, {random_title} or {random_title_2}?"])
 
             if len(director_ratings) > 1:
-                random_director_2 = random.choice([director in director_ratings.keys() and director != random_director])
+                random_director_2 = random.choice([director in director_ratings.keys()])
+
+                while(random_director_2 == random_director):
+                    random_director_2 = random.choice([director in director_ratings.keys()])
+
                 jokes_list.extend([f"Did you know that {random_director} and {random_director_2} are siblings?<br><br>No, you did not! Because they are not. Probably...",
                                    f"Seems like your dream movie would be directed by {random_director} and {random_director_2}.<br><br>That would be an interesting collab.",
                                    f"Seems like you are a fan of {random_director} and {random_director_2}.<br><br>That's a weird combination, and I love it.",
@@ -1287,6 +1312,7 @@ class StatisticsWindow(QDialog):
         dialog.exec_()
 
     def get_favorite_actor(self):
+        """
         window.update_result_label("Calculating your favorite actors/actresses...")
         app.processEvents()
         time.sleep(1.5)
@@ -1296,7 +1322,7 @@ class StatisticsWindow(QDialog):
         actor_titles = {}
 
         # Get the user lists page from user_preferences.txt
-        lists_link, watchlist_link = window.checkPreferences()
+        lists_link = checkPreferences()
         ratings_link = lists_link.replace("lists", "ratings")
 
         # Send an HTTP GET request to fetch the ratings page
@@ -1389,13 +1415,13 @@ class StatisticsWindow(QDialog):
 
                             # Loop through the ratings_data list
                             for item in ratings_data:
-                                # Check if the title type is "movie"
-                                if item['Title Type'] == "movie":
+                                # Check if the title type is "Movie"
+                                if item['Title Type'] == "Movie":
                                     # Extract title and rating
                                     rating = int(item['Your Rating'])
 
                                     # Check if the title is the same as the current title
-                                    if title == item['Title']:
+                                    if title == item['Original Title']:
                                         # Extract directors
                                         directors = item['Directors'].split(", ")
 
@@ -1510,8 +1536,12 @@ class StatisticsWindow(QDialog):
             sorted_actors = (f"An error occurred.\n"
                              f"Please check if your Ratings are public and try again.")
             return sorted_actors
+        """
+
+        return "This functionality is not available at the moment due to the changes IMDb made to their website."
 
     def see_all_actors(self, favorite_actors):
+        """
         # Create a new QDialog to show all the actors
         dialog = QDialog()
         dialog.setWindowTitle("All Actors")
@@ -1550,6 +1580,13 @@ class StatisticsWindow(QDialog):
         dialog.setLayout(layout)
         # Connect the sorting function to the header labels
         dialog.exec_()
+        """
+        # Show an error pop up
+        error_dialog = QMessageBox()
+        error_dialog.setWindowTitle("Error")
+        error_dialog.setText("This functionality is not available at the moment due to the changes IMDb made to their website.")
+        error_dialog.setIcon(QMessageBox.Critical)
+        error_dialog.exec_()
 
 
     # Get the favorite genre based on the average rating you have given to movies/series of that genre
@@ -1563,8 +1600,8 @@ class StatisticsWindow(QDialog):
 
         # Loop through the ratings_data list
         for item in ratings_data:
-            # Check if the title type is not "tvEpisode", since the genre of a TV episode is the genre of the TV series
-            if item['Title Type'] != "tvEpisode":
+            # Check if the title type is not "TV Episode", since the genre of a TV episode is the genre of the TV series
+            if item['Title Type'] != "TV Episode":
                 # Extract genres and rating
                 genres = item['Genres'].split(", ")
                 rating = float(item['Your Rating'])
@@ -1603,7 +1640,7 @@ class StatisticsWindow(QDialog):
             # Calculate the love_formula for each genre
             genre_love_formulas = {
                 genre: (avg_rating, genre_title_counts[genre],
-                           ((avg_rating ** 5) * (genre_title_counts[genre] ** 1.3)) / 1000)
+                           ((avg_rating ** 5) * (genre_title_counts[genre] ** 1.2)) / 1000)
                 for genre, avg_rating in genre_average_ratings.items()
             }
 
@@ -1668,9 +1705,9 @@ class StatisticsWindow(QDialog):
         # Loop through the ratings_data list
         for item in ratings_data:
 
-            # Check if the title type is "tvSeries"
-            if item['Title Type'] == "tvSeries":
-                series_name = item['Title']
+            # Check if the title type is TV series
+            if item['Title Type'] == "TV Series":
+                series_name = item['Original Title']
                 rating = float(item['Your Rating'])
 
                 if series_name not in tv_series_data:
@@ -1690,15 +1727,15 @@ class StatisticsWindow(QDialog):
                 if series_name in rewatched_series:
                     tv_series_data[series_name]['Rewatch Count'] = rewatched_series[series_name]
 
-            # Check if the title type is "tvEpisode"
-            elif item['Title Type'] == "tvEpisode":
+            # Check if the title type is "TV Episode"
+            elif item['Title Type'] == "TV Episode":
                 # Split the title into series name and episode name
                 # There are four possibilities:
                 # "Series Name: Episode Name",
                 # "Series Name: 'Episode Name: Episode Part'",
                 # "'IP Name: Series Name': Episode Name",
                 # "'IP Name: Series Name': 'Episode Name: Episode Part'"
-                title_split = item['Title'].split(":")
+                title_split = item['Original Title'].split(":")
 
                 # Determine how many colons are in the title and act accordingly
                 num_colons = len(title_split)
@@ -1708,20 +1745,42 @@ class StatisticsWindow(QDialog):
                     series_name = title_split[0]
                 elif num_colons == 3:
                     window.update_result_label(f"Checking out individual episodes such as:<br>"
-                                               f"{item['Title']}")
+                                               f"{item['Original Title']}")
                     app.processEvents()
-                    # Format: "Series Name: 'Episode Name: Episode Part'" or "'IP Name: Series Name': Episode Name"
-                    # Check the URL to determine which format it is
-                    title_url = item['URL']
 
-                    # Get the HTML content of the title URL
-                    title_html = requests.get(title_url, headers=headers).text
+                    # Check the known TV titles first (to avoid unnecessary requests)
+                    known_tv_titles = []
 
-                    # Create a BeautifulSoup object from the HTML content
-                    title_soup = BeautifulSoup(title_html, 'html.parser')
+                    # Check if the "known_tv_titles.txt" file exists
+                    if os.path.exists("known_tv_titles.txt"):
+                        # If the file exists, read the known TV titles from the file and add them to the list
+                        with open("known_tv_titles.txt", "r") as file:
+                            known_tv_titles = [line.strip() for line in file]
 
-                    # Get the title from the HTML content
-                    series_name = title_soup.find("div", class_="bTLVGY").a.text
+                    # Check if the title starts with a known TV series name (from the known_tv_titles dictionary)
+                    if any(item['Original Title'].startswith(known_title) for known_title in known_tv_titles):
+                        # Format: "Series Name: 'Episode Name: Episode Part'"
+                        series_name = title_split[0]
+
+                    else:
+                        # Format: "Series Name: 'Episode Name: Episode Part'" or "'IP Name: Series Name': Episode Name"
+                        # Check the URL to determine which format it is
+                        title_url = item['URL']
+                        print(title_url)
+
+                        # Get the HTML content of the title URL
+                        title_html = requests.get(title_url, headers=headers).text
+
+                        # Create a BeautifulSoup object from the HTML content
+                        title_soup = BeautifulSoup(title_html, 'html.parser')
+
+                        # Get the title from the HTML content
+                        series_name = title_soup.find("div", class_="sc-2a168135-0 flmBNm").a.text
+                        print(series_name)
+
+                        # Save the known TV titles to a new line in the "known_tv_titles.txt" file
+                        with open("known_tv_titles.txt", "a") as file:
+                            file.write(f"{series_name}\n")
 
                 elif num_colons == 4:
                     # Format: "'IP Name: Series Name': 'Episode Name: Episode Part'"
@@ -1813,25 +1872,22 @@ class StatisticsWindow(QDialog):
             if data['Episode Count'] != 0 and data['Your Rating'] != 0:
                 if data['Episode Count'] > 1:
                     love_formula = (
-                            # Geometric mean of user's rating for the series and average episode rating
                             # Weighted by the number of episodes rated by the user
-                            math.sqrt((data['Average Episode Rating'] ** 5) *
-                                      (data['Your Rating'] ** 5)) *
-                            (data['Episode Count'] ** 1.3) / 1000
+                            math.pow((data['Average Episode Rating'] ** 3) *
+                                      (data['Your Rating'] ** 5), 0.2) *
+                            (data['Episode Count'] ** 0.2)
                     )
                 else:
                     love_formula = (
-                        # Geometric mean of user's rating for the series and average episode rating
                         # Weighted by the number of episodes rated by the user
-                            math.sqrt((data['Average Episode Rating'] ** 5) *
-                                      (data['Your Rating'] ** 5)) *
-                            ((data['Episode Count'] + 0.5) ** 1.3) / 1000
+                        math.pow((data['Average Episode Rating'] ** 3) *
+                                 (data['Your Rating'] ** 5), 0.2) *
+                        ((data['Episode Count'] + 0.5) ** 0.2)
                     )
 
             elif data['Episode Count'] != 0 and data['Your Rating'] == 0:
                 love_formula = (
-                        (data['Average Episode Rating'] ** 2.5) *
-                        (data['Episode Count'] ** 1.3) / 1000
+                        data['Average Episode Rating'] * data['Episode Count'] ** 0.2
                 )
 
             elif data['Episode Count'] == 0 and data['Your Rating'] != 0:
@@ -1840,7 +1896,7 @@ class StatisticsWindow(QDialog):
                 )
 
             if data['Rewatch Count'] > 0:
-                love_formula *= math.sqrt(data['Rewatch Count'])
+                love_formula *= math.pow(data['Rewatch Count'], 1.1)
 
             data['Love Formula'] = love_formula
 
@@ -1925,7 +1981,7 @@ class StatisticsWindow(QDialog):
 
         # Write the rewatch counts to rewatch.csv (separated by semicolon)
         with open("rewatch.csv", "w") as file:
-            file.write("Title;Rewatch Count\n")
+            file.write("Original Title;Rewatch Count\n")
             for title, rewatch_count in rewatch_counts:
                 file.write(f"{title};{rewatch_count}\n")
 
@@ -1945,7 +2001,7 @@ class StatisticsWindow(QDialog):
             # Loop through the rewatch_data list
             for item in rewatch_data:
                 # Extract title and rewatch count
-                title = item['Title']
+                title = item['Original Title']
                 rewatch_counts[title] = int(item['Rewatch Count'])
 
             return rewatch_counts
@@ -2178,6 +2234,7 @@ class DetailsWindow(QDialog):
         else:
             # Get the title from result_label's text's first row
             print("An error occurred while getting the awards and nominations on title")
+            awards = "An error occurred while getting the awards and nominations on title"
 
         # Get certificate ratings and parental guide
         response = browser.open(title_url + "parentalguide")
@@ -2263,35 +2320,6 @@ class DetailsWindow(QDialog):
 
         self.main_layout = QGridLayout(self, spacing=0)
 
-        # Show certificate ratings
-        certificate_widget = QWidget()
-
-        certificate_ratings_label = QLabel("<h2>Certificate Ratings</h2>")
-        certificate_list_label = QLabel()
-        certificate_list_label.setText(", ".join(certificate_ratings_list))
-        certificate_list_label.setStyleSheet("font-size: 18px;")
-        certificate_list_label.setWordWrap(True)
-        certificate_list_label.hide()
-
-        certificate_button = QPushButton("| Show/Hide Certificate Ratings")
-        certificate_button.clicked.connect(lambda: certificate_list_label.show() if certificate_list_label.isHidden() else certificate_list_label.hide())
-
-        default_button_stylesheet = certificate_button.styleSheet()
-
-        certificate_label_widget = QWidget()
-        certificate_label_widget_layout = QHBoxLayout()
-        certificate_label_widget_layout.addWidget(certificate_ratings_label)
-        certificate_label_widget_layout.addWidget(certificate_button)
-        certificate_label_widget_layout.setAlignment(Qt.AlignLeft)
-        certificate_label_widget.setLayout(certificate_label_widget_layout)
-
-        certificate_widget_layout = QVBoxLayout()
-        certificate_widget_layout.addWidget(certificate_label_widget)
-        certificate_widget_layout.addWidget(certificate_list_label)
-        certificate_widget.setLayout(certificate_widget_layout)
-
-        self.main_layout.addWidget(certificate_widget, 0, 0)
-
         # Show parental guide: Nudity, Violence, Profanity, Alcohol, Drugs & Smoking, Frightening & Intense Scenes
         parental_guide_widget = QWidget()
         parental_guide_label_widget = QWidget()
@@ -2323,6 +2351,8 @@ class DetailsWindow(QDialog):
             case "Moderate":
                 sex_nudity_label.setStyleSheet("color: orange;")
             case "Mild":
+                sex_nudity_label.setStyleSheet("color: yellow;")
+            case _:
                 sex_nudity_label.setStyleSheet("color: green;")
 
         sex_nudity_label_widget = QWidget()
@@ -2347,6 +2377,8 @@ class DetailsWindow(QDialog):
             case "Moderate":
                 violence_gore_label.setStyleSheet("color: orange;")
             case "Mild":
+                violence_gore_label.setStyleSheet("color: yellow;")
+            case _:
                 violence_gore_label.setStyleSheet("color: green;")
 
         violence_gore_label_widget = QWidget()
@@ -2372,6 +2404,8 @@ class DetailsWindow(QDialog):
             case "Moderate":
                 profanity_label.setStyleSheet("color: orange;")
             case "Mild":
+                profanity_label.setStyleSheet("color: yellow;")
+            case _:
                 profanity_label.setStyleSheet("color: green;")
 
         profanity_label_widget = QWidget()
@@ -2397,6 +2431,8 @@ class DetailsWindow(QDialog):
             case "Moderate":
                 alcohol_drugs_smoking_label.setStyleSheet("color: orange;")
             case "Mild":
+                alcohol_drugs_smoking_label.setStyleSheet("color: yellow;")
+            case _:
                 alcohol_drugs_smoking_label.setStyleSheet("color: green;")
 
         alcohol_drugs_smoking_label_widget = QWidget()
@@ -2422,6 +2458,8 @@ class DetailsWindow(QDialog):
             case "Moderate":
                 frightening_intense_scenes_label.setStyleSheet("color: orange;")
             case "Mild":
+                frightening_intense_scenes_label.setStyleSheet("color: yellow;")
+            case _:
                 frightening_intense_scenes_label.setStyleSheet("color: green;")
 
         frightening_intense_scenes_label_widget = QWidget()
@@ -2467,7 +2505,39 @@ class DetailsWindow(QDialog):
         parental_guide_widget_layout.addWidget(parental_guide_label_widget)
         parental_guide_widget_layout.addWidget(parental_guide_container)
         parental_guide_widget.setLayout(parental_guide_widget_layout)
-        self.main_layout.addWidget(scroll_area, 1, 0)
+
+        # Change the color of the parental guide container background according to levels of overall severity
+        # There are 5 categories with 4 levels of severity each: None, Mild, Moderate, Severe
+        # This adds up to 20, with each 4 levels having a different color
+        # 0-4: Green, 5-9: Yellow, 10-14: Orange, 15-20: Red
+
+        severity_levels = {
+            "": 0,
+            "None": 0,
+            "Mild": 1,
+            "Moderate": 2,
+            "Severe": 3
+        }
+
+        overall_severity = severity_levels[sn_severity] + severity_levels[violence_severity] + severity_levels[profanity_severity] + severity_levels[ad_severity] + severity_levels[fis_severity]
+
+        print(f"Sex & Nudity: {sn_severity}\n"
+              f"Violence & Gore: {violence_severity}\n"
+              f"Profanity: {profanity_severity}\n"
+              f"Alcohol, Drugs & Smoking: {ad_severity}\n"
+              f"Frightening & Intense Scenes: {fis_severity}\n"
+              f"Overall Severity: {overall_severity}")
+
+        if overall_severity <= 4:
+            parental_guide_container.setStyleSheet("background-color: #003a00;")    # Dark Green
+        elif overall_severity <= 9:
+            parental_guide_container.setStyleSheet("background-color: #505900;")    # Dark Yellow
+        elif overall_severity <= 14:
+            parental_guide_container.setStyleSheet("background-color: #593a00;")    # Dark Orange
+        else:
+            parental_guide_container.setStyleSheet("background-color: #3b0101;")    # Dark Red
+
+        self.main_layout.addWidget(scroll_area, 0, 0)
 
         # Show the awards and nominations
         awards_widget = QWidget()
@@ -2482,7 +2552,7 @@ class DetailsWindow(QDialog):
         awards_widget_layout.addWidget(awards_button)
         awards_widget.setLayout(awards_widget_layout)
 
-        self.main_layout.addWidget(awards_widget, 2, 0)
+        self.main_layout.addWidget(awards_widget, 1, 0)
 
         # Show the plot
         # Get to summaries page
@@ -2508,6 +2578,7 @@ class DetailsWindow(QDialog):
 
         else:
             print("An error occurred while getting the plot summary")
+            plot = "An error occurred while getting the plot summary"
 
         plot_widget = QWidget()
         plot_label = QLabel("<h2>Plot</h2>")
@@ -2547,6 +2618,7 @@ class DetailsWindow(QDialog):
 
         else:
             print("An error occurred while getting the plot keywords")
+            plot_keywords = ["An error occurred while getting the plot keywords"]
 
         plot_keywords_widget = QWidget()
         plot_keywords_label = QLabel("<h2>Plot Keywords</h2>")
@@ -2690,8 +2762,6 @@ class YearReviewWindow(QDialog):
         self.previous_button.hide()
         self.next_button.hide()
         self.page = 0
-
-
 
     # Class Functions
     def detect_active_years(self):
@@ -2932,7 +3002,7 @@ class YearReviewWindow(QDialog):
                 self.header_label.setMaximumHeight(100)
 
             case 3: # Busiest month, least busy month
-                self.header_label.setText(f"<h1>\"{int(self.total_runtime)}\"</h1>")
+                self.header_label.setText(f"<h1>\"{int(self.total_runtime)}\" minutes</h1>")
                 self.previous_button.setText("< Your activity throughout the year")
                 self.next_button.setText("When did you have your BEST and WORST times? >")
                 self.description_label.show()
@@ -3367,11 +3437,11 @@ class YearReviewWindow(QDialog):
                 self.next_button.hide()
                 app.processEvents()
 
-
+                """
                 actors = self.favorite_actors()
                 print(actors)
 
-
+                
                 # Show the top 5 actors in the description label
                 self.description_label.setText(f"You watched a total of <b>{len(actors)} movies</b> in {self.year}.<br><br>"
                                                f"<b>Your Top 5 Actors for {self.year}:</b><br>"
@@ -3443,15 +3513,15 @@ class YearReviewWindow(QDialog):
                     image = pixmap.toImage()
 
                     smooth_color_change(image)
-
-
+                    """
+                self.description_label.setText("This functionality does not work at the moment due to IMDb's changes to the site.")
 
     def favorite_tv_shows(self):
         # Filter the data so that only the TV shows remain (filtered_data is already filtered to the selected year)
-        self.tv_shows_data = self.filtered_data[self.filtered_data['Title Type'] == "tvSeries"]
+        self.tv_shows_data = self.filtered_data[self.filtered_data['Title Type'] == "TV Series"]
 
         # Filter the data so that only the TV episodes remain (filtered_data is already filtered to the selected year)
-        self.tv_episodes_data = self.filtered_data[self.filtered_data['Title Type'] == "tvEpisode"]
+        self.tv_episodes_data = self.filtered_data[self.filtered_data['Title Type'] == "TV Episode"]
 
         if self.tv_shows_data.empty and self.tv_episodes_data.empty:
             return None, None
@@ -3512,7 +3582,7 @@ class YearReviewWindow(QDialog):
                     title_soup = BeautifulSoup(title_html, 'html.parser')
 
                     # Get the title from the HTML content
-                    tv_show = title_soup.find("div", class_="bTLVGY").a.text
+                    tv_show = title_soup.find("div", class_="sc-2a168135-0 flmBNm").a.text
 
                 elif num_colons == 4:
                     # Format: "'IP Name: Series Name': 'Episode Name: Episode Part'"
@@ -3608,7 +3678,7 @@ class YearReviewWindow(QDialog):
 
     def favorite_directors(self):
         # Filter the data so that only the movies remain (filtered_data is already filtered to the selected year)
-        self.movies_data = self.filtered_data[self.filtered_data['Title Type'] == "movie"]
+        self.movies_data = self.filtered_data[self.filtered_data['Title Type'] == "Movie"]
 
         print(self.filtered_data)
         print(self.movies_data)
@@ -3660,6 +3730,7 @@ class YearReviewWindow(QDialog):
         return directors if directors else None
 
     def favorite_actors(self):
+        """
         actor_ratings = {}
         actor_title_counts = {}
         actor_titles = {}
@@ -3667,7 +3738,7 @@ class YearReviewWindow(QDialog):
         yearFound = False
         breakFlag = False
 
-        lists_link, watchlist_link = window.checkPreferences()
+        lists_link = checkPreferences()
         print(lists_link)
 
         # Strip away the part after "?"
@@ -3765,13 +3836,13 @@ class YearReviewWindow(QDialog):
 
                                 # Loop through the ratings_data list
                                 for item in ratings_data:
-                                    # Check if the title type is "movie"
-                                    if item['Title Type'] == "movie":
+                                    # Check if the title type is "Movie"
+                                    if item['Title Type'] == "Movie":
                                         # Extract title and rating
                                         rating = int(item['Your Rating'])
 
                                         # Check if the title is the same as the current title
-                                        if title == item['Title']:
+                                        if title == item['Original Title']:
                                             # Extract directors
                                             directors = item['Directors'].split(", ")
 
@@ -3826,7 +3897,7 @@ class YearReviewWindow(QDialog):
                 # Calculate the love_formula for each actor
                 actor_love_formulas = {
                     actor: (avg_rating, actor_title_counts[actor],
-                            ((avg_rating ** 5) * (actor_title_counts[actor] ** 1.3)) / 1000)
+                            (avg_rating ** 5) * (actor_title_counts[actor] ** 1.2) / 1000)
                     for actor, avg_rating in actor_average_ratings.items()
                 }
 
@@ -3841,7 +3912,156 @@ class YearReviewWindow(QDialog):
         except mechanize.URLError as e:
             print("URL Error: ", e)
             return []
+        """
+        return ["This feature does not work at the moment due to IMDb's changes to their website.", "", ""]
 
+class InsightsWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Insights")
+        self.resize(800, 500)
+
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
+
+        # Create a top-level layout for the main content
+        content_layout = QVBoxLayout()
+        self.main_layout.addLayout(content_layout)
+
+        # Create a label to show the insights
+        insights_label = QLabel("<h2>Insights</h2>")
+        insights_label.setAlignment(Qt.AlignCenter)
+
+        # Add the label to the content layout
+        content_layout.addWidget(insights_label)
+
+        self.user_ratings_vs_IMDB_ratings()
+        self.user_watched_vs_release_date()
+
+
+    # Class functions
+    def previous(self):
+        self.current_case -= 1
+        self.updateUI()
+
+    def next(self):
+        self.current_case += 1
+        self.updateUI()
+
+    def updateUI(self):
+        # Clear the layout
+        for i in reversed(range(self.content_layout.count())):
+            self.content_layout.itemAt(i).widget().setParent(None)
+
+        # Create a new widget based on the current case
+        self.createWidget(self.current_case)
+
+        # Add the widget to the content layout
+        self.content_layout.addWidget(self.widget)
+
+    def user_ratings_vs_IMDB_ratings(self):
+        # Open the ratings.csv file
+        with open('ratings.csv', 'r') as file:
+            # Read the file as a dictionary
+            ratings_data = list(csv.DictReader(file))
+
+            # Create dictionaries to store the user ratings and the IMDB ratings
+            ratings = {}
+
+            # Loop through the ratings_data list
+            for item in ratings_data:
+                # Extract the title name, user rating and the IMDB rating for each title
+                title = item['Original Title']
+                user_rating = float(item['Your Rating'])
+                imdb_rating = float(item['IMDb Rating'])
+
+                # ratings dictionary will have the title as the key and a tuple of user rating and IMDB rating as the value
+                ratings[title] = (user_rating, imdb_rating)
+
+            # Calculate the average difference between the user ratings and the IMDB ratings
+            average_difference = sum([(user_rating - imdb_rating) for user_rating, imdb_rating in ratings.values()]) / len(ratings)
+            print("Average Difference: ", average_difference)
+
+            # Calculate the average user rating and the average IMDB rating
+            average_user_rating = sum([user_rating for user_rating, imdb_rating in ratings.values()]) / len(ratings)
+            average_imdb_rating = sum([imdb_rating for user_rating, imdb_rating in ratings.values()]) / len(ratings)
+            print("Average User Rating: ", average_user_rating)
+            print("Average IMDB Rating: ", average_imdb_rating)
+
+            # Calculate the maximum difference that user rated a title higher than the IMDB rating
+            max_difference = max([user_rating - imdb_rating for user_rating, imdb_rating in ratings.values()])
+            # Print the maximum difference and the title
+            print("Max Diff: ", max_difference, [title for title, (user_rating, imdb_rating) in ratings.items() if user_rating - imdb_rating == max_difference])
+
+            # Calculate the maximum difference that user rated a title lower than the IMDB rating
+            min_difference = min([user_rating - imdb_rating for user_rating, imdb_rating in ratings.values()])
+            # Print the minimum difference and the title
+            print("Min Diff: ", min_difference, [title for title, (user_rating, imdb_rating) in ratings.items() if user_rating - imdb_rating == min_difference])
+
+            # Calculate the percentage of titles that the user rated higher than the IMDB rating
+            higher_than_imdb = len([user_rating for user_rating, imdb_rating in ratings.values() if user_rating > imdb_rating]) / len(ratings) * 100
+            print(f"Higher than IMDB: {higher_than_imdb:.2f}%")
+
+            # Calculate the percentage of titles that the user rated the same as the IMDB rating
+            same_as_imdb = len([user_rating for user_rating, imdb_rating in ratings.values() if user_rating == imdb_rating]) / len(ratings) * 100
+            print(f"Same as IMDB: {same_as_imdb:.2f}%")
+
+            # Calculate the percentage of titles that the user rated lower than the IMDB rating
+            lower_than_imdb = len([user_rating for user_rating, imdb_rating in ratings.values() if user_rating < imdb_rating]) / len(ratings) * 100
+            print(f"Lower than IMDB: {lower_than_imdb:.2f}%")
+
+    def user_watched_vs_release_date(self):
+        # Open the ratings.csv file
+        with open('ratings.csv', 'r') as file:
+            # Read the file as a dictionary
+            ratings_data = list(csv.DictReader(file))
+
+            # Create a dictionary to store the release dates and user rated dates
+            dates = {}
+
+            # Loop through the ratings_data list
+            for item in ratings_data:
+                print(item)
+                # Extract the release year and the user rating for each title
+                release_date = item['Release Date']
+                user_date = item['Date Rated']
+
+                # Check if the release date and user date are not empty
+                if release_date == "" or user_date == "":
+                    continue
+                # Check if the release date is in the expected format (YYYY-MM-DD)
+                if not re.match(r"\d{4}-\d{2}-\d{2}", release_date):
+                    continue
+
+                # Convert the user date and release date from strings in YYYY-MM-DD format to datetime objects
+                release_date = datetime.strptime(release_date, "%Y-%m-%d")
+                user_date = datetime.strptime(user_date, "%Y-%m-%d")
+
+                # Add the title name as the key and the user date and release date as the tuple value to the dictionary
+                dates[item['Original Title']] = (release_date, user_date)
+
+            # Calculate the average difference between the user rated dates and the release dates
+            average_difference = sum([(user_date - release_date).days for release_date, user_date in dates.values()]) / len(dates)
+
+            # Calculate the years, months and days
+            years = f"{int(average_difference // 365)} years," if average_difference // 365 > 0 else ""
+            months = f"{int((average_difference % 365) // 30)} months, and" if (average_difference % 365) // 30 > 0 else ""
+            days = f"{(average_difference % 365) % 30} days" if (average_difference % 365) % 30 > 0 else ""
+            print(f"Average Date Difference: {years} {months} {days} after release")
+
+            # Calculate the maximum difference that user rated a title after the release date
+            max_difference = max([(user_date - release_date).days for release_date, user_date in dates.values()])
+            years = f"{int(max_difference // 365)} years," if max_difference // 365 > 0 else ""
+            months = f"{int((max_difference % 365) // 30)} months, and" if (max_difference % 365) // 30 > 0 else ""
+            days = f"{(max_difference % 365) % 30} days" if (max_difference % 365) % 30 > 0 else ""
+            print(f"Max Diff: {years} {months} {days}", [title for title, (release_date, user_date) in dates.items() if (user_date - release_date).days == max_difference])
+
+            # Calculate the minimum difference that user rated a title after the release date
+            min_difference = min([(user_date - release_date).days for release_date, user_date in dates.values()])
+            years = f"{int(min_difference // 365)} years," if min_difference // 365 > 0 else ""
+            months = f"{int((min_difference % 365) // 30)} months, and" if (min_difference % 365) // 30 > 0 else ""
+            days = f"{(min_difference % 365) % 30} days" if (min_difference % 365) % 30 > 0 else ""
+            print(f"Min Diff: {years} {months} {days}", [title for title, (release_date, user_date) in dates.items() if (user_date - release_date).days == min_difference])
 class ModernApp(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
@@ -3901,9 +4121,13 @@ class ModernApp(QMainWindow):
         year_review_action = QAction("Year Review", self)
         year_review_action.triggered.connect(self.year_review)
 
+        insights_action = QAction("Insights", self)
+        insights_action.triggered.connect(self.insights)
+
         menu_bar.addAction(statistics_action)
         menu_bar.addAction(now_watching_action)
         menu_bar.addAction(year_review_action)
+        menu_bar.addAction(insights_action)
         menu_bar.addAction(help_action)
         menu_bar.addAction(about_action)
 
@@ -3934,7 +4158,6 @@ class ModernApp(QMainWindow):
         # Check if the preferences file exists, and create it if not
         self.preferences_file = "user_preferences.txt"
         self.user_lists_link = ""
-        self.watchlist_link = ""
 
         # Create a combo box to select a list
         self.list_combo = QComboBox()
@@ -3947,21 +4170,21 @@ class ModernApp(QMainWindow):
             self.create_preferences_file()
 
         # Check the preferences file and get the necessary links
-        self.user_lists_link, self.watchlist_link = self.checkPreferences()
+        self.user_lists_link = checkPreferences()
 
-        if not (self.user_lists_link == "" and self.watchlist_link == ""):
+        if not (self.user_lists_link == ""):
             # Send an HTTP GET request to fetch the IMDb user lists page
             response = requests.get(self.user_lists_link, headers=headers)
 
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
-                list_items = soup.find_all('li', class_='ipl-zebra-list__item user-list')
+                list_items = soup.find_all('li', class_='ipc-metadata-list-summary-item')
 
                 # Extract the list names and links
                 for item in list_items:
-                    list_name = item.find('a', class_='list-name').text.strip()
+                    list_name = item.find('a', class_='ipc-metadata-list-summary-item__t').text.strip()
                     self.list_names.append(list_name)
-                    href = item.find('a', class_='list-name')['href']
+                    href = item.find('a', class_='ipc-metadata-list-summary-item__t')['href']
                     list_link = f'https://www.imdb.com{href}'
                     self.list_links.append(list_link)
                     self.list_combo.addItem(list_name)
@@ -4159,26 +4382,7 @@ class ModernApp(QMainWindow):
 
         if result == QDialog.Accepted:
             with open(self.preferences_file, "w") as file:
-                file.write(f"\"User Lists Link\": \"{dialog.user_lists_link}\"\n"
-                           f"\"Watchlist Link\": \"{dialog.watchlist_link}\"")
-
-            # Create watchlist file
-            self.watchlist_csv = f'watchlist.csv'
-
-            # Send an HTTP GET request to the URL0
-            response = requests.get(dialog.watchlist_link, headers=headers)
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                # Get the content of the response
-                content = response.text
-
-                # Save the content to the destination file
-                with open(self.watchlist_csv, 'w', encoding='utf-8') as file:
-                    file.write(content)
-            else:
-                print(
-                    "\nFailed to download the CSV file. Check the URL or make sure your watchlist is public and try again.")
+                file.write(f"\"User Lists Link\": \"{dialog.user_lists_link}\"\n")
 
             # Update the combo box with the new lists
             self.list_combo.clear()
@@ -4221,7 +4425,7 @@ class ModernApp(QMainWindow):
         if selected_index == 0:
             self.update_result_label(0)
             app.processEvents()
-            self.watchlist_random(self.watchlist_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
+            self.watchlist_random(self.user_lists_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
 
         else:
             self.update_result_label(1)
@@ -4237,16 +4441,17 @@ class ModernApp(QMainWindow):
         QApplication.restoreOverrideCursor()
 
     def list_random(self, list_url, min_rating, selected_genre, max_runtime, selected_type, max_episodes):
+        """
         number_of_episodes = 0
 
         # If the user has selected a maximum number of episodes and not selected a title type, search only through TV series
         if max_episodes != 0 and selected_type == "All Types":
             self.update_result_label(3)
             app.processEvents()
-            selected_type = "tvSeries"
+            selected_type = "TV Series"
 
         # If the user has selected a maximum number of episodes and a title type, respect the title type
-        elif max_episodes != 0 and (selected_type == "tvSeries" or selected_type == "tvMiniSeries" or selected_type == "podcastSeries"):
+        elif max_episodes != 0 and (selected_type == "TV Series" or selected_type == "TV Mini Series" or selected_type == "Podcast Series"):
             self.update_result_label(3)
             app.processEvents()
             selected_type = selected_type
@@ -4279,13 +4484,8 @@ class ModernApp(QMainWindow):
             movie_details = soup.select('.lister-item-content')
 
             # Check how many titles are there in the list
-            list_details = soup.select(".lister-total-num-results")
+            list_details = soup.select("div[data-testid='list-page-mc-total-items']")
             if list_details:
-                number_of_titles_str = list_details[0].text.strip()
-
-            else:
-                list_details = soup.find_all("div.lister-details")
-                print(list_details)
                 number_of_titles_str = list_details[0].text.strip()
 
             # Use a regular expression to extract the integer
@@ -4556,34 +4756,28 @@ class ModernApp(QMainWindow):
         else:
             self.result_label.setText(f"Failed to retrieve the list. Check the URL and try again.")
             return
+            """
+
+        # Pop up an error message
+        error_message = QMessageBox()
+        error_message.setWindowTitle("Error")
+        error_message.setText("This functionality does not work at the moment due to IMDb's new website structure. Please use the Watchlist option instead.")
+        error_message.setIcon(QMessageBox.Critical)
+        error_message.exec_()
+        return
+
 
     ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
     def watchlist_random(self, url, min_rating, selected_genre, max_runtime, selected_type, max_episodes):
         # If there are any episode filters, call list_random() instead
         if max_episodes != 0:
-            # Delete 'export' from the URL
-            url = url.replace("export", "")
+            # Get the watchlist URL from the user preferences
+            url = url.replace("lists", "watchlist")
             self.list_random(url, min_rating, selected_genre, max_runtime, selected_type, max_episodes)
             return
 
         # Define the destination file path where you want to save the CSV file
         self.watchlist_csv = f'watchlist.csv'
-
-        # Send an HTTP GET request to the URL0
-        response = requests.get(url, headers=headers)
-
-        # Check if the request was successful
-        if response.status_code == 200:
-            # Get the content of the response
-            content = response.text
-
-            # Save the content to the destination file
-            with open(self.watchlist_csv, 'w', encoding='utf-8') as file:
-                file.write(content)
-        else:
-            print(
-                "\nFailed to download the CSV file. Check the URL or make sure your watchlist is public and try again.")
-            return
 
         # Read the CSV file and store its data in a list of dictionaries
         csv_data = []
@@ -4594,20 +4788,24 @@ class ModernApp(QMainWindow):
 
         # Check if there's data in the CSV file
         if csv_data:
+            print("\nSuccessfully read the CSV file.")
             self.update_result_label(3)
             app.processEvents()
 
             # Filter the CSV data by minimum rating, maximum runtime and selected genre
             csv_data = [item for item in csv_data if 'IMDb Rating' in item and item['IMDb Rating'] and float(item['IMDb Rating']) >= min_rating]
+            print(f"Filtered by rating: {min_rating} ({len(csv_data)} titles match)")
 
             if selected_genre != "All Genres":
                 csv_data = [item for item in csv_data if selected_genre in item['Genres']]
 
             if max_runtime != 0:
                 csv_data = [item for item in csv_data if 'Runtime (mins)' in item and item['Runtime (mins)'] and int(item['Runtime (mins)']) <= max_runtime]
+                print(f"Filtered by runtime: {max_runtime} ({len(csv_data)} titles match)")
 
             if selected_type != "All Types":
                 csv_data = [item for item in csv_data if selected_type in item['Title Type']]
+                print(f"Filtered by title type: {selected_type} ({len(csv_data)} titles match)")
 
             # Check if there's data in the CSV file after filtering
             if csv_data:
@@ -4617,7 +4815,7 @@ class ModernApp(QMainWindow):
                 random_item = random.choice(csv_data)
 
                 # Check if the user has rated the movie/series before
-                user_rating = self.checkRatings(random_item['Title'], random_item['Title Type'])
+                user_rating = self.checkRatings(random_item['Original Title'], random_item['Title Type'])
 
                 # To get the title type and the poster, we need to scrape the movie's/series' own page
                 # Send an HTTP GET request to fetch the list page
@@ -4635,7 +4833,7 @@ class ModernApp(QMainWindow):
                         directors = random_item['Directors'] if random_item['Directors'] != "" else director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
 
                     # If the title is not a TV series, do not get the number of episodes
-                    if random_item["Title Type"] == "tvSeries" or random_item["Title Type"] == "tvMiniSeries":
+                    if random_item["Title Type"] == "TV Series" or random_item["Title Type"] == "TV Mini Series":
                         episode_details = second_soup.find('span', class_='ipc-title__subtext')
 
                         if episode_details:
@@ -4687,7 +4885,7 @@ class ModernApp(QMainWindow):
                         self.star_icon_painter.end()
 
                         # Change the color of the star icon to yellow if it is in the favorites list
-                        if self.check_favorites(random_item['Title']):
+                        if self.check_favorites(random_item['Original Title']):
                             self.star_color = "yellow"
                             self.change_star_color(self.star_color)
 
@@ -4708,7 +4906,7 @@ class ModernApp(QMainWindow):
 
                         # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
                         # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
-                        self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Title'], random_item['URL'])
+                        self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Original Title'], random_item['URL'])
 
                     description_details = second_soup.select_one("span[data-testid='plot-xl']")
 
@@ -4717,7 +4915,7 @@ class ModernApp(QMainWindow):
                         self.description_label.setText(f"{description}")
 
                     # Extract and print the desired columns
-                    self.result_label.setText(f"<a href=\"{random_item['URL']}\"><h1>{random_item['Title']}</h1></a><br>"
+                    self.result_label.setText(f"<a href=\"{random_item['URL']}\"><h1>{random_item['Original Title']}</h1></a><br>"
                                               f"<b>Title Type:</b> {random_item['Title Type']}<br>"
                                               f"<b>IMDb Rating:</b> {random_item['IMDb Rating']}<br>"
                                               f"<b>Runtime:</b> {random_item['Runtime (mins)']}<br>"
@@ -4787,18 +4985,6 @@ class ModernApp(QMainWindow):
         # Create a new window to display the details
         self.details_window = DetailsWindow(title_url)
         self.details_window.show()
-
-
-    # Check the preferences file for the user's IMDb user page link and watchlist export link
-    def checkPreferences(self):
-        with open(self.preferences_file, "r") as file:
-            preferences = file.read()
-            preferences = preferences.split("\n")
-
-            user_lists_link = preferences[0].split(": ")[1].strip("\"")
-            watchlist_link = preferences[1].split(": ")[1].strip("\"")
-
-            return user_lists_link, watchlist_link
 
     # Save the movie/series' title and URL to a CSV file name "favorites.csv"
     def save_favorite(self, title, url):
@@ -4908,35 +5094,33 @@ class ModernApp(QMainWindow):
         if self.title_type_combo.currentText() != "All Types":
             match(self.title_type_combo.currentText()):
                 case "Movies":
-                    self.selected_type = "movie"
+                    self.selected_type = "Movie"
                 case "TV Series":
-                    self.selected_type = "tvSeries"
+                    self.selected_type = "TV Series"
                 case "TV Episodes":
-                    self.selected_type = "tvEpisode"
+                    self.selected_type = "TV Episode"
                 case "TV Mini-Series":
-                    self.selected_type = "tvMiniSeries"
+                    self.selected_type = "TV Mini Series"
                 case "Shorts":
-                    self.selected_type = "short"
+                    self.selected_type = "Short"
                 case "TV Movies":
-                    self.selected_type = "tvMovie"
+                    self.selected_type = "TV Movie"
                 case "TV Specials":
-                    self.selected_type = "tvSpecial"
+                    self.selected_type = "TV Special"
                 case "Videos":
-                    self.selected_type = "video"
+                    self.selected_type = "Video"
                 case "Video Games":
-                    self.selected_type = "videoGame"
+                    self.selected_type = "Video Game"
                 case "Podcasts":
-                    self.selected_type = "podcastSeries"
+                    self.selected_type = "Podcast Series"
                 case "Podcast Episodes":
-                    self.selected_type = "podcastEpisode"
-                case "TV Mini-Series":
-                    self.selected_type = "tvMiniSeries"
+                    self.selected_type = "Podcast Episode"
                 case "TV Shorts":
-                    self.selected_type = "tvShort"
+                    self.selected_type = "TV Short"
                 case "Documentaries":
-                    self.selected_type = "documentary"
+                    self.selected_type = "Documentary"
                 case "Music Videos":
-                    self.selected_type = "musicVideo"
+                    self.selected_type = "Music Video"
 
         # Display the applied filters
         self.result_label.setText(f"<h3>Applied Filters:</h3><br>"
@@ -5171,6 +5355,14 @@ class ModernApp(QMainWindow):
         # Change the cursor back to the default cursor
         QApplication.restoreOverrideCursor()
 
+    def insights(self):
+        # Create and display the insights dialog
+        insights_window = InsightsWindow()
+        insights_window.exec_()
+
+        # Change the cursor back to the default cursor
+        QApplication.restoreOverrideCursor()
+
     # Show the now watching dialog
     def now_watching(self):
         # Create and display the now watching dialog
@@ -5256,3 +5448,4 @@ if __name__ == '__main__':
     window = ModernApp()
     window.show()
     sys.exit(app.exec_())
+
