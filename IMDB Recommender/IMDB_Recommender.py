@@ -31,6 +31,51 @@ browser = mechanize.Browser()
 browser.set_handle_robots(False)
 browser.addheaders = [headers]
 
+last_login = None
+
+# Check the last login time from the user_preferences.txt file
+def check_last_update():
+    with open("user_preferences.txt", "r") as file:
+        if os.stat("user_preferences.txt").st_size == 0:
+            return ""
+
+        try:
+            preferences = file.read()
+            preferences = preferences.split("\n")
+            print(preferences)
+            last_update = preferences[0].split(": ")[1].strip("\"")
+            print(last_update)
+
+            # If the last update time is longer than 7 days ago, pop up a message box and ask the user
+            # if they want to update their watchlist, ratings list, or other custom lists
+            days_since_last_update = (datetime.now() - datetime.strptime(last_update, "%Y-%m-%d")).days
+            if (days_since_last_update) >= 7:
+                message_box = QMessageBox()
+                message_box.setWindowTitle("Update")
+                message_box.setText(
+                    f"It has been more than {days_since_last_update} days since you updated your lists.\n"
+                    f"Would you like to update your watchlist, ratings list, or any other custom lists?")
+                message_box.setIcon(QMessageBox.Question)
+                message_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+                message_box.setDefaultButton(QMessageBox.Yes)
+                message_box.buttonClicked.connect(ModernApp.create_preferences_file)
+                message_box.exec_()
+
+            return last_update
+
+        except:
+            message_box = QMessageBox()
+            message_box.setWindowTitle("Update")
+            message_box.setText(
+                f"It looks like there is a problem and we do not know the last time you have updated your lists.\n"
+                f"Would you like to update your watchlist, ratings list, or any other custom lists?")
+            message_box.setIcon(QMessageBox.Question)
+            message_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            message_box.setDefaultButton(QMessageBox.Yes)
+            message_box.buttonClicked.connect(ModernApp.create_preferences_file)
+            message_box.exec_()
+            return ""
+
 def smooth_color_change(image):
     # Get the image dimensions
     width = image.width()
@@ -162,28 +207,15 @@ def smooth_color_change(image):
         light_palette.setColor(QPalette.Link, dominant_color)
         window.light_theme()
 
-# Check the preferences file for the user's IMDb user page link and watchlist export link
-def checkPreferences():
-    with open("user_preferences.txt", "r") as file:
-        if os.stat("user_preferences.txt").st_size == 0:
-            return ""
-
-        preferences = file.read()
-        print(preferences)
-        preferences = preferences.split("\n")
-        print(preferences)
-        user_lists_link = preferences[0].split(": ")[1].strip("\"")
-
-        return user_lists_link
-
 # Custom QDialog class for the Preferences dialog
 class PreferencesDialog(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Preferences")
         # Ask the user to enter their IMDb user page link
-        self.user_lists_link_label = QLabel("IMDB User Lists Link:", self)
-        self.user_lists_link_input = QLineEdit(self)
+        self.user_list_file_label = QLabel("Want to add a custom list?", self)
+        self.user_list_file_name_label = QLineEdit("Enter the name of the list", self)
+        self.user_list_file_input = QPushButton("Select File", self)
 
         # Add a button to select the watchlist.csv file
         self.watchlist_file_label = QLabel("Watchlist File Path:", self)
@@ -194,12 +226,13 @@ class PreferencesDialog(QDialog):
         self.ratings_file_input = QPushButton("Select File", self)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
-        button_box.accepted.connect(self.custom_accept)
+        button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
 
         layout = QVBoxLayout()
-        layout.addWidget(self.user_lists_link_label)
-        layout.addWidget(self.user_lists_link_input)
+        layout.addWidget(self.user_list_file_label)
+        layout.addWidget(self.user_list_file_name_label)
+        layout.addWidget(self.user_list_file_input)
         layout.addWidget(self.watchlist_file_label)
         layout.addWidget(self.watchlist_file_input)
         layout.addWidget(self.ratings_file_label)
@@ -213,113 +246,8 @@ class PreferencesDialog(QDialog):
         # Connect the watchlist_file_input button to the select_watchlist_file function
         self.watchlist_file_input.clicked.connect(self.select_watchlist_file)
 
-    def custom_accept(self):
-        # Check the user inputs and create a flag
-        self.user_lists_link = self.user_lists_link_input.text()
-
-        input_flag = self.check_input(self.user_lists_link)
-        print(f"Input flag: {input_flag}")
-
-        # Check if "user_preferences.txt" file exists
-        if os.path.isfile("user_preferences.txt"):
-            # Read the user preferences from the text file
-            print("Preferences file exists.")
-            self.old_user_lists_link = checkPreferences()
-            print("Old link:", self.old_user_lists_link)
-
-            self.old_user_lists_link = self.correct_preferences(self.old_user_lists_link)
-
-            preferences_flag = self.check_preferences(self.old_user_lists_link)
-            print(f"Preferences flag: {preferences_flag}")
-
-            # Check if the flags give an error
-            self.result(preferences_flag, input_flag)
-
-        else:
-            preferences_flag = 1
-            print(f"Preferences flag: {preferences_flag}")
-            self.result(preferences_flag, input_flag)
-
-    # Check if the user input is a valid URL
-    def check_url(self, url):
-            # Check if the URL starts with "https://www.imdb.com/"
-            return url.startswith("https://www.imdb.com/")
-
-    # Check all the possible combinations of user inputs and flag them
-    def check_input(self, lists_input):
-        # Check and flag if the user inputs are valid URLs
-        if self.check_url(lists_input):
-            return 0
-        elif lists_input == "":
-            return 1
-        else:
-            return 2
-
-    # Check all the possible combinations of preferences file inputs and flag them
-    def check_preferences(self, lists_pref):
-        if self.check_url(lists_pref):
-            return 0
-        elif lists_pref == "":
-            return 1
-        else:
-            return 2
-
-    # Correct the user preferences file if there is something wrong with it
-    def correct_preferences(self, lists_pref):
-        if not self.check_url(lists_pref):
-            lists_pref = ""
-
-        return lists_pref
-
-    # Return error message based on the preferences and input flags
-    def result(self, preferences_flag, input_flag):
-        # input: 0 - valid, 1 - empty, 2 - invalid
-        # preferences: 0 - valid, 1 - empty, 2 - invalid
-        match (preferences_flag, input_flag):
-            case (0, 0) | (1, 0):    # Both valid
-                self.accept()
-
-            case (0, 1):   # Preferences valid, input empty
-                # Do not change the old preferences
-                self.user_lists_link = self.old_user_lists_link
-                self.accept()
-
-            case (0, 2):   # Preferences valid, input invalid
-                # Show QMessageBox with the error message
-                error_message = QMessageBox()
-                error_message.setWindowTitle("Error")
-                error_message.setText("Please enter a valid URL for the \"IMDB User Lists Link\" field.")
-                error_message.setIcon(QMessageBox.Critical)
-                error_message.exec_()
-
-            case (1, 1):   # Both empty
-                # Show QMessageBox with the error message
-                error_message = QMessageBox()
-                error_message.setWindowTitle("Error")
-                error_message.setText("Please do not leave the \"IMDB User Lists Link\" field empty.")
-                error_message.setIcon(QMessageBox.Critical)
-                error_message.exec_()
-
-            case (1, 2):   # Preferences empty, input invalid
-                # Show QMessageBox with the error message
-                error_message = QMessageBox()
-                error_message.setWindowTitle("Error")
-                error_message.setText("You have entered an invalid URL. Please enter a valid URL for the \"IMDB User Lists Link\" field.")
-                error_message.setIcon(QMessageBox.Critical)
-                error_message.exec_()
-
-            case (2, 0):   # Preferences invalid, input valid
-                # Change the old preferences to the new input
-                self.old_user_lists_link = self.user_lists_link
-                self.accept()
-
-            case (2, 1) | (2, 2):   # Preferences invalid, input empty or invalid
-                # Show QMessageBox with the error message
-                error_message = QMessageBox()
-                error_message.setWindowTitle("Error")
-                error_message.setText("User preferences are invalid. Please enter a valid URL for the \"IMDB User Lists Link\" field.")
-                error_message.setIcon(QMessageBox.Critical)
-                error_message.exec_()
+        # Connect the user_lists_file_input button to the select_user_lists_file function
+        self.user_list_file_input.clicked.connect(self.select_user_list_file)
 
     # Ask user to select the directory for their ratings.csv file
     def select_ratings_file(self):
@@ -350,6 +278,22 @@ class PreferencesDialog(QDialog):
 
             # Update the watchlist_file_input text with the watchlist.csv file path
             self.watchlist_file_input.setText(watchlist_file_path)
+
+    # Ask user to select the directory for a custom exported user list
+    def select_user_list_file(self):
+        self.list_name = self.user_list_file_name_label.text()
+        # Open a file dialog to select the user_lists.csv file
+        user_lists_file_path = QFileDialog.getOpenFileName(self, 'Select a user list to import', '', 'CSV files (*.csv)')[0]
+
+        # Check if the user selected a file
+        if user_lists_file_path:
+            # Check if the user_lists.csv file is in the same directory as the script or executable
+            if not os.path.dirname(os.path.realpath(__file__)) + f"{self.list_name}.csv" == user_lists_file_path:
+                # If not, copy the user_lists.csv file to the same directory as the script
+                shutil.copy(user_lists_file_path, f"{self.list_name}.csv")
+
+            # Update the user_lists_file_input text with the user_lists.csv file path
+            self.user_list_file_input.setText(user_lists_file_path)
 
 # Custom QDialog class for the Favorites dialog
 class MyFavoritesDialog(QDialog):
@@ -2622,7 +2566,10 @@ class DetailsWindow(QDialog):
 
         plot_keywords_widget = QWidget()
         plot_keywords_label = QLabel("<h2>Plot Keywords</h2>")
-        plot_keywords_text = QLabel("\n".join(plot_keywords))
+        try:
+            plot_keywords_text = QLabel("\n".join(plot_keywords))
+        except:
+            plot_keywords_text = QLabel("An error occurred while getting the plot keywords")
         plot_keywords_text.setWordWrap(True)
 
         # Add the plot keywords text to a scroll area
@@ -4162,32 +4109,20 @@ class ModernApp(QMainWindow):
         # Create a combo box to select a list
         self.list_combo = QComboBox()
         self.list_combo.addItem("Watchlist")  # Add a default option
-        self.list_names = []
-        self.list_links = []
+
+        # Find all the .csv files in the current directory except for ratings.csv, watchlist.csv, rewatch.csv, watching.csv, favorites.csv
+        lists = [file for file in os.listdir() if
+                 file.endswith(".csv") and file not in ["ratings.csv", "watchlist.csv", "rewatch.csv", "watching.csv",
+                                                        "favorites.csv"]]
+
+        # Add the list names to the combo box
+        if lists:
+            for list_name in lists:
+                self.list_combo.addItem(list_name.split(".")[0])
 
         # Check if the preferences file exists or not empty
         if not self.check_preferences_file() or os.stat(self.preferences_file).st_size == 0:
             self.create_preferences_file()
-
-        # Check the preferences file and get the necessary links
-        self.user_lists_link = checkPreferences()
-
-        if not (self.user_lists_link == ""):
-            # Send an HTTP GET request to fetch the IMDb user lists page
-            response = requests.get(self.user_lists_link, headers=headers)
-
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
-                list_items = soup.find_all('li', class_='ipc-metadata-list-summary-item')
-
-                # Extract the list names and links
-                for item in list_items:
-                    list_name = item.find('a', class_='ipc-metadata-list-summary-item__t').text.strip()
-                    self.list_names.append(list_name)
-                    href = item.find('a', class_='ipc-metadata-list-summary-item__t')['href']
-                    list_link = f'https://www.imdb.com{href}'
-                    self.list_links.append(list_link)
-                    self.list_combo.addItem(list_name)
 
         # Center every item in the combo box
         self.list_combo.setEditable(True)
@@ -4231,31 +4166,17 @@ class ModernApp(QMainWindow):
         self.runtime_slider.setTickInterval(1)
         self.runtime_slider.setTickPosition(QSlider.TicksAbove)
 
-        # Create a QSlider for selecting maximum number of episodes
-        self.episodes_slider = QSlider(Qt.Horizontal)
-        self.episodes_slider.setMinimum(0)
-        self.episodes_slider.setMaximum(100)  # Maximum number of episodes is 100
-        self.episodes_slider.setValue(0)  # Default to 0
-        self.episodes_slider.setTickInterval(1)
-        self.episodes_slider.setTickPosition(QSlider.TicksAbove)
-
         # Create a QLabel to display the selected rating
         self.rating_label = QLabel("Minimum Rating: No Limit")
 
         # Create a QLabel to display the selected runtime
         self.runtime_label = QLabel("Maximum Runtime: No Limit")
 
-        # Create a QLabel to display the selected number of episodes
-        self.episodes_label = QLabel("Maximum Number of Episodes: No Limit")
-
         # Update the label when the slider value changes
         self.rating_slider.valueChanged.connect(self.update_rating_label)
 
         # Update the label when the slider value changes
         self.runtime_slider.valueChanged.connect(self.update_runtime_label)
-
-        # Update the label when the slider value changes
-        self.episodes_slider.valueChanged.connect(self.update_episodes_label)
 
         # Create a QComboBox for selecting genres
         self.genre_combo = QComboBox()
@@ -4281,8 +4202,6 @@ class ModernApp(QMainWindow):
         filter_layout.addWidget(self.rating_slider)
         filter_layout.addWidget(self.runtime_label)
         filter_layout.addWidget(self.runtime_slider)
-        filter_layout.addWidget(self.episodes_label)
-        filter_layout.addWidget(self.episodes_slider)
         filter_layout.addWidget(apply_filters_button)
         self.filters_container.setLayout(filter_layout)
 
@@ -4342,24 +4261,10 @@ class ModernApp(QMainWindow):
         self.more_details_button.hide()
         self.main_layout.addWidget(self.more_details_button)
 
-        # Create a QLineEdit for custom IMDB list input
-        self.custom_list = QLineEdit()
-        self.custom_list.setPlaceholderText("Want to explore a custom list? Paste it here!")
-        self.custom_list.setAlignment(Qt.AlignCenter)
-
-        # Create a QPushButton
-        search_button = QPushButton("Search")
-
-        # Connect the button's clicked signal to the slot
-        search_button.clicked.connect(self.apply_filters)
-        search_button.clicked.connect(self.search_button_click)
-
 
         # Add both the QLineEdit and the button to a container widget
         self.container = QWidget()
         self.container_layout = QHBoxLayout()
-        self.container_layout.addWidget(self.custom_list)
-        self.container_layout.addWidget(search_button)
         self.container.setLayout(self.container_layout)
 
         # Add the container to the main layout
@@ -4381,40 +4286,20 @@ class ModernApp(QMainWindow):
         result = dialog.exec_()
 
         if result == QDialog.Accepted:
-            with open(self.preferences_file, "w") as file:
-                file.write(f"\"User Lists Link\": \"{dialog.user_lists_link}\"\n")
+            with open("user_preferences.txt", "w") as file:
+                file.write(f"\"Last Update\": \"{datetime.now().strftime('%Y-%m-%d')}\"")
 
             # Update the combo box with the new lists
             self.list_combo.clear()
             self.list_combo.addItem("Watchlist")  # Add a default option
-            self.list_names = []
-            self.list_links = []
 
+            # Find all the .csv files in the current directory except for ratings.csv, watchlist.csv, rewatch.csv, watching.csv, favorites.csv
+            lists = [file for file in os.listdir() if file.endswith(".csv") and file not in ["ratings.csv", "watchlist.csv", "rewatch.csv", "watching.csv", "favorites.csv"]]
 
-            if dialog.user_lists_link.startswith("https://www.imdb.com/"):
-                # Send an HTTP GET request to fetch the IMDb user lists page
-                response = requests.get(dialog.user_lists_link, headers=headers)
-
-                if response.status_code == 200:
-                    soup = BeautifulSoup(response.content, 'html.parser')
-                    list_items = soup.find_all('li', class_='ipl-zebra-list__item user-list')
-
-                    # Extract the list names and links
-                    for item in list_items:
-                        list_name = item.find('a', class_='list-name').text.strip()
-                        self.list_names.append(list_name)
-                        href = item.find('a', class_='list-name')['href']
-                        list_link = f'https://www.imdb.com{href}'
-                        self.list_links.append(list_link)
-                        self.list_combo.addItem(list_name)
-
-            else:
-                # Qmessagebox to show error
-                error_message = QMessageBox()
-                error_message.setWindowTitle("Error")
-                error_message.setText("Please enter a valid URL for the \"IMDB User Lists Link\" field.")
-                error_message.setIcon(QMessageBox.Critical)
-                error_message.exec_()
+            # Add the list names to the combo box
+            if lists:
+                for list_name in lists:
+                    self.list_combo.addItem(list_name.split(".")[0])
 
 
     def find_random_movie(self):
@@ -4425,13 +4310,12 @@ class ModernApp(QMainWindow):
         if selected_index == 0:
             self.update_result_label(0)
             app.processEvents()
-            self.watchlist_random(self.user_lists_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
+            self.list_random(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type)
 
         else:
             self.update_result_label(1)
             app.processEvents()
-            selected_list_link = self.list_links[selected_index - 1]
-            self.list_random(selected_list_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
+            self.list_random(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type)
 
         # Change the cursor back to normal
         self.poster_label.show()
@@ -4440,348 +4324,16 @@ class ModernApp(QMainWindow):
         self.more_details_button.show()
         QApplication.restoreOverrideCursor()
 
-    def list_random(self, list_url, min_rating, selected_genre, max_runtime, selected_type, max_episodes):
-        """
-        number_of_episodes = 0
-
-        # If the user has selected a maximum number of episodes and not selected a title type, search only through TV series
-        if max_episodes != 0 and selected_type == "All Types":
-            self.update_result_label(3)
-            app.processEvents()
-            selected_type = "TV Series"
-
-        # If the user has selected a maximum number of episodes and a title type, respect the title type
-        elif max_episodes != 0 and (selected_type == "TV Series" or selected_type == "TV Mini Series" or selected_type == "Podcast Series"):
-            self.update_result_label(3)
-            app.processEvents()
-            selected_type = selected_type
-
-        # If the user selected a title type other than any series, this overrides the episode filter
-        else:
-            self.update_result_label(3)
-            app.processEvents()
-            max_episodes = 0
-
-        list_url = list_url + f"?sort=list_order,asc&st_dt=&mode=detail"
-
-        if selected_type != "All Types":
-            self.update_result_label(3)
-            app.processEvents()
-            list_url = list_url + f"&title_type={selected_type}"
-
-        # Send an HTTP GET request to fetch the list page
-        response = requests.get(list_url, headers=headers)
-
-        # Check if the request was successful
-        if response.status_code == 200:
-            self.update_result_label(7)
-            app.processEvents()
-
-            # Parse the HTML content of the page
-            soup = BeautifulSoup(response.content, 'html.parser')
-
-            # Extract the movie or TV series details from the list
-            movie_details = soup.select('.lister-item-content')
-
-            # Check how many titles are there in the list
-            list_details = soup.select("div[data-testid='list-page-mc-total-items']")
-            if list_details:
-                number_of_titles_str = list_details[0].text.strip()
-
-            # Use a regular expression to extract the integer
-            match = re.search(r'\d+', number_of_titles_str)
-            if match:
-                # The group(0) will contain the first matched integer
-                number_of_titles = int(match.group(0))
-
-            # Calculate the page count
-            page_count = math.ceil(number_of_titles / 100)
-
-
-            # Append all pages to movie_details
-            for page in range(2, page_count + 1):
-                # Use regex to remove referral parameters
-                list_url_without_referral = re.sub(r'[?&]ref_[^&]*', '', list_url)
-                print(f"{list_url_without_referral}&page={page}")
-
-                # Send an HTTP GET request to fetch the list page
-                response = requests.get(f"{list_url_without_referral}&page={page}", headers=headers)
-
-                # Check if the request was successful
-                if response.status_code == 200:
-                    # Parse the HTML content of the page
-                    soup = BeautifulSoup(response.content, 'html.parser')
-
-                    # Extract the movie or TV series details from the list
-                    movie_details += soup.select('.lister-item-content')
-
-                else:
-                    print("\nThere was a problem while retrieving the list. Check the URL and try again.")
-                    return
-
-            # Check if there are any movie details
-            if movie_details:
-                self.update_result_label(3)
-                app.processEvents()
-
-                # Filter movie details based on min_rating and selected_genre
-                filtered_movie_details = []
-                for movie_detail in movie_details:
-                    imdb_rating = movie_detail.find('span', class_='ipl-rating-star__rating')
-                    if imdb_rating:
-                        imdb_rating = float(imdb_rating.text.strip())
-                    else:
-                        imdb_rating = 0.0
-
-                    genres = movie_detail.find('span', class_='genre')
-                    if genres:
-                        genres = genres.text.strip()
-                    else:
-                        genres = "-"
-
-                    runtime = movie_detail.find('span', class_='runtime')
-                    if runtime:
-                        runtime = runtime.text.strip()
-
-                        # Check if runtime has decimal separator
-                        if "." in runtime or "," in runtime:
-                            runtime = runtime.replace(",", "")
-                            runtime = runtime.replace(".", "")
-
-                        runtime = runtime.split(" ")[0]
-
-                    else:
-                        runtime = 0
-
-                    if imdb_rating >= min_rating and (selected_genre == "All Genres" or selected_genre in genres) and (max_runtime == 0 or int(runtime) <= max_runtime):
-                        filtered_movie_details.append(movie_detail)
-
-                # Check if there are any filtered movie details
-                if filtered_movie_details:
-                    self.update_result_label(4)
-                    app.processEvents()
-
-                    # Randomly select a movie detail from the list
-                    random_movie_detail = random.choice(filtered_movie_details)
-
-                    # Extract the desired information
-                    title = random_movie_detail.find('h3', class_='lister-item-header').find('a').text.strip()
-                    url = 'https://www.imdb.com' + random_movie_detail.find('h3', class_='lister-item-header').find('a')['href']
-
-                    title_type = ""
-                    directors = ""
-
-                    # To get the title type and the poster, we need to scrape the movie's/series' own page
-                    # Send an HTTP GET request to fetch the list page
-                    second_response = requests.get(url, headers=headers)
-
-                    # Check if the request was successful
-                    if second_response.status_code == 200:
-                        self.update_result_label(5)
-                        app.processEvents()
-
-                        # Parse the HTML content of the page
-                        second_soup = BeautifulSoup(second_response.content, 'html.parser')
-
-                        # Extract the movie or TV series details from the list
-                        type_details = second_soup.select("div.sc-e6498a88-0")
-                        if type_details:
-                            title_type = type_details[0].select_one('li.ipc-inline-list__item[role="presentation"]').text.strip()
-
-                        if title_type.isdigit():
-                            title_type = "Movie"
-
-                        # If the title is not a TV series, do not get the number of episodes
-                        if title_type == "TV Series" or title_type == "TV Mini-Series":
-                            episode_details = second_soup.find('span', class_='ipc-title__subtext')
-
-                            if episode_details:
-                                number_of_episodes = int(episode_details.text.strip())
-
-                        else:
-                            number_of_episodes = 0
-
-                        # Check if the number of episodes is less than or equal to the selected maximum number of episodes
-                        if max_episodes != 0:
-                            # If the number of episodes is greater than the selected maximum number of episodes, try again until the list ends or a title matches the criteria
-                            if number_of_episodes > max_episodes:
-                                self.update_result_label(6)
-                                app.processEvents()
-                                for i in range(0, len(filtered_movie_details)):
-                                    random_movie_detail = random.choice(filtered_movie_details)
-                                    title = random_movie_detail.find('h3', class_='lister-item-header').find('a').text.strip()
-                                    url = 'https://www.imdb.com' + random_movie_detail.find('h3', class_='lister-item-header').find('a')['href']
-                                    second_response = requests.get(url, headers=headers)
-                                    second_soup = BeautifulSoup(second_response.content, 'html.parser')
-                                    type_details = second_soup.select("div.iwmAVw")
-                                    if type_details:
-                                        title_type = type_details[0].select_one('li.ipc-inline-list__item[role="presentation"]').text.strip()
-                                    if title_type.isdigit():
-                                        title_type = "Movie"
-                                    if title_type == "TV Series" or title_type == "TV Mini-Series":
-                                        episode_details = second_soup.find('span', class_='ipc-title__subtext')
-                                        if episode_details:
-                                            number_of_episodes = int(episode_details.text.strip())
-                                    else:
-                                        number_of_episodes = 0
-                                    if number_of_episodes <= max_episodes:
-                                        break
-
-                                # If the number of episodes is still greater than the selected maximum number of episodes, show an error message
-                                if number_of_episodes > max_episodes:
-                                    self.result_label.setText(f"No title matches your criteria. Try again with different filters.")
-                                    return
-
-                        director_details = second_soup.select("div.ipc-metadata-list-item__content-container")
-
-                        if director_details:
-                            directors = director_details[0].select_one("a.ipc-metadata-list-item__list-content-item--link").text.strip()
-
-                        description_details = second_soup.select_one("span[data-testid='plot-xl']")
-
-                        if description_details:
-                            description = description_details.text.strip()
-                            self.description_label.setText(f"{description}")
-
-                        # Check if result label is too long
-                        if len(self.result_label.text()) > 140:
-                            # Add result label to the scroll area
-                            self.result_scroll_area.setWidget(self.result_label)
-                            self.result_scroll_area.show()
-
-                        # Check if the description label is too long
-                        if description and len(description) > 140:
-                            # Add description label to the scroll area
-                            self.description_scroll_area.setWidget(self.description_label)
-                            self.description_scroll_area.show()
-
-                        # Add padding to the result label and description label
-                        self.result_label.setStyleSheet("padding: 10px")
-
-                        # Get the movie poster URL from the IMDb page
-                        poster_image = second_soup.find('img', class_='ipc-image')
-
-                        if poster_image:
-                            poster_url = poster_image['src']
-                            print(poster_url)
-
-                            # Get the biggest poster image by changing the url
-                            # For example:
-                            # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
-                            # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
-                            # Remove everything except ".jpg" after "@@"
-                            if "@@" in poster_url:
-                                poster_url = poster_url.split("@@")[0] + "@@.jpg"
-
-                            else:
-                                poster_url = poster_url.split("_")[0] + "jpg"
-
-                            # Create a pixmap from the poster image URL
-                            pixmap = QPixmap()
-                            pixmap.loadFromData(requests.get(poster_url).content)
-
-                            # Set the pixmap to the poster_label
-                            self.poster_label.setPixmap(pixmap.scaled(self.poster_label.size(), Qt.KeepAspectRatio))
-                            self.poster_label.show()
-
-                            # Find the majority color of the poster image
-                            # Convert the pixmap to a QImage
-                            image = pixmap.toImage()
-
-                            smooth_color_change(image)
-
-                            # Create a star icon at the top left corner on the movie poster
-                            star_icon = QIcon("star.svg")
-                            star_icon_renderer = QSvgRenderer("star.svg")
-                            self.star_icon_pixmap = QPixmap(20, 20)
-                            self.star_icon_pixmap.fill(Qt.transparent)
-                            self.star_icon_painter = QPainter(self.star_icon_pixmap)
-                            star_icon_renderer.render(self.star_icon_painter)
-                            self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-                            self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
-                            self.star_icon_painter.end()
-
-                            # Change the color of the star icon to yellow if it is in the favorites list
-                            if self.check_favorites(title):
-                                self.star_color = "yellow"
-                                self.change_star_color(self.star_color)
-
-                            elif self.theme == "light":
-                                self.star_color = "black"
-                                self.change_star_color(self.star_color)
-
-                            else:
-                                self.star_color = "white"
-                                self.change_star_color(self.star_color)
-
-                            self.star_icon_label = QLabel(self.poster_label)
-                            self.star_icon_label.setPixmap(self.star_icon_pixmap)
-                            self.star_icon_label.move(10, 10)
-                            self.star_icon_label.show()
-
-                            # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
-                            # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
-                            self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(title, url)
-
-                    else:
-                        print("\nFailed to retrieve the list. Check the URL and try again.")
-
-                    imdb_rating = random_movie_detail.find('span', class_='ipl-rating-star__rating').text.strip()
-                    runtime = random_movie_detail.find('span', class_='runtime').text.strip()
-                    year = random_movie_detail.find('span', class_='lister-item-year').text.strip()
-                    genres = random_movie_detail.find('span', class_='genre').text.strip()
-                    user_rating = self.checkRatings(title, title_type)
-
-                    # Update self.result_label with the recommendation
-                    self.result_label.setText(f"<a href=\"{url}\"><h1>{title}</h1></a><br>"
-                                              f"<b>Title Type:</b> {title_type}<br>"
-                                              f"<b>IMDb Rating:</b> {imdb_rating}<br>"
-                                              f"<b>Runtime:</b> {runtime}<br>"
-                                              f"<b>Episode Count:</b> {number_of_episodes}<br>"
-                                              f"<b>Year:</b> {year}<br>"
-                                              f"<b>Genres:</b> {genres}<br>"
-                                              f"<b>Director/Creator:</b> {directors}<br><br>"
-                                              f"{user_rating}")
-
-                else:
-                    # If there are no filtered movie details, show an error message
-                    self.result_label.setText("No title matches your criteria. Try again with different filters.")
-
-                    # Reset the poster_label
-                    self.poster_label.clear()
-
-            else:
-                # If there are no movie details, show an error message
-                self.result_label.setText("No title matches your criteria. Try again with different filters.")
-        else:
-            self.result_label.setText(f"Failed to retrieve the list. Check the URL and try again.")
-            return
-            """
-
-        # Pop up an error message
-        error_message = QMessageBox()
-        error_message.setWindowTitle("Error")
-        error_message.setText("This functionality does not work at the moment due to IMDb's new website structure. Please use the Watchlist option instead.")
-        error_message.setIcon(QMessageBox.Critical)
-        error_message.exec_()
-        return
-
 
     ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
-    def watchlist_random(self, url, min_rating, selected_genre, max_runtime, selected_type, max_episodes):
-        # If there are any episode filters, call list_random() instead
-        if max_episodes != 0:
-            # Get the watchlist URL from the user preferences
-            url = url.replace("lists", "watchlist")
-            self.list_random(url, min_rating, selected_genre, max_runtime, selected_type, max_episodes)
-            return
+    def list_random(self, min_rating, selected_genre, max_runtime, selected_type):
 
         # Define the destination file path where you want to save the CSV file
-        self.watchlist_csv = f'watchlist.csv'
+        self.list_name = f"{self.list_combo.currentText()}.csv"
 
         # Read the CSV file and store its data in a list of dictionaries
         csv_data = []
-        with open(self.watchlist_csv, mode='r', encoding='utf-8') as file:
+        with open(self.list_name, mode='r', encoding='utf-8') as file:
             csv_reader = csv.DictReader(file)
             for row in csv_reader:
                 csv_data.append(row)
@@ -4956,15 +4508,17 @@ class ModernApp(QMainWindow):
                     ratings_csv_data.append(row)
 
         except FileNotFoundError:
-            return f"File not found."
+            return f"Ratings file not found."
 
         # Check if there's data in the CSV file
         if ratings_csv_data:
             # Iterate through the CSV data to find a match for the provided title
             for item in ratings_csv_data:
-                if item["Title"] == title:
+                if item["Original Title"] == title:
                     your_rating = item["Your Rating"]
                     date_rated = item["Date Rated"]
+                    # Convert the date to a more readable format (day number, month name, year)
+                    date_rated = datetime.strptime(date_rated, "%Y-%m-%d").strftime("%d %B %Y")
 
                     rating_result = f"\nYou have rated this {title_type} with a rating of <b>{your_rating}/10</b> on <b>{date_rated}</b>."
                     return rating_result # Exit the function once a match is found
@@ -5067,17 +4621,6 @@ class ModernApp(QMainWindow):
 
         return False
 
-    # Search button logic for custom list input
-    def search_button_click(self):
-        self.update_result_label(2)
-        app.processEvents()
-
-        # Get the text from the QLineEdit
-        list_link = self.custom_list.text()
-
-        # Call the list_random function with the input
-        self.list_random(list_link, self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.max_episodes)
-
     def show_filters(self):
         if self.filters_container.isHidden():
             self.filters_container.show()
@@ -5089,7 +4632,6 @@ class ModernApp(QMainWindow):
         self.min_rating = self.rating_slider.value() / 2.0
         self.selected_genre = self.genre_combo.currentText()
         self.max_runtime = self.runtime_slider.value()
-        self.max_episodes = self.episodes_slider.value()
 
         if self.title_type_combo.currentText() != "All Types":
             match(self.title_type_combo.currentText()):
@@ -5127,8 +4669,7 @@ class ModernApp(QMainWindow):
                                   f"Type: {self.title_type_combo.currentText()}<br>"
                                   f"Minimum Rating: {self.min_rating}<br>"
                                   f"Genre: {self.selected_genre}<br>"
-                                  f"Maximum Runtime: {self.max_runtime}<br>"
-                                  f"Maximum Episodes: {self.max_episodes}")
+                                  f"Maximum Runtime: {self.max_runtime}<br>")
 
         # Hide the filters container after applying filters
         self.filters_container.hide()
@@ -5146,13 +4687,6 @@ class ModernApp(QMainWindow):
             self.runtime_label.setText(f"Maximum Runtime: No Limit")
         else:
             self.runtime_label.setText(f"Maximum Runtime: {self.runtime_slider.value()}")
-
-    # Update the episodes label when the slider value changes
-    def update_episodes_label(self):
-        if self.episodes_slider.value() == 0:
-            self.episodes_label.setText(f"Maximum Episodes: No Limit")
-        else:
-            self.episodes_label.setText(f"Maximum Episodes: {self.episodes_slider.value()}")
 
     # Update the result label to inform the user that the program is working
     def update_result_label(self, flag):
@@ -5447,5 +4981,7 @@ if __name__ == '__main__':
 
     window = ModernApp()
     window.show()
+    # Check the last time the user updated their lists
+    check_last_update()
     sys.exit(app.exec_())
 
