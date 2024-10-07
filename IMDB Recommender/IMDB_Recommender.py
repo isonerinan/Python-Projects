@@ -1,3 +1,4 @@
+import json
 import math
 import shutil
 import sys
@@ -22,6 +23,7 @@ import mechanize
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import zipfile
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -30,8 +32,6 @@ headers = {
 browser = mechanize.Browser()
 browser.set_handle_robots(False)
 browser.addheaders = [headers]
-
-last_login = None
 
 # Check the last login time from the user_preferences.txt file
 def check_last_update():
@@ -218,12 +218,16 @@ class PreferencesDialog(QDialog):
         self.user_list_file_input = QPushButton("Select File", self)
 
         # Add a button to select the watchlist.csv file
-        self.watchlist_file_label = QLabel("Watchlist File Path:", self)
+        self.watchlist_file_label = QLabel("IMDb Watchlist File Path:", self)
         self.watchlist_file_input = QPushButton("Select File", self)
 
         # Add a button to select the ratings.csv file
-        self.ratings_file_label = QLabel("Ratings File Path:", self)
+        self.ratings_file_label = QLabel("IMDb Ratings File Path:", self)
         self.ratings_file_input = QPushButton("Select File", self)
+
+        # Add a button to select the Letterboxd data .zip file
+        self.letterboxd_file_label = QLabel("Letterboxd Data File Path:", self)
+        self.letterboxd_file_input = QPushButton("Select File", self)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
         button_box.accepted.connect(self.accept)
@@ -237,6 +241,8 @@ class PreferencesDialog(QDialog):
         layout.addWidget(self.watchlist_file_input)
         layout.addWidget(self.ratings_file_label)
         layout.addWidget(self.ratings_file_input)
+        layout.addWidget(self.letterboxd_file_label)
+        layout.addWidget(self.letterboxd_file_input)
         layout.addWidget(button_box)
         self.setLayout(layout)
 
@@ -248,6 +254,9 @@ class PreferencesDialog(QDialog):
 
         # Connect the user_lists_file_input button to the select_user_lists_file function
         self.user_list_file_input.clicked.connect(self.select_user_list_file)
+
+        # Connect the letterboxd_file_input button to the select_letterboxd_file function
+        self.letterboxd_file_input.clicked.connect(self.select_letterboxd_file)
 
     # Ask user to select the directory for their ratings.csv file
     def select_ratings_file(self):
@@ -294,6 +303,25 @@ class PreferencesDialog(QDialog):
 
             # Update the user_lists_file_input text with the user_lists.csv file path
             self.user_list_file_input.setText(user_lists_file_path)
+
+    # Ask user to select the directory for their Letterboxd data .zip file
+    def select_letterboxd_file(self):
+        # Open a file dialog to select the Letterboxd data .zip file
+        letterboxd_file_path = QFileDialog.getOpenFileName(self, 'Select Letterboxd data .zip file', '', 'ZIP files (*.zip)')[0]
+
+        # Check if the user selected a file
+        if letterboxd_file_path:
+            # Check if the Letterboxd data .zip file is in the same directory as the script or executable
+            if not os.path.dirname(os.path.realpath(__file__)) + "letterboxd_data.zip" == letterboxd_file_path:
+                # If not, copy the Letterboxd data .zip file to the same directory as the script
+                shutil.copy(letterboxd_file_path, "letterboxd_data.zip")
+
+                # Extract the contents of the Letterboxd data .zip file
+                with zipfile.ZipFile("letterboxd_data.zip", 'r') as zip_ref:
+                    zip_ref.extractall("letterboxd_data")
+
+            # Update the letterboxd_file_input text with the Letterboxd data .zip file path
+            self.letterboxd_file_input.setText(letterboxd_file_path)
 
 # Custom QDialog class for the Favorites dialog
 class MyFavoritesDialog(QDialog):
@@ -2589,7 +2617,6 @@ class DetailsWindow(QDialog):
         self.main_layout.setRowStretch(1, 1) # Make the second row stretchable
 
 
-
 class SortableTable(QTableWidget):
     def __init__(self, rows, cols):
         super().__init__(rows, cols)
@@ -4045,10 +4072,6 @@ class ModernApp(QMainWindow):
         self.main_layout = QVBoxLayout()
         central_widget.setLayout(self.main_layout)
 
-        # Create a top-level layout for the main content
-        content_layout = QVBoxLayout()
-        self.main_layout.addLayout(content_layout)
-
         # Create a menu toolbar
         menu_bar = self.menuBar()
         options_menu = menu_bar.addMenu("Options")
@@ -4211,6 +4234,12 @@ class ModernApp(QMainWindow):
         self.poster_widget.setLayout(self.poster_layout)
         self.main_layout.addWidget(self.poster_widget)
 
+        # Create a new QWidget for displaying the IMDb and Letterboxd logos on top, and the movie/series details below
+        self.logo_poster_widget = QWidget()
+        self.logo_poster_layout = QVBoxLayout()
+
+        self.logo_poster_widget.setLayout(self.logo_poster_layout)
+
         self.poster_label = QLabel()
         self.poster_label.hide()
         self.poster_label.setAlignment(Qt.AlignCenter)
@@ -4219,7 +4248,13 @@ class ModernApp(QMainWindow):
         self.poster_label.setMinimumHeight(450)
         self.poster_label.setMaximumWidth(500)
         self.poster_label.setMaximumHeight(750)
+
         self.poster_layout.addWidget(self.poster_label)
+        self.poster_layout.addWidget(self.logo_poster_widget)
+
+        self.logo_label = QLabel("Test")
+        self.logo_label.setStyleSheet("padding: 10px;")
+        self.logo_label.hide()
 
         self.result_label = QLabel("Welcome to Watchable!<br>Your recommendation will appear here.")
         self.result_label.setWordWrap(True)
@@ -4227,7 +4262,9 @@ class ModernApp(QMainWindow):
         # Enable rich text
         self.result_label.setOpenExternalLinks(True)
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.poster_layout.addWidget(self.result_label)
+
+        self.logo_poster_layout.addWidget(self.logo_label)
+        self.logo_poster_layout.addWidget(self.result_label)
 
         # Create a new QLabel for displaying the movie/series description
         self.description_label = QLabel()
@@ -4237,14 +4274,14 @@ class ModernApp(QMainWindow):
         self.description_label.hide()
         self.main_layout.addWidget(self.description_label)
 
-        # Create scroll areas for the result label and description label
+        # Create scroll areas for the logo label and result label
         self.result_scroll_area = QtWidgets.QScrollArea()
         self.result_scroll_area.setWidgetResizable(True)
         self.result_scroll_area.setFixedHeight(450)
         self.result_scroll_area.setAlignment(Qt.AlignCenter)
         self.result_scroll_area.hide()
 
-        self.poster_layout.addWidget(self.result_scroll_area)
+        self.logo_poster_layout.addWidget(self.result_scroll_area)
 
         # Add the description label to a scroll area
         self.description_scroll_area = QtWidgets.QScrollArea()
@@ -4290,8 +4327,8 @@ class ModernApp(QMainWindow):
                 file.write(f"\"Last Update\": \"{datetime.now().strftime('%Y-%m-%d')}\"")
 
             # Update the combo box with the new lists
-            self.list_combo.clear()
-            self.list_combo.addItem("Watchlist")  # Add a default option
+            window.list_combo.clear()
+            window.list_combo.addItem("Watchlist")  # Add a default option
 
             # Find all the .csv files in the current directory except for ratings.csv, watchlist.csv, rewatch.csv, watching.csv, favorites.csv
             lists = [file for file in os.listdir() if file.endswith(".csv") and file not in ["ratings.csv", "watchlist.csv", "rewatch.csv", "watching.csv", "favorites.csv"]]
@@ -4299,7 +4336,7 @@ class ModernApp(QMainWindow):
             # Add the list names to the combo box
             if lists:
                 for list_name in lists:
-                    self.list_combo.addItem(list_name.split(".")[0])
+                    window.list_combo.addItem(list_name.split(".")[0])
 
 
     def find_random_movie(self):
@@ -4310,7 +4347,23 @@ class ModernApp(QMainWindow):
         if selected_index == 0:
             self.update_result_label(0)
             app.processEvents()
-            self.list_random(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type)
+
+            # Randomly select if the title is from IMDb Watchlist or Letterboxd Watchlist (0 for IMDb, 1 for Letterboxd)
+            random_site = random.randint(0, 1)
+
+            if random_site == 0:
+                # Change the logo label to display IMDb.png image with 40x50 size
+                self.logo_label.setPixmap(QPixmap("IMDb.png").scaled(40, 40))
+                self.logo_label.show()
+
+                self.list_random(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type)
+
+            elif random_site == 1:
+                # Change the logo label to display letterboxd.png image with 40x40 size
+                self.logo_label.setPixmap(QPixmap("letterboxd.png").scaled(40, 40))
+                self.logo_label.show()
+
+                self.list_random_letterboxd()
 
         else:
             self.update_result_label(1)
@@ -4324,8 +4377,7 @@ class ModernApp(QMainWindow):
         self.more_details_button.show()
         QApplication.restoreOverrideCursor()
 
-
-    ## IF A WATCHLIST, DOWNLOAD THE CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY ##
+    ## IF AN IMDb WATCHLIST, READ CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY (WITH USER FILTERS) ##
     def list_random(self, min_rating, selected_genre, max_runtime, selected_type):
 
         # Define the destination file path where you want to save the CSV file
@@ -4496,6 +4548,128 @@ class ModernApp(QMainWindow):
                 print("The CSV file is empty.")
                 return
 
+    ## IF A LETTERBOXD WATCHLIST, READ CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY (WITHOUT FILTERS) ##
+    def list_random_letterboxd(self):
+        # Get the CSV file from unzipped letterboxd_data folder
+        letterboxd_csv = "letterboxd_data/watchlist.csv"
+
+        # Read the CSV file and store its data in a list of dictionaries
+        csv_data = []
+
+        with open(letterboxd_csv, mode='r', encoding='utf-8') as file:
+            csv_reader = csv.DictReader(file)
+            for row in csv_reader:
+                csv_data.append(row)
+
+        # Check if there's data in the CSV file
+        if csv_data:
+            print("\nSuccessfully read the CSV file.")
+            self.update_result_label(3)
+            app.processEvents()
+
+            # Randomly select a row from the CSV data
+            random_item = random.choice(csv_data)
+
+            # Check if the user has rated the movie/series before
+            # user_rating = self.checkRatings(random_item['Title'], random_item['Type'])
+
+            # To get the title type and the poster, we need to scrape the movie's/series' own page
+            # Send an HTTP GET request to fetch the list page
+            response = requests.get(random_item['Letterboxd URI'], headers=headers)
+
+            # Check if the request was successful
+            if response.status_code == 200:
+                self.update_result_label(5)
+                app.processEvents()
+                # Parse the HTML content of the page
+                soup = BeautifulSoup(response.content, 'html.parser')
+
+                details = soup.select("div.col-17")
+                if details:
+                    director = soup.select_one("a.contributor")
+                    film_details = soup.select_one("div.review")
+
+
+                    tagline = film_details.select_one("h4.tagline")
+                    print("Tagline:", tagline)
+
+                    if tagline:
+                        tagline = tagline.text.strip() + "<br><br>"
+                    else:
+                        tagline = ""
+
+                    description = film_details.select_one("div.truncate")
+
+                # Get the movie poster URL from the IMDb page
+                script_w_data = soup.select_one('script[type="application/ld+json"]')
+                poster_image = json.loads(script_w_data.text.split(' */')[1].split('/* ]]>')[0])
+                print(poster_image['image'])
+
+
+                if poster_image:
+                    poster_url = poster_image['image']
+                    print("Poster URL", poster_url)
+
+                    # Create a pixmap from the poster image URL
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(requests.get(poster_url).content)
+
+                    # Set the pixmap to the poster_label
+                    self.poster_label.setPixmap(pixmap.scaled(self.poster_label.size(), Qt.KeepAspectRatio))
+
+                    # Find the majority color of the poster image
+                    # Convert the pixmap to a QImage
+                    image = pixmap.toImage()
+
+                    smooth_color_change(image)
+
+                    # Create a star icon at the top left corner on the movie poster
+                    star_icon = QIcon("star.svg")
+                    star_icon_renderer = QSvgRenderer("star.svg")
+                    self.star_icon_pixmap = QPixmap(20, 20)
+                    self.star_icon_pixmap.fill(Qt.transparent)
+                    self.star_icon_painter = QPainter(self.star_icon_pixmap)
+                    star_icon_renderer.render(self.star_icon_painter)
+                    self.star_icon_painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+                    self.star_icon_painter.fillRect(self.star_icon_pixmap.rect(), QColor(255, 255, 255))
+
+                    self.star_icon_painter.end()
+
+                    # Change the color of the star icon to yellow if it is in the favorites list
+                    if self.check_favorites(random_item['Name']):
+                        self.star_color = "yellow"
+                        self.change_star_color(self.star_color)
+
+                    else:
+                        # If not in the favorites list, change the color of the star icon to white or black depending on the theme
+                        if self.theme == "light":
+                            self.star_color = "black"
+                            self.change_star_color(self.star_color)
+
+                        elif self.theme == "dark":
+                            self.star_color = "white"
+                            self.change_star_color(self.star_color)
+
+                    self.star_icon_label = QLabel(self.poster_label)
+
+                    self.star_icon_label.setPixmap(self.star_icon_pixmap)
+                    self.star_icon_label.move(10, 10)
+
+                    self.star_icon_label.show()
+
+                    # When clicked, save the movie/series' title and URL to a CSV file name "favorites.csv" and change the color of the star icon to yellow
+                    # When clicked again, remove the movie/series from the CSV file and change the color of the star icon to white or black depending on the theme
+                    self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Name'], random_item['Letterboxd URI'])
+
+                # Extract and print the desired columns
+                self.result_label.setText(f"<a href=\"{random_item['Letterboxd URI']}\"><h1>{random_item['Name']}</h1></a><br>"
+                                          f"<i>{tagline}</i>"
+                                          f"<b>Year:</b> {random_item['Year']}<br>"
+                                          f"<b>Director:</b> {director.text.strip()}<br>")
+
+                if description:
+                    self.description_label.setText(f"{description.text.strip()}")
+
 
     ## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
     def checkRatings(self, title, title_type):
@@ -4609,7 +4783,6 @@ class ModernApp(QMainWindow):
         # Change the color of the star icon to yellow
         self.star_color = "yellow"
         self.change_star_color(self.star_color)
-
 
     # Check if the movie/series is already in the favorites.csv file
     def check_favorites(self, title):
@@ -4727,8 +4900,6 @@ class ModernApp(QMainWindow):
             case _:
                 self.result_label.setText(flag)
 
-
-
     # Change the star icon color
     def change_star_color(self, color):
         star_painter = QPainter(self.star_icon_pixmap)
@@ -4767,7 +4938,7 @@ class ModernApp(QMainWindow):
         self.result_scroll_area = QtWidgets.QScrollArea()
         self.result_scroll_area.setWidgetResizable(True)
         self.result_scroll_area.setFixedHeight(450)
-        self.result_scroll_area.setWidget(self.result_label)
+        self.result_scroll_area.setWidget(self.logo_poster_widget)
 
         self.poster_layout.addWidget(self.result_scroll_area)
 
@@ -4805,7 +4976,7 @@ class ModernApp(QMainWindow):
         self.result_scroll_area = QtWidgets.QScrollArea()
         self.result_scroll_area.setWidgetResizable(True)
         self.result_scroll_area.setFixedHeight(450)
-        self.result_scroll_area.setWidget(self.result_label)
+        self.result_scroll_area.setWidget(self.logo_poster_widget)
 
         self.poster_layout.addWidget(self.result_scroll_area)
 
@@ -4859,8 +5030,6 @@ class ModernApp(QMainWindow):
 
         # Change the cursor back to the default cursor
         QApplication.restoreOverrideCursor()
-
-
 
     # Show the help dialog
     def help(self):
@@ -4943,6 +5112,9 @@ class ModernApp(QMainWindow):
         # Create and display the favorites dialog
         favorites_dialog = MyFavoritesDialog(favorites_data)
         favorites_dialog.exec_()
+
+    # def update_letterboxd_watchlist(self):
+
 
 
 
