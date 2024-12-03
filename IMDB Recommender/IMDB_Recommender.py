@@ -301,6 +301,13 @@ class PreferencesDialog(QDialog):
                 # If not, copy the user_lists.csv file to the same directory as the script
                 shutil.copy(user_lists_file_path, f"{self.list_name}.csv")
 
+                # If yes, remove the original user_lists.csv file and copy the new one to the same directory as the script
+                if os.path.exists("user_lists.csv"):
+                    os.remove("user_lists.csv")
+                    shutil.copy(user_lists_file_path, "user_lists.csv")
+
+
+
             # Update the user_lists_file_input text with the user_lists.csv file path
             self.user_list_file_input.setText(user_lists_file_path)
 
@@ -2186,6 +2193,16 @@ class ImageLoaderThread(QThread):
 class DetailsWindow(QDialog):
     def __init__(self, title_url):
         super().__init__()
+        # Check if the title URL is IMDb and not Letterboxd
+        if "imdb.com" not in title_url:
+            # Show an error pop up
+            error_dialog = QMessageBox()
+            error_dialog.setWindowTitle("Error")
+            error_dialog.setText("This functionality is only available for IMDb titles for now.")
+            error_dialog.setIcon(QMessageBox.Critical)
+            error_dialog.exec_()
+            return
+
         # Remove the referral from the URL
         title_url = title_url.split("?")[0]
 
@@ -3556,7 +3573,7 @@ class YearReviewWindow(QDialog):
                     title_soup = BeautifulSoup(title_html, 'html.parser')
 
                     # Get the title from the HTML content
-                    tv_show = title_soup.find("div", class_="sc-2a168135-0 flmBNm").a.text
+                    tv_show = title_soup.find("div", class_="sc-8bd166f4-0 bjorNY").a.text
 
                 elif num_colons == 4:
                     # Format: "'IP Name: Series Name': 'Episode Name: Episode Part'"
@@ -3976,9 +3993,9 @@ class InsightsWindow(QDialog):
             higher_than_imdb = len([user_rating for user_rating, imdb_rating in ratings.values() if user_rating > imdb_rating]) / len(ratings) * 100
             print(f"Higher than IMDB: {higher_than_imdb:.2f}%")
 
-            # Calculate the percentage of titles that the user rated the same as the IMDB rating
-            same_as_imdb = len([user_rating for user_rating, imdb_rating in ratings.values() if user_rating == imdb_rating]) / len(ratings) * 100
-            print(f"Same as IMDB: {same_as_imdb:.2f}%")
+            # Calculate the percentage of titles that the user rated similar to the IMDB rating (+- 0.5)
+            similar_to_imdb = len([user_rating for user_rating, imdb_rating in ratings.values() if imdb_rating - 0.5 <= user_rating <= imdb_rating + 0.5]) / len(ratings) * 100
+            print(f"Similar to IMDB: {similar_to_imdb:.2f}%")
 
             # Calculate the percentage of titles that the user rated lower than the IMDB rating
             lower_than_imdb = len([user_rating for user_rating, imdb_rating in ratings.values() if user_rating < imdb_rating]) / len(ratings) * 100
@@ -3995,7 +4012,6 @@ class InsightsWindow(QDialog):
 
             # Loop through the ratings_data list
             for item in ratings_data:
-                print(item)
                 # Extract the release year and the user rating for each title
                 release_date = item['Release Date']
                 user_date = item['Date Rated']
@@ -4527,7 +4543,7 @@ class ModernApp(QMainWindow):
                     # Extract and print the desired columns
                     self.result_label.setText(f"<a href=\"{random_item['URL']}\"><h1>{random_item['Original Title']}</h1></a><br>"
                                               f"<b>Title Type:</b> {random_item['Title Type']}<br>"
-                                              f"<b>IMDb Rating:</b> {random_item['IMDb Rating']}<br>"
+                                              f'<b>IMDb Rating:</b> {random_item["IMDb Rating"]}/10 ★<br>'
                                               f"<b>Runtime:</b> {random_item['Runtime (mins)']}<br>"
                                               f"<b>Episode Count:</b> {number_of_episodes}<br>"
                                               f"<b>Year:</b> {random_item['Year']}<br>"
@@ -4583,16 +4599,115 @@ class ModernApp(QMainWindow):
                 app.processEvents()
                 # Parse the HTML content of the page
                 soup = BeautifulSoup(response.content, 'html.parser')
+                print(soup)
 
-                details = soup.select("div.col-17")
-                if details:
-                    director = soup.select_one("a.contributor")
+                # To get the average rating, we need to scrape another page: https://letterboxd.com/csi/film/{movie_id}/rating-histogram/ instead of https://letterboxd.com/film/{movie_id}/
+                ratings_page = "https://letterboxd.com" + soup.find("div", {"data-on-load": "film-rating-histogram"}).get("data-src")
+
+                # Send an HTTP GET request to fetch the ratings page
+                ratings_response = requests.get(ratings_page, headers=headers)
+
+                if ratings_response.status_code == 200:
+                    ratings_soup = BeautifulSoup(ratings_response.content, 'html.parser')
+
+                    # Locate the span with class 'average-rating'
+                    average_rating_span = ratings_soup.find("span", class_="average-rating")
+
+                    if average_rating_span:
+                        # Find the <a> tag with class 'tooltip display-rating' inside the span
+                        display_rating = average_rating_span.find("a", class_="tooltip display-rating")
+                        if display_rating:
+                            # Extract and print the text
+                            rating = display_rating.get_text(strip=True)
+                            print(f"Average Rating: {rating}")
+                        else:
+                            print("Display rating not found.")
+                    else:
+                        print("Average rating span not found.")
+
+                # Get the runtime
+                main_section = soup.find("section", class_="section col-10 col-main")
+
+                if main_section:
+                    # Find the <p> with class 'text-link text-footer'
+                    footer_text = main_section.find("p", class_="text-link text-footer")
+                    if footer_text:
+                        # Extract and clean the runtime value
+                        runtime = footer_text.get_text(strip=True).split(" ")[0]
+                        print(f"Runtime: {runtime}")
+                    else:
+                        print("Runtime not found.")
+                else:
+                    print("Main section not found.")
+
+                # Extract cast
+                try:
+                    cast_section = soup.find('h3', class_='hidden', string='Cast').find_next('div', class_='cast-list')
+                except AttributeError:
+                    cast_section = ""
+
+                cast_members = [
+                    {
+                        "name": a.text,
+                        "role": a.get('title'),
+                        "link": a.get('href')
+                    }
+                    for a in cast_section.find_all('a', class_='text-slug tooltip') if a.get('title')
+                ]
+
+                # Extract crew members
+                crew_roles = soup.find_all('span', class_='crewrole -full')
+                crew_details = {}
+
+                for role in crew_roles:
+                    role_name = role.text.strip()  # Get the full role name
+                    if role_name:
+                        # Find the next sibling div containing the crew members
+                        crew_section = role.find_next('div', class_='text-sluglist')
+                        if crew_section:
+                            crew_members = [
+                                {
+                                    "name": a.text.strip(),
+                                    "link": a.get('href')
+                                }
+                                for a in crew_section.find_all('a', class_='text-slug')
+                            ]
+                            crew_details[role_name] = crew_members
+
+                # Extracting details
+                details_block = soup.find("div", id="tab-details")
+                details = {}
+                if details_block:
+                    for p in details_block.find_all("p"):
+                        span = p.find("span")  # Check if a span exists
+                        if span:  # Ensure span is not None
+                            key = span.text.strip(":")  # Extract the key (e.g., 'Release Date', 'Runtime')
+                            value = p.get_text(separator=" ").replace(span.text + ":", "").strip()  # Get the value
+                            details[key] = value
+
+                # Initialize the genres dictionary
+                genres_and_themes = {"Genres": [], "Themes": []}
+
+                # Find the Genres Block
+                genres_block = soup.find("div", id="tab-genres")
+
+                if genres_block:
+                    # Loop through each <h3> and its subsequent <div>
+                    for header in genres_block.find_all("h3"):
+                        section_name = header.find("span").text.strip()  # e.g., 'Genres' or 'Themes'
+                        next_div = header.find_next("div", class_="text-sluglist")
+                        if next_div:
+                            links = next_div.find_all("a", class_="text-slug")
+                            genres_and_themes[section_name] = [
+                                {"name": a.text.strip(), "link": a["href"].strip()}
+                                for a in links
+                            ]
+
+                other_details = soup.select("div.col-17")
+                if other_details:
                     film_details = soup.select_one("div.review")
 
-
                     tagline = film_details.select_one("h4.tagline")
-                    print("Tagline:", tagline)
-
                     if tagline:
                         tagline = tagline.text.strip() + "<br><br>"
                     else:
@@ -4600,15 +4715,12 @@ class ModernApp(QMainWindow):
 
                     description = film_details.select_one("div.truncate")
 
-                # Get the movie poster URL from the IMDb page
+                # Get the movie poster URL
                 script_w_data = soup.select_one('script[type="application/ld+json"]')
                 poster_image = json.loads(script_w_data.text.split(' */')[1].split('/* ]]>')[0])
-                print(poster_image['image'])
-
 
                 if poster_image:
                     poster_url = poster_image['image']
-                    print("Poster URL", poster_url)
 
                     # Create a pixmap from the poster image URL
                     pixmap = QPixmap()
@@ -4662,10 +4774,39 @@ class ModernApp(QMainWindow):
                     self.star_icon_label.mousePressEvent = lambda event: self.save_favorite(random_item['Name'], random_item['Letterboxd URI'])
 
                 # Extract and print the desired columns
-                self.result_label.setText(f"<a href=\"{random_item['Letterboxd URI']}\"><h1>{random_item['Name']}</h1></a><br>"
-                                          f"<i>{tagline}</i>"
-                                          f"<b>Year:</b> {random_item['Year']}<br>"
-                                          f"<b>Director:</b> {director.text.strip()}<br>")
+                base_url = "https://letterboxd.com"
+
+                directors_html = ", ".join(
+                    f"<a href=\"{base_url}{director['link']}\">{director['name']}</a>"
+                    for director in (crew_details.get("Directors", []) + crew_details.get("Director", []))
+                )
+
+                actors_html = "<br>".join(
+                    f"<a href=\"{base_url}{actor['link']}\">{actor['name']}</a> as {actor['role']}"
+                    for actor in cast_members
+                )
+
+                genres_html = ", ".join(
+                    f"<a href=\"{base_url}{genre['link']}\">{genre['name']}</a>" for genre in
+                    genres_and_themes.get("Genres", [])
+                )
+
+                themes_html = ", ".join(
+                    f"<a href=\"{base_url}{theme['link']}\">{theme['name']}</a>" for theme in
+                    genres_and_themes.get("Themes", [])
+                )
+
+                self.result_label.setText(
+                    f"<a href=\"{random_item['Letterboxd URI']}\"><h1>{random_item['Name']}</h1></a><br>"
+                    f"<i>{tagline}</i><br>"
+                    f"<b>Letterboxd Rating:</b> {rating}/5 ★<br>"
+                    f"<b>Runtime:</b> {runtime}<br>"
+                    f"<b>Year:</b> {random_item['Year']}<br>"
+                    f"<b>Directors:</b> {directors_html}<br>"
+                    f"<b>Genres:</b> {genres_html}<br>"
+                    f"<b>Themes:</b> {themes_html}<br>"
+                    f"<b>Cast:</b><br>{actors_html:5}<br>"
+                )
 
                 if description:
                     self.description_label.setText(f"{description.text.strip()}")
