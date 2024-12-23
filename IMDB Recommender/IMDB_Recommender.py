@@ -14,7 +14,8 @@ import random
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QDialog, QLineEdit, QDialogButtonBox, QFileDialog, QMessageBox, QMenu, QAction, \
-    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget, QScrollArea, QAbstractItemView
+    QTableWidget, QHeaderView, QTableWidgetItem, QSlider, QGridLayout, QListWidget, QScrollArea, QAbstractItemView, \
+    QCheckBox
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QPixmap, QPainter, QIcon, QPalette, QColor, QFont
 from PyQt5.QtSvg import QSvgRenderer
@@ -24,6 +25,12 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import zipfile
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+session = requests.Session()
+retries = Retry(total=5, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+session.mount("https://", HTTPAdapter(max_retries=retries))
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36 Edg/117.0.2045.47',
@@ -206,6 +213,23 @@ def smooth_color_change(image):
 
         light_palette.setColor(QPalette.Link, dominant_color)
         window.light_theme()
+
+    center_window(window)
+
+def center_window(window):
+    # Only center the window vertically, do not center horizontally
+    # Get the screen resolution
+    screen_resolution = app.desktop().screenGeometry()
+
+    # Get the window resolution
+    window_width, window_height = window.width(), window.height()
+
+    # Calculate new position
+    x = window.x()
+    y = (screen_resolution.height() - window.height()) // 2
+
+    # Set the new window position
+    window.move(x, y)
 
 # Custom QDialog class for the Preferences dialog
 class PreferencesDialog(QDialog):
@@ -2171,25 +2195,6 @@ class NowWatchingWindow(QDialog):
             msg.exec_()
 
 
-class ImageLoaderThread(QThread):
-    image_loaded = pyqtSignal(QPixmap)
-
-    def __init__(self, image_url):
-        super().__init__()
-        self.image_url = image_url
-
-    def run(self):
-        # Download the image
-        image_data = requests.get(self.image_url).content
-
-        # Convert the image data to QPixmap
-        pixmap = QPixmap()
-        pixmap.loadFromData(image_data)
-
-        # Emit the signal with the loaded pixmap
-        self.image_loaded.emit(pixmap)
-
-
 class DetailsWindow(QDialog):
     def __init__(self, title_url):
         super().__init__()
@@ -2502,6 +2507,7 @@ class DetailsWindow(QDialog):
 
         severity_levels = {
             "": 0,
+            "-": 0,
             "None": 0,
             "Mild": 1,
             "Moderate": 2,
@@ -3068,14 +3074,12 @@ class YearReviewWindow(QDialog):
                     # Convert the pixmap to a QImage
                     image = pixmap.toImage()
 
-                    smooth_color_change(image)
-
 
                 self.description_label.setText(f"Your average rating for {self.year} was <b>{self.average_rating:.2f}</b>/10.<br><br>"
                                                f"You definitely loved <b>{self.month_with_highest_average_rating}</b>, which got an average rating of <b>{self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Your Rating'].mean().max():.2f}</b>/10 from you.<br>"
                                                f"Your least enjoyable period probably was <b>{self.month_with_lowest_average_rating}</b>, where your average rating was <b>{self.filtered_data.groupby(self.filtered_data['Date Rated'].dt.strftime('%B'))['Your Rating'].mean().min():.2f}</b>/10<br><br>"
                                                f"You watched <b>{favorite_month_title}</b> in {self.month_with_highest_average_rating}, and you rated it <b>{favorite_month_title_rating}</b>/10. Maybe you should watch it again?")
-
+                smooth_color_change(image)
 
             case 5: # Start of the year
                 self.header_label.setText("<h1>A lot can happen in three months.</h1>")
@@ -3131,11 +3135,10 @@ class YearReviewWindow(QDialog):
                         # Convert the pixmap to a QImage
                         image = pixmap.toImage()
 
-                        smooth_color_change(image)
-
                         self.description_label.setText(f"Do you remember watching <b>{selected_title}</b> at the start of {self.year}?<br>"
                                                        f"You rated it <b>{selected_title_rating}</b>/10.<br><br>"
                                                        f"Along with that, you watched <b>{len(self.first_three_months_data)} titles</b> in the first three months of {self.year}.")
+                        smooth_color_change(image)
 
                 else:
                     self.description_label.setText("No titles found in the first three months of the year.")
@@ -3196,11 +3199,11 @@ class YearReviewWindow(QDialog):
                         # Convert the pixmap to a QImage
                         image = pixmap.toImage()
 
-                        smooth_color_change(image)
-
                         self.description_label.setText(f"Do you remember watching <b>{selected_title}</b> at the end of {self.year}?<br>"
                                                        f"You rated it <b>{selected_title_rating}</b>/10.<br><br>"
                                                        f"Along with that, you watched <b>{len(self.last_three_months_data)} titles</b> in the last three months of {self.year}.")
+
+                        smooth_color_change(image)
 
                 else:
                     self.description_label.setText("No titles found in the last three months of the year.")
@@ -3256,8 +3259,6 @@ class YearReviewWindow(QDialog):
                     # Convert the pixmap to a QImage
                     image = pixmap.toImage()
 
-                    smooth_color_change(image)
-
                 self.description_label.setText(f"Your favorite genre was <b>{favorite_genre}</b>, and you watched <b>{len(self.filtered_data)}</b> titles in that genre.<br>"
                                                f"<b>{favorite_genre_title}</b> was one of them, and you rated it <b>{favorite_genre_title_rating}</b>/10.<br><br>")
 
@@ -3266,6 +3267,7 @@ class YearReviewWindow(QDialog):
                                                + "<br>".join([f"<b>{key}:</b> {value[0]} titles, {value[1]:.2f}/10 average rating, {value[2]:.2f} ❤️" for key, value in list(self.genres.items())[:5]]))
 
                 self.description_label.show()
+                smooth_color_change(image)
 
             case 8: # Favorite TV shows
                 random_genres, favorite_tv_shows = self.favorite_tv_shows()
@@ -4074,7 +4076,6 @@ class ModernApp(QMainWindow):
         self.max_runtime = 0
         self.selected_genre = "All Genres"
         self.selected_type = "All Types"
-        self.max_episodes = 0
 
         self.initUI()
 
@@ -4197,6 +4198,21 @@ class ModernApp(QMainWindow):
         self.rating_slider.setTickInterval(1)
         self.rating_slider.setTickPosition(QSlider.TicksAbove)
 
+        # Create a QSlider for selecting a year
+        self.year_slider = QSlider(Qt.Horizontal)
+        self.year_slider.setMinimum(1800)
+        self.year_slider.setMaximum(2030)
+        self.year_slider.setValue(1800)
+        self.year_slider.setTickInterval(1)
+        self.year_slider.setTickPosition(QSlider.TicksAbove)
+
+        # Create a two tickboxes: One for before selected year, one for after selected year
+        self.before_year_checkbox = QCheckBox("Before Selected Year")
+        self.after_year_checkbox = QCheckBox("After Selected Year")
+
+        # Create a QLabel to display the selected year (if before checked, display "Before Selected Year", if after checked, display "After Selected Year")
+        self.year_label = QLabel("Selected Year: All Years")
+
         # Create a QSlider for selecting maximum runtime
         self.runtime_slider = QSlider(Qt.Horizontal)
         self.runtime_slider.setMinimum(0)
@@ -4211,11 +4227,13 @@ class ModernApp(QMainWindow):
         # Create a QLabel to display the selected runtime
         self.runtime_label = QLabel("Maximum Runtime: No Limit")
 
-        # Update the label when the slider value changes
+        # Update the label when the slider values change
         self.rating_slider.valueChanged.connect(self.update_rating_label)
-
-        # Update the label when the slider value changes
         self.runtime_slider.valueChanged.connect(self.update_runtime_label)
+        self.checkbox_state = 0
+        self.year_slider.valueChanged.connect(self.update_year_label)
+        self.before_year_checkbox.stateChanged.connect(self.update_before_checkbox)
+        self.after_year_checkbox.stateChanged.connect(self.update_after_checkbox)
 
         # Create a QComboBox for selecting genres
         self.genre_combo = QComboBox()
@@ -4239,6 +4257,15 @@ class ModernApp(QMainWindow):
         filter_layout.addWidget(self.genre_combo)
         filter_layout.addWidget(self.rating_label)
         filter_layout.addWidget(self.rating_slider)
+        filter_layout.addWidget(self.year_label)
+        filter_layout.addWidget(self.year_slider)
+
+        # Create a horizontal layout for checkboxes
+        checkbox_layout = QHBoxLayout()
+        checkbox_layout.addWidget(self.before_year_checkbox)
+        checkbox_layout.addWidget(self.after_year_checkbox)
+        filter_layout.addLayout(checkbox_layout)
+
         filter_layout.addWidget(self.runtime_label)
         filter_layout.addWidget(self.runtime_slider)
         filter_layout.addWidget(apply_filters_button)
@@ -4354,7 +4381,6 @@ class ModernApp(QMainWindow):
                 for list_name in lists:
                     window.list_combo.addItem(list_name.split(".")[0])
 
-
     def find_random_movie(self):
         # Change the cursor to indicate that the program is working
         QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -4367,24 +4393,28 @@ class ModernApp(QMainWindow):
             # Randomly select if the title is from IMDb Watchlist or Letterboxd Watchlist (0 for IMDb, 1 for Letterboxd)
             random_site = random.randint(0, 1)
 
+            # If there are any filters, choose IMDb
+            if self.min_rating != 0 or self.selected_genre != "All Genres" or self.max_runtime != 0 or self.selected_type != "All Types":
+                random_site = 0
+
             if random_site == 0:
                 # Change the logo label to display IMDb.png image with 40x50 size
                 self.logo_label.setPixmap(QPixmap("IMDb.png").scaled(40, 40))
                 self.logo_label.show()
 
-                self.list_random(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type)
+                self.list_random(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.selected_year, self.before_or_after)
 
             elif random_site == 1:
                 # Change the logo label to display letterboxd.png image with 40x40 size
                 self.logo_label.setPixmap(QPixmap("letterboxd.png").scaled(40, 40))
                 self.logo_label.show()
 
-                self.list_random_letterboxd()
+                self.list_random_letterboxd(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.selected_year, self.before_or_after)
 
         else:
             self.update_result_label(1)
             app.processEvents()
-            self.list_random(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type)
+            self.list_random(self.min_rating, self.selected_genre, self.max_runtime, self.selected_type, self.selected_year, self.before_or_after)
 
         # Change the cursor back to normal
         self.poster_label.show()
@@ -4393,8 +4423,8 @@ class ModernApp(QMainWindow):
         self.more_details_button.show()
         QApplication.restoreOverrideCursor()
 
-    ## IF AN IMDb WATCHLIST, READ CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY (WITH USER FILTERS) ##
-    def list_random(self, min_rating, selected_genre, max_runtime, selected_type):
+    ## SELECT A MOVIE/SERIES RANDOMLY (WITH USER FILTERS) ##
+    def list_random(self, min_rating, selected_genre, max_runtime, selected_type, selected_year, before_or_after):
 
         # Define the destination file path where you want to save the CSV file
         self.list_name = f"{self.list_combo.currentText()}.csv"
@@ -4426,6 +4456,18 @@ class ModernApp(QMainWindow):
             if selected_type != "All Types":
                 csv_data = [item for item in csv_data if selected_type in item['Title Type']]
                 print(f"Filtered by title type: {selected_type} ({len(csv_data)} titles match)")
+
+            if selected_year != 1800 and before_or_after == "Neither":
+                csv_data = [item for item in csv_data if 'Year' in item and item['Year'] and int(item['Year']) == selected_year]
+                print(f"Filtered by year: {selected_year} ({len(csv_data)} titles match)")
+
+            if selected_year != 1800 and before_or_after == "Before":
+                csv_data = [item for item in csv_data if 'Year' in item and item['Year'] and int(item['Year']) <= selected_year]
+                print(f"Filtered by year: {selected_year} ({len(csv_data)} titles match")
+
+            if selected_year != 1800 and before_or_after == "After":
+                csv_data = [item for item in csv_data if 'Year' in item and item['Year'] and int(item['Year']) >= selected_year]
+                print(f"Filtered by year: {selected_year} ({len(csv_data)} titles match")
 
             self.result_label.setText(f"Our chefs are adding filters to enhance your selection's flavor...<br><br>"
                                       f"({len(csv_data)} titles match your preferences)")
@@ -4497,8 +4539,6 @@ class ModernApp(QMainWindow):
                         # Convert the pixmap to a QImage
                         image = pixmap.toImage()
 
-                        smooth_color_change(image)
-
                         # Create a star icon at the top left corner on the movie poster
                         star_icon = QIcon("star.svg")
                         star_icon_renderer = QSvgRenderer("star.svg")
@@ -4552,6 +4592,8 @@ class ModernApp(QMainWindow):
                                               f"<b>Director/Creator:</b> {directors}<br><br>"
                                               f"{user_rating}")
 
+                    smooth_color_change(image)
+
                 else:
                     print("\nFailed to retrieve the list. Check the URL and try again.")
 
@@ -4565,7 +4607,13 @@ class ModernApp(QMainWindow):
                 return
 
     ## IF A LETTERBOXD WATCHLIST, READ CSV FILE AND SELECT A MOVIE/SERIES RANDOMLY (WITHOUT FILTERS) ##
-    def list_random_letterboxd(self):
+    def list_random_letterboxd(self, min_rating, selected_genre, max_runtime, selected_type, selected_year, before_or_after):
+        # Check if there are any filters other than selected_year
+        if min_rating != 0 or selected_genre != "All Genres" or max_runtime != 0 or selected_type != "All Types":
+            self.update_result_label(1)
+            app.processEvents()
+            self.list_random(min_rating, selected_genre, max_runtime, selected_type, selected_year, before_or_after)
+
         # Get the CSV file from unzipped letterboxd_data folder
         letterboxd_csv = "letterboxd_data/watchlist.csv"
 
@@ -4583,6 +4631,19 @@ class ModernApp(QMainWindow):
             self.update_result_label(3)
             app.processEvents()
 
+            # Check if there are any filters
+            if selected_year != 1800 and before_or_after == "Neither":
+                csv_data = [item for item in csv_data if 'Year' in item and item['Year'] and int(item['Year']) == selected_year]
+                print(f"Filtered by year: {selected_year} ({len(csv_data)} titles match)")
+
+            if selected_year != 1800 and before_or_after == "Before":
+                csv_data = [item for item in csv_data if 'Year' in item and item['Year'] and int(item['Year']) <= selected_year]
+                print(f"Filtered by year: {selected_year} ({len(csv_data)} titles match")
+
+            if selected_year != 1800 and before_or_after == "After":
+                csv_data = [item for item in csv_data if 'Year' in item and item['Year'] and int(item['Year']) >= selected_year]
+                print(f"Filtered by year: {selected_year} ({len(csv_data)} titles match")
+
             # Randomly select a row from the CSV data
             random_item = random.choice(csv_data)
 
@@ -4591,7 +4652,7 @@ class ModernApp(QMainWindow):
 
             # To get the title type and the poster, we need to scrape the movie's/series' own page
             # Send an HTTP GET request to fetch the list page
-            response = requests.get(random_item['Letterboxd URI'], headers=headers)
+            response = session.get(random_item['Letterboxd URI'], headers=headers, timeout=10)
 
             # Check if the request was successful
             if response.status_code == 200:
@@ -4599,13 +4660,12 @@ class ModernApp(QMainWindow):
                 app.processEvents()
                 # Parse the HTML content of the page
                 soup = BeautifulSoup(response.content, 'html.parser')
-                print(soup)
 
                 # To get the average rating, we need to scrape another page: https://letterboxd.com/csi/film/{movie_id}/rating-histogram/ instead of https://letterboxd.com/film/{movie_id}/
                 ratings_page = "https://letterboxd.com" + soup.find("div", {"data-on-load": "film-rating-histogram"}).get("data-src")
 
-                # Send an HTTP GET request to fetch the ratings page
-                ratings_response = requests.get(ratings_page, headers=headers)
+                ratings_response = session.get(ratings_page, headers=headers, timeout=10)  # Set timeout to 10 seconds
+                ratings_response.raise_for_status()  # Raise an exception for HTTP errors
 
                 if ratings_response.status_code == 200:
                     ratings_soup = BeautifulSoup(ratings_response.content, 'html.parser')
@@ -4622,8 +4682,15 @@ class ModernApp(QMainWindow):
                             print(f"Average Rating: {rating}")
                         else:
                             print("Display rating not found.")
+                            rating = "Failed to retrieve the average rating."
                     else:
                         print("Average rating span not found.")
+                        rating = "Failed to retrieve the average rating."
+
+                else:
+                    print("Failed to retrieve the average rating. Check the URL and try again.")
+                    print(ratings_response.status_code)
+                    rating = "Failed to retrieve the average rating."
 
                 # Get the runtime
                 main_section = soup.find("section", class_="section col-10 col-main")
@@ -4733,8 +4800,6 @@ class ModernApp(QMainWindow):
                     # Convert the pixmap to a QImage
                     image = pixmap.toImage()
 
-                    smooth_color_change(image)
-
                     # Create a star icon at the top left corner on the movie poster
                     star_icon = QIcon("star.svg")
                     star_icon_renderer = QSvgRenderer("star.svg")
@@ -4810,6 +4875,8 @@ class ModernApp(QMainWindow):
 
                 if description:
                     self.description_label.setText(f"{description.text.strip()}")
+
+                smooth_color_change(image)
 
 
     ## SHOW USER IF THEY WATCHED AND RATED THIS MOVIE/SERIES BEFORE
@@ -4947,14 +5014,18 @@ class ModernApp(QMainWindow):
     def show_filters(self):
         if self.filters_container.isHidden():
             self.filters_container.show()
+            center_window(window)
         else:
             self.filters_container.hide()
+            center_window(window)
 
     def apply_filters(self):
         # Retrieve selected minimum rating and genre
         self.min_rating = self.rating_slider.value() / 2.0
         self.selected_genre = self.genre_combo.currentText()
         self.max_runtime = self.runtime_slider.value()
+        self.selected_year = self.year_slider.value()
+        self.before_or_after = "Before" if self.checkbox_state == 1 else "After" if self.checkbox_state == 2 else "Neither"
 
         if self.title_type_combo.currentText() != "All Types":
             match(self.title_type_combo.currentText()):
@@ -4992,6 +5063,7 @@ class ModernApp(QMainWindow):
                                   f"Type: {self.title_type_combo.currentText()}<br>"
                                   f"Minimum Rating: {self.min_rating}<br>"
                                   f"Genre: {self.selected_genre}<br>"
+                                  f"{self.year_label.text()}<br>"
                                   f"Maximum Runtime: {self.max_runtime}<br>")
 
         # Hide the filters container after applying filters
@@ -5010,6 +5082,40 @@ class ModernApp(QMainWindow):
             self.runtime_label.setText(f"Maximum Runtime: No Limit")
         else:
             self.runtime_label.setText(f"Maximum Runtime: {self.runtime_slider.value()}")
+
+    def update_before_checkbox(self):
+        if self.before_year_checkbox.isChecked():
+            self.after_year_checkbox.setChecked(False)
+            self.checkbox_state = 1
+
+        elif not self.before_year_checkbox.isChecked() and not self.after_year_checkbox.isChecked():
+            self.checkbox_state = 0
+
+        self.update_year_label()
+
+    def update_after_checkbox(self):
+        if self.after_year_checkbox.isChecked():
+            self.before_year_checkbox.setChecked(False)
+            self.checkbox_state = 2
+
+        elif not self.before_year_checkbox.isChecked() and not self.after_year_checkbox.isChecked():
+            self.checkbox_state = 0
+
+        self.update_year_label()
+
+    def update_year_label(self):
+        # Check the checkbox state
+        if self.checkbox_state == 0:
+            if self.year_slider.minimum() == self.year_slider.value():
+                self.year_label.setText(f"Year: All Years")
+            else:
+                self.year_label.setText(f"Year: {self.year_slider.value()}")
+
+        elif self.checkbox_state == 1:
+            self.year_label.setText(f"Year: Before {self.year_slider.value()}")
+
+        elif self.checkbox_state == 2:
+            self.year_label.setText(f"Year: After {self.year_slider.value()}")
 
     # Update the result label to inform the user that the program is working
     def update_result_label(self, flag):
