@@ -2671,7 +2671,7 @@ class YearReviewWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Year Review")
-        self.resize(800, 500)
+        self.resize(1000, 800)
 
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
@@ -2728,13 +2728,21 @@ class YearReviewWindow(QDialog):
         self.description_label.setAlignment(Qt.AlignCenter)
         # Enable rich text for the description label so that we can change the font size, boldness, etc.
         self.description_label.setOpenExternalLinks(True)
-        self.description_label.setFixedHeight(500)
+        self.description_label.setMinimumHeight(500)
         self.description_label.setMinimumWidth(200)
         self.year_details_layout.addWidget(self.description_label)
+
+        # Add a scroll area to the description label
+        self.description_scroll_area = QScrollArea()
+        self.description_scroll_area.setWidget(self.description_label)
+        self.description_scroll_area.setWidgetResizable(True)
+        self.year_details_layout.addWidget(self.description_scroll_area)
 
         # Hide the image and the description label
         self.image_label.hide()
         self.description_label.hide()
+        self.description_scroll_area.hide()
+
 
         # Create a layout for previous and next buttons
         previous_next_layout = QHBoxLayout()
@@ -2928,6 +2936,7 @@ class YearReviewWindow(QDialog):
                 self.previous_button.setEnabled(False)
                 self.previous_button.hide()
                 self.description_label.hide()
+                self.description_scroll_area.hide()
                 self.header_label.setText("Welcome to your year review!\n"
                                           "Let's see what you watched, and how much you loved them.")
                 self.previous_button.setText("-")
@@ -2936,6 +2945,7 @@ class YearReviewWindow(QDialog):
             case 1: # Titles watched in each genre
                 self.next_button.show()
                 self.description_label.show()
+                self.description_scroll_area.show()
                 self.previous_button.setEnabled(True)
                 self.previous_button.show()
                 self.header_label.setText(f"<h1>\"{len(self.filtered_data)}\"</h1>")
@@ -2959,6 +2969,7 @@ class YearReviewWindow(QDialog):
                 self.previous_button.setText("< How many titles did you watch?")
                 self.next_button.setText("Where did all the time go? >")
                 self.description_label.hide()
+                self.description_scroll_area.hide()
                 self.image_label.hide()
 
                 # Graph the number of titles watched in each month and show it in the description label
@@ -3003,6 +3014,7 @@ class YearReviewWindow(QDialog):
                 self.previous_button.setText("< Your activity throughout the year")
                 self.next_button.setText("When did you have your BEST and WORST times? >")
                 self.description_label.show()
+                self.description_scroll_area.show()
 
                 # Delete the plot widget if it exists
                 try:
@@ -3030,6 +3042,7 @@ class YearReviewWindow(QDialog):
                 self.previous_button.setText("< Where did all the time go?")
                 self.next_button.setText("How did you start the year? >")
                 self.description_label.show()
+                self.description_scroll_area.show()
 
                 # Choose a random title from the favorite month
                 favorite_month_titles = self.filtered_data[self.filtered_data['Date Rated'].dt.strftime('%B') == self.month_with_highest_average_rating]['Title'].tolist()
@@ -3086,6 +3099,7 @@ class YearReviewWindow(QDialog):
                 self.previous_button.setText("< When did you have your BEST and WORST times?")
                 self.next_button.setText("How did you end the year? >")
                 self.description_label.show()
+                self.description_scroll_area.show()
 
                 # Check if there are any titles in the first three months
                 if not self.first_three_months_data.empty:
@@ -3150,6 +3164,7 @@ class YearReviewWindow(QDialog):
                 self.previous_button.setText("< How did you start the year?")
                 self.next_button.setText("What were your favorite genres? >")
                 self.description_label.show()
+                self.description_scroll_area.show()
 
                 # Check if there are any titles in the last three months
                 if not self.last_three_months_data.empty:
@@ -3267,6 +3282,7 @@ class YearReviewWindow(QDialog):
                                                + "<br>".join([f"<b>{key}:</b> {value[0]} titles, {value[1]:.2f}/10 average rating, {value[2]:.2f} ❤️" for key, value in list(self.genres.items())[:5]]))
 
                 self.description_label.show()
+                self.description_scroll_area.show()
                 smooth_color_change(image)
 
             case 8: # Favorite TV shows
@@ -3341,7 +3357,7 @@ class YearReviewWindow(QDialog):
             case 9: # Favorite director
                 self.header_label.setText(f"<h1>These are the movie directors that inspired you in {self.year}.</h1>")
                 self.previous_button.setText("< What were your favorite TV shows?")
-                self.next_button.setText("Who was your favorite actor? >")
+                self.next_button.setText("PERFECT movies? >")
                 self.next_button.show()
 
                 # Get the favorite director and filter the data
@@ -3421,93 +3437,528 @@ class YearReviewWindow(QDialog):
                         smooth_color_change(image)
 
 
-            case 10: # Favorite actor
-                self.header_label.setText(f"<h1>Actors</h1>")
-                self.description_label.setText(f"Calculating your favorite actors for {self.year}...")
+            case 10: # This year's perfect movies (Movies with 10/10 rating)
+                self.header_label.setText(f"<h1>Perfect Year For Perfect Movies</h1>")
+                self.description_label.setText(f"Finding what movies you deemed perfect in {self.year}...")
                 self.previous_button.setText("< Who was your favorite director?")
-                self.next_button.setEnabled(False)
-                self.next_button.setText("-")
+                self.next_button.setText("Perfect TV! >")
+                app.processEvents()
+
+                # Get the perfect movies
+                perfect_movies = self.perfect_movies()
+
+                if perfect_movies is not None:
+                    print(perfect_movies)
+                    # Choose a random movie from the list
+                    random_movie = random.choice(perfect_movies)
+
+                    # Get the URL of the selected movie
+                    random_movie_name = random_movie['Title']
+                    print(random_movie_name)
+
+                    random_movie_url = random_movie['URL']
+                    print(random_movie_url)
+
+                    # Go to the selected movie's IMDb page and get the poster URL
+                    soup = BeautifulSoup(browser.open(random_movie_url).read(), 'html.parser')
+
+                    # Get the movie poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                    # Turn perfect_movies names into a list
+                    perfect_movies_names = [movie['Title'] for movie in perfect_movies]
+                    self.description_label.setText(f'You rated <b><a href="{random_movie["URL"]}">{random_movie["Title"]}</a></b> 10/10 in {self.year}. It was CINEMA!<br><br>'
+                                                    f'Here are all the perfect movies you watched in {self.year}:<br>'
+                                                    f'{"<br>".join(perfect_movies_names)}')
+
+                else:
+                    self.description_label.setText("You were quite picky this year. You rated no movies 10/10.")
+                    self.image_label.hide()
+
+            case 11: # Perfect TV shows (TV shows with 10/10 rating)
+                self.header_label.setText(f"<h1>Perfect Year For Perfect TV Shows</h1>")
+                self.description_label.setText(f"Finding what TV shows you deemed perfect in {self.year}...")
+                self.previous_button.setText("< Perfect movies!")
+                self.next_button.setText("Perfect episodes! >")
+                app.processEvents()
+
+                # Check if there are any perfect TV shows
+                perfect_tv_shows = self.perfect_tv_shows()
+
+                if perfect_tv_shows is not None:
+                    print(perfect_tv_shows)
+                    # Choose a random TV show from the list
+                    random_tv_show = random.choice(perfect_tv_shows)
+
+                    # Get the URL of the selected TV show
+                    random_tv_show_name = random_tv_show['Title']
+                    print(random_tv_show_name)
+
+                    random_tv_show_url = random_tv_show['URL']
+                    print(random_tv_show_url)
+
+                    # Go to the selected TV show's IMDb page and get the poster URL
+                    soup = BeautifulSoup(browser.open(random_tv_show_url).read(), 'html.parser')
+
+                    # Get the TV show poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                    # Turn perfect_tv_shows names into a list
+                    perfect_tv_shows_names = [tv_show['Title'] for tv_show in perfect_tv_shows]
+                    self.description_label.setText(f'You rated <b><a href="{random_tv_show["URL"][0]}">{random_tv_show["Title"]}</a></b> 10/10 in {self.year}. It was a PERFECT series for you.<br><br>'
+                                                    f'Here are all the perfect TV shows you watched in {self.year}:<br>'
+                                                    f'{"<br>".join(perfect_tv_shows_names)}')
+
+                else:
+                    self.description_label.setText("You were quite picky this year. You rated no TV shows 10/10.")
+                    self.image_label.hide()
+
+            case 12: # Perfect TV episodes (TV episodes with 10/10 rating)
+                self.header_label.setText(f"<h1>Perfect Year For Perfect TV Episodes</h1>")
+                self.description_label.setText(f"Finding what TV episodes you deemed perfect in {self.year}...")
+                self.previous_button.setText("< Perfect TV!")
+                self.next_button.setText("Do you live in the past? Let's find out! >")
+                app.processEvents()
+
+                # Check if there are any perfect TV episodes
+                perfect_tv_episodes = self.perfect_tv_episodes()
+
+                if perfect_tv_episodes is not None:
+                    print(perfect_tv_episodes)
+                    print(f"{len(perfect_tv_episodes)} perfect episodes")
+                    # Choose a random TV episode from the list
+                    random_tv_episode = random.choice(perfect_tv_episodes)
+
+                    # Get the URL of the selected TV episode
+                    random_tv_episode_name = random_tv_episode['Title']
+                    print(random_tv_episode_name)
+
+                    random_tv_episode_url = random_tv_episode['URL']
+                    print(random_tv_episode_url)
+
+                    # Go to the selected TV episode's IMDb page and get the poster URL
+                    soup = BeautifulSoup(browser.open(random_tv_episode_url).read(), 'html.parser')
+
+                    # Get the TV episode poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                    # Turn perfect_tv_episodes names into a list
+                    perfect_tv_episodes_names = [tv_episode['Title'] for tv_episode in perfect_tv_episodes]
+                    print(perfect_tv_episodes_names)
+                    print('<br>'.join(perfect_tv_episodes_names))
+                    self.description_label.setText(f"You rated <b><a href='{random_tv_episode_url}'>{random_tv_episode_name}</a></b> 10/10 in {self.year}. Let's rewatch this one and see how it becomes a 4 hour binge-watching session!<br><br>"
+                                                   f"Here are all the perfect TV episodes you watched in {self.year}:<br>"
+                                                   f"{'<br>'.join(perfect_tv_episodes_names)}")
+
+                else:
+                    self.description_label.setText("You were quite picky this year. You rated no TV episodes 10/10.")
+                    self.image_label.hide()
+
+            case 13: # The oldest title the user watched this year
+                self.header_label.setText(f"<h1>Back to the past...</h1>")
+                self.description_label.setText(f"Finding the oldest title you watched in {self.year}...")
+                self.previous_button.setText("< Perfect episodes!")
+                self.next_button.setText("What was the newest title you watched? >")
+                app.processEvents()
+
+                # Get the oldest titles the user watched this year
+                oldest_titles = self.oldest_title()
+
+                if oldest_titles is not None:
+                    print(oldest_titles)
+                    # Choose the first title from the list
+                    oldest_title = oldest_titles.iloc[0]
+                    print(oldest_title)
+
+                    # Get the URL of the selected title
+                    oldest_title_url = oldest_title['URL']
+
+                    # Go to the selected title's IMDb page and get the poster URL
+                    soup = BeautifulSoup(browser.open(oldest_title_url).read(), 'html.parser')
+
+                    # Get the title poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                    # Turn oldest_titles names into a list (take only the first 5)
+                    oldest_titles = oldest_titles.iloc[:5]
+
+                    # Extract titles and years into lists
+                    oldest_titles_names = oldest_titles['Title'].tolist()
+                    oldest_titles_years = oldest_titles['Year'].tolist()
+
+                    # Use the first title for specific details
+                    oldest_title = oldest_titles.iloc[0]
+                    oldest_title_name = oldest_title['Title']
+                    oldest_title_year = oldest_title['Year']
+                    title_type = oldest_title['Title Type']
+
+                    # Generate the description
+                    self.description_label.setText(
+                        f'You watched <b><a href="{oldest_title_url}">{oldest_title_name}</a></b> in {self.year}.<br>'
+                        f'It was made {self.year - oldest_title_year} years ago and it is the oldest {title_type} you watched this year.<br><br>'
+                        f'Here are the 5 oldest titles you watched in {self.year}:<br>'
+                        f'{"<br>".join([f"{title} ({year})" for title, year in zip(oldest_titles_names, oldest_titles_years)])}'
+                    )
+                else:
+                    self.description_label.setText("You didn't watch anything this year.")
+                    self.image_label.hide()
+
+            case 14: # The newest title the user watched this year
+                self.header_label.setText(f"<h1>Back to the future...</h1>")
+                self.description_label.setText(f"Finding the newest title you watched in {self.year}...")
+                self.previous_button.setText("< What was the oldest title you watched?")
+                self.next_button.setText("You're generous! >")
+                app.processEvents()
+
+                # Get the newest title the user watched this year
+                newest_titles = self.newest_title()
+
+                if newest_titles is not None:
+                    print(newest_titles)
+                    # Choose the first title from the list
+                    newest_title = newest_titles.iloc[0]
+
+                    # Get the URL of the selected title
+                    newest_title_url = newest_title['URL']
+                    print(newest_title_url)
+
+                    # Go to the selected title's IMDb page and get the poster URL
+                    soup = BeautifulSoup(browser.open(newest_title_url).read(), 'html.parser')
+
+                    # Get the title poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                    # Turn newest_title names into a list (take only the first 5)
+                    newest_titles = newest_titles.iloc[:5]
+
+                    # Extract titles and years into lists
+                    newest_titles_names = newest_titles['Title'].tolist()
+                    newest_titles_years = newest_titles['Year'].tolist()
+
+                    # Use the first title for specific details
+                    newest_title = newest_titles.iloc[0]
+                    newest_title_name = newest_title['Title']
+                    newest_title_year = newest_title['Year']
+                    title_type = newest_title['Title Type']
+
+                    # Generate the description
+                    self.description_label.setText(
+                        f'You watched <b><a href="{newest_title_url}">{newest_title_name}</a></b> in {self.year}.<br>'
+                        f'It was made {self.year - newest_title_year} years ago and it is the newest {title_type} you watched this year.<br><br>'
+                        f'Here are the 5 newest titles you watched in {self.year}:<br>'
+                        f'{"<br>".join([f"{title} ({year})" for title, year in zip(newest_titles_names, newest_titles_years)])}'
+                    )
+
+                else:
+                    self.description_label.setText("You didn't watch anything this year.")
+                    self.image_label.hide()
+
+            # The average difference when the user rated a title higher than the average rating
+            # And the 5 titles where the difference was the most
+            case 15:
+                self.header_label.setText(f"<h1>You think these are underrated!</h1>")
+                self.description_label.setText(f"Calculating the average difference when you rated a title higher than the average rating in {self.year}...")
+                self.previous_button.setText("< What was the newest title you watched?")
+                self.next_button.setText("You hate these! >")
+                app.processEvents()
+
+                # Get the average difference when the user rated a title higher than the average rating
+                # And the 5 titles where the difference was the most
+                average_difference, underrated_titles = self.underrated_titles()
+
+                if average_difference is not None and underrated_titles is not None:
+                    print(average_difference)
+                    print(underrated_titles)
+
+                    # Choose the first title from the list
+                    top_underrated_title = underrated_titles[0]
+                    top_underrated_title_difference = top_underrated_title['Your Rating'] - top_underrated_title['Average Rating']
+
+                    top_underrated_title_name = top_underrated_title['Title']
+
+                    top_underrated_title_url = top_underrated_title['URL']
+                    print(top_underrated_title_url)
+
+                    # Go to the selected title's IMDb page and get the poster URL
+                    soup = BeautifulSoup(browser.open(top_underrated_title_url).read(), 'html.parser')
+
+                    # Get the title poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                    self.description_label.setText(f'You rated these titles higher than the average rating in {self.year}.<br><br>'
+                                                   f'The average difference when you liked a movie more than other people was +{average_difference:.2f}.<br><br>'
+                                                   f'<b>1. <a href="{top_underrated_title_url}">{top_underrated_title_name}</a>:</b>\t+{top_underrated_title_difference:.2f} difference<br>'
+                                                   f'<b>2. <a href="{underrated_titles[1]["URL"]}">{underrated_titles[1]["Title"]}</a>:</b>\t+{underrated_titles[1]["Your Rating"] - underrated_titles[1]["Average Rating"]:.2f} difference<br>'
+                                                   f'<b>3. <a href="{underrated_titles[2]["URL"]}">{underrated_titles[2]["Title"]}</a>:</b>\t+{underrated_titles[2]["Your Rating"] - underrated_titles[2]["Average Rating"]:.2f} difference<br>'
+                                                   f'<b>4. <a href="{underrated_titles[3]["URL"]}">{underrated_titles[3]["Title"]}</a>:</b>\t+{underrated_titles[3]["Your Rating"] - underrated_titles[3]["Average Rating"]:.2f} difference<br>'
+                                                   f'<b>5. <a href="{underrated_titles[4]["URL"]}">{underrated_titles[4]["Title"]}</a>:</b>\t+{underrated_titles[4]["Your Rating"] - underrated_titles[4]["Average Rating"]:.2f} difference')
+
+                else:
+                    self.description_label.setText("You didn't watch anything this year.")
+                    self.image_label.hide()
+
+            # The average difference when the user rated a title lower than the average rating
+            # And the 5 titles where the difference was the most
+            case 16:
+                self.header_label.setText(f"<h1>Overrated!</h1>")
+                self.description_label.setText(f"Calculating the average difference when you rated a title lower than the average rating in {self.year}...")
+                self.previous_button.setText("< You think these are underrated!")
+                self.next_button.setText("See you next year! >")
+                app.processEvents()
+
+                # Get the average difference when the user rated a title lower than the average rating
+                # And the 5 titles where the difference was the most
+                average_difference, overrated_titles = self.overrated_titles()
+
+                if average_difference is not None and overrated_titles is not None:
+                    print(average_difference)
+                    print(overrated_titles)
+
+                    # Choose the first title from the list
+                    top_overrated_title = overrated_titles[0]
+                    top_overrated_title_difference = top_overrated_title['Average Rating'] - top_overrated_title['Your Rating']
+
+                    top_overrated_title_name = top_overrated_title['Title']
+
+                    top_overrated_title_url = top_overrated_title['URL']
+                    print(top_overrated_title_url)
+
+                    # Go to the selected title's IMDb page and get the poster URL
+                    soup = BeautifulSoup(browser.open(top_overrated_title_url).read(), 'html.parser')
+
+                    # Get the title poster URL from the IMDb page
+                    poster_image = soup.find('img', class_='ipc-image')
+
+                    if poster_image:
+                        poster_url = poster_image['src']
+                        print(poster_url)
+
+                        # Get the biggest poster image by changing the url
+                        # For example:
+                        # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
+                        # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
+                        # Remove everything except ".jpg" after "@@"
+                        if "@@" in poster_url:
+                            poster_url = poster_url.split("@@")[0] + "@@.jpg"
+
+                        else:
+                            poster_url = poster_url.split("_")[0] + "jpg"
+
+                        # Create a pixmap from the poster image URL
+                        pixmap = QPixmap()
+                        pixmap.loadFromData(requests.get(poster_url).content)
+
+                        # Set the pixmap to the poster_label
+                        self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
+                        self.image_label.show()
+
+                        # Find the majority color of the poster image
+                        # Convert the pixmap to a QImage
+                        image = pixmap.toImage()
+
+                        smooth_color_change(image)
+
+                    self.description_label.setText(f'You rated these titles lower than the average rating in {self.year}.<br><br>'
+                                                    f'The average difference when you did not like a title as much as other people was -{average_difference:.2f}.<br><br>'
+                                                    f'<b>1. <a href="{top_overrated_title_url}">{top_overrated_title_name}</a>:</b>\t-{top_overrated_title_difference:.2f} difference<br>'
+                                                    f'<b>2. <a href="{overrated_titles[1]["URL"]}">{overrated_titles[1]["Title"]}</a>:</b>\t-{overrated_titles[1]["Average Rating"] - overrated_titles[1]["Your Rating"]:.2f} difference<br>'
+                                                    f'<b>3. <a href="{overrated_titles[2]["URL"]}">{overrated_titles[2]["Title"]}</a>:</b>\t-{overrated_titles[2]["Average Rating"] - overrated_titles[2]["Your Rating"]:.2f} difference<br>'
+                                                    f'<b>4. <a href="{overrated_titles[3]["URL"]}">{overrated_titles[3]["Title"]}</a>:</b>\t-{overrated_titles[3]["Average Rating"] - overrated_titles[3]["Your Rating"]:.2f} difference<br>'
+                                                    f'<b>5. <a href="{overrated_titles[4]["URL"]}">{overrated_titles[4]["Title"]}</a>:</b>\t-{overrated_titles[4]["Average Rating"] - overrated_titles[4]["Your Rating"]:.2f} difference')
+
+                else:
+                    self.description_label.setText("You didn't watch anything this year.")
+                    self.image_label.hide()
+
+            case 17: # The end
+                self.header_label.setText(f"<h1>That's it!</h1>")
+                self.description_label.setText(f"Thank you for checking out Watchable Year Review! Hope you enjoyed it!")
+                self.previous_button.setText("< Overrated!")
                 self.next_button.hide()
                 app.processEvents()
 
-                """
-                actors = self.favorite_actors()
-                print(actors)
+            case _:
+                self.header_label.setText(f"<h1>Whoops!</h1>")
+                self.description_label.setText(f"Something went wrong. Please try again.")
+                self.previous_button.hide()
+                self.next_button.hide()
+                app.processEvents()
 
-                
-                # Show the top 5 actors in the description label
-                self.description_label.setText(f"You watched a total of <b>{len(actors)} movies</b> in {self.year}.<br><br>"
-                                               f"<b>Your Top 5 Actors for {self.year}:</b><br>"
-                                               + "<br>".join([f"<b>{actor[0]}:</b> {actor[1][1]} movies, "
-                                                              f"{actor[1][0]:.2f}/10 average movie rating, {actor[1][2]:.2f} ❤️"
-                                                              for actor in actors[:5]]))
 
-                # Choose the first actor from the list
-                top_actor = actors[0]
-                print(top_actor)
-
-                # If the actor's name contains a comma, remove everything after the comma
-                if "," in top_actor[0]:
-                    top_actor[0] = top_actor[0].split(",")[0]
-
-                # Get the name of the actor
-                actor_name = top_actor[0]
-
-                # Replace spaces with %20 in the actor's name
-                actor_name = actor_name.replace(" ", "%20")
-
-                # Search on IMDB
-                search_url = f"https://www.imdb.com/find?q={actor_name}&ref_=nv_sr_sm"
-                print(search_url)
-
-                # Get the HTML content of the search URL
-                search_html = requests.get(search_url, headers=headers).text
-
-                # Create a BeautifulSoup object from the HTML content
-                search_soup = BeautifulSoup(search_html, 'html.parser')
-
-                # Get the first result
-                first_result = search_soup.find("div", class_="ipc-metadata-list-summary-item__tc").a['href']
-
-                # Get the actor's page URL
-                actor_url = f"https://www.imdb.com{first_result}"
-
-                # Get the poster URL of the selected director
-                soup = BeautifulSoup(browser.open(actor_url).read(), 'html.parser')
-
-                # Get the actor's poster URL from the IMDb page
-                poster_image = soup.find('img', class_='ipc-image')
-
-                if poster_image:
-                    poster_url = poster_image['src']
-                    print(poster_url)
-
-                    # Get the biggest poster image by changing the url
-                    # For example:
-                    # - URL we get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@._V1_QL75_UX190_CR0,0,190,281_.jpg
-                    # - URL we want to get: https://m.media-amazon.com/images/M/MV5BMTI3MzYxMTA4NF5BMl5BanBnXkFtZTcwMDE4ODg3Mg@@.jpg
-                    # Remove everything except ".jpg" after "@@"
-                    if "@@" in poster_url:
-                        poster_url = poster_url.split("@@")[0] + "@@.jpg"
-
-                    else:
-                        poster_url = poster_url.split("_")[0] + "jpg"
-
-                    # Create a pixmap from the poster image URL
-                    pixmap = QPixmap()
-                    pixmap.loadFromData(requests.get(poster_url).content)
-
-                    # Set the pixmap to the poster_label
-                    self.image_label.setPixmap(pixmap.scaled(self.image_label.size(), Qt.KeepAspectRatio))
-                    self.image_label.show()
-
-                    # Find the majority color of the poster image
-                    # Convert the pixmap to a QImage
-                    image = pixmap.toImage()
-
-                    smooth_color_change(image)
-                    """
-                self.description_label.setText("This functionality does not work at the moment due to IMDb's changes to the site.")
 
     def favorite_tv_shows(self):
         # Filter the data so that only the TV shows remain (filtered_data is already filtered to the selected year)
@@ -3722,191 +4173,174 @@ class YearReviewWindow(QDialog):
 
         return directors if directors else None
 
-    def favorite_actors(self):
-        """
-        actor_ratings = {}
-        actor_title_counts = {}
-        actor_titles = {}
+    def perfect_movies(self):
+        # Filter the data so that only the movies, TV movies or shorts remain (filtered_data is already filtered to the selected year)
+        self.movies_data = self.filtered_data[
+            self.filtered_data['Title Type'].isin(['Movie', 'TV Movie', 'Short'])
+        ]
 
-        yearFound = False
-        breakFlag = False
+        # Filter the data so that only the perfect movies remain
+        perfect_movies = self.movies_data[self.movies_data['Your Rating'] == 10]
 
-        lists_link = checkPreferences()
-        print(lists_link)
+        # Convert to a dictionary so that we can randomly choose a movie
+        perfect_movies = perfect_movies.to_dict('records')
 
-        # Strip away the part after "?"
-        lists_link = lists_link.split("?")[0]
-        print(lists_link)
+        if not perfect_movies:
+            return None
 
-        ratings_link = lists_link.replace("lists", f"ratings?sort=date_added,desc&ratingFilter=0&mode=detail&ref_=undefined&lastPosition=0")
-        print(ratings_link)
+        return perfect_movies
 
-        # Send an HTTP GET request to fetch the ratings page
-        try:
-            # Open the URL
-            response = browser.open(ratings_link)
+    def perfect_tv_shows(self):
+        # Filter the data so that only the TV shows or TV miniseries remain (filtered_data is already filtered to the selected year)
+        self.tv_shows_data = self.filtered_data[
+            self.filtered_data['Title Type'].isin(['TV Series', 'TV Mini-Series'])
+        ]
 
-            html_content = response.read()
+        # Filter the data so that only the perfect TV shows remain
+        perfect_tv_shows = self.tv_shows_data[self.tv_shows_data['Your Rating'] == 10]
 
-            # Get the HTML content
-            soup = BeautifulSoup(html_content, 'html.parser')
+        # Convert to a dictionary so that we can randomly choose a TV show
+        perfect_tv_shows = perfect_tv_shows.to_dict('records')
 
-            # Extract the movie or TV series details from the list
-            movie_details = soup.select('.lister-item-content')
+        if not perfect_tv_shows:
+            return None
 
-            # Check how many titles are there in the list
-            list_details = soup.select(".lister-list-length")
-            number_of_titles_str = list_details[0].text.strip()
-            print(number_of_titles_str)
+        return perfect_tv_shows
 
-            # Use a regular expression to extract the integer
-            match = re.search(r'\d+', number_of_titles_str)
-            print(match)
+    def perfect_tv_episodes(self):
+        # Filter the data so that only the TV episodes remain (filtered_data is already filtered to the selected year)
+        self.tv_episodes_data = self.filtered_data[self.filtered_data['Title Type'] == "TV Episode"]
 
-            if match:
-                # The group(0) will contain the first matched integer
-                number_of_titles = int(match.group(0))
-                print(number_of_titles)
+        # Filter the data so that only the perfect TV episodes remain
+        perfect_tv_episodes = self.tv_episodes_data[self.tv_episodes_data['Your Rating'] == 10]
 
-            # Calculate the page count
-            page_count = math.ceil(number_of_titles / 100)
-            print(page_count)
+        # Convert to a dictionary so that we can randomly choose a TV episode
+        perfect_tv_episodes = perfect_tv_episodes.to_dict('records')
 
-            # Loop through the pages
-            for page in range(0, page_count + 1):
-                # Check if the breakFlag is set to True
-                if breakFlag:
-                    print("breakFlag is True")
-                    break
+        if not perfect_tv_episodes:
+            return None
 
-                for movie in movie_details:
-                    if breakFlag:
-                        print("breakFlag is True")
-                        break
+        return perfect_tv_episodes
 
-                    # Get the title
-                    title_element = movie.select_one(".lister-item-header")
-                    title = title_element.text.strip()
-                    print(title)
+    def oldest_title(self):
+        if self.filtered_data.empty:
+            return None
 
-                    # Extract the title type
-                    isEpisode_element = movie.find("small", class_="text-primary")
-                    if isEpisode_element:
-                        isEpisode = isEpisode_element.text.strip()
-                    else:
-                        isEpisode = ""
+        # Sort the data by the 'Year' column in ascending order
+        self.filtered_data = self.filtered_data.sort_values(by='Year')
 
-                    print(isEpisode)
+        return self.filtered_data
 
-                    # Find the <p> tag with the text 'Rated on'
-                    rating_date_tag = movie.find('p', text=lambda t: t and 'Rated on' in t)
-                    print(rating_date_tag)
+    def newest_title(self):
+        if self.filtered_data.empty:
+            return None
 
-                    # Extract the rating year from the tag
-                    rating_year = int(rating_date_tag.text.split(" ")[-1])
-                    print(rating_year)
+        # Sort the data by the 'Year' column in descending order
+        self.filtered_data = self.filtered_data.sort_values(by='Year', ascending=False)
 
-                    # Check if the rating year is the same as the selected year
-                    if rating_year == self.year:
-                        # yearFound flag is set to True
-                        yearFound = True
-                        print("yearFound is True")
+        return self.filtered_data
 
-                        # Check if the title type is not an episode
-                        if "Episode:" not in isEpisode:
-                            # Extract actors and rating
-                            # Find the <p> element with directors and actors
-                            p_element = movie.select("p.text-muted a")
-                            print(p_element)
+    def underrated_titles(self):
+        # Filter the data so that only the movies, TV series, TV miniseries, TV movies, or shorts remain
+        self.titles_data = self.filtered_data[
+            self.filtered_data['Title Type'].isin(['Movie', 'TV Series', 'TV Mini-Series', 'TV Movie', 'Short'])
+        ]
 
-                            # Extract the actors from the text of each item in the list
-                            actors = [actor.text.strip() for actor in p_element if "dir" not in actor['href']]
-                            print(actors)
+        # Create a dictionary to store the movie names, their average ratings, and their user ratings
+        titles = {}
 
-                            # Get the rating and directors from ratings.csv and remove directors from actors
-                            with open('ratings.csv', 'r') as file:
-                                ratings_data = list(csv.DictReader(file))
+        # Loop through the movies
+        for index, row in self.titles_data.iterrows():
+            # Get the movie name
+            title = row['Title']
 
-                                # Loop through the ratings_data list
-                                for item in ratings_data:
-                                    # Check if the title type is "Movie"
-                                    if item['Title Type'] == "Movie":
-                                        # Extract title and rating
-                                        rating = int(item['Your Rating'])
+            # Get the movie rating
+            user_rating = row['Your Rating']
 
-                                        # Check if the title is the same as the current title
-                                        if title == item['Original Title']:
-                                            # Extract directors
-                                            directors = item['Directors'].split(", ")
+            # Get the average rating
+            imdb_rating = row['IMDb Rating']
 
-                                            # Remove directors from actors
-                                            actors = [actor for actor in actors if actor not in directors]
-
-                                            break
-
-                                # Loop through the actors
-                                for actor in actors:
-                                    # Check if the actor is already in the dictionary
-                                    if actor in actor_ratings:
-                                        # Add the rating to the existing actor
-                                        actor_ratings[actor] += rating
-                                        actor_title_counts[actor] += 1
-                                        actor_titles[actor].append(title)
-                                    else:
-                                        # Add the actor to the dictionary
-                                        actor_ratings[actor] = rating
-                                        actor_title_counts[actor] = 1
-                                        actor_titles[actor] = [title]
-
-                    else:
-                        if yearFound:
-                            print("yearFound is True")
-                            # This means we have found the year, and now we are in the previous year
-                            breakFlag = True
-                            break
-                        break
-
-
-                # Next page
-                next_page = soup.find('a', class_='flat-button lister-page-next next-page')
-                print(next_page)
-
-                if next_page:
-                    next_page_url = f'https://www.imdb.com{next_page["href"]}'
-                    print(next_page_url)
-                    response = browser.open(next_page_url)
-                    html_content = response.read()
-                    soup = BeautifulSoup(html_content, 'html.parser')
-                    movie_details = soup.select('.lister-item-content')
-
-            # Check if there are any ratings
-            if actor_ratings:
-                # Calculate the average rating for each actor
-                actor_average_ratings = {
-                    actor: actor_ratings[actor] / actor_title_counts[actor]
-                    for actor in actor_ratings
+            # Check if the movie is already in the dictionary
+            # If not, create a new entry
+            if title not in titles:
+                titles[title] = {
+                    'Title': title,
+                    'Your Rating': user_rating,
+                    'Average Rating': imdb_rating,
+                    'URL': row['URL']
                 }
 
-                # Calculate the love_formula for each actor
-                actor_love_formulas = {
-                    actor: (avg_rating, actor_title_counts[actor],
-                            (avg_rating ** 5) * (actor_title_counts[actor] ** 1.2) / 1000)
-                    for actor, avg_rating in actor_average_ratings.items()
+        # Calculate the average difference only for titles where user rating is at least 15% higher than the IMDb rating
+        relevant_differences = [
+            (value['Your Rating'] - value['Average Rating'])
+            for value in titles.values()
+            if value['Your Rating'] >= value['Average Rating']
+        ]
+
+        # Calculate the average difference
+        average_difference = sum(relevant_differences) / len(relevant_differences) if relevant_differences else 0
+
+        # Filter and sort the titles based on the same condition
+        filtered_titles = [
+            value for value in titles.values()
+            if value['Your Rating'] >= value['Average Rating']
+        ]
+        filtered_titles = sorted(
+            filtered_titles, key=lambda x: x['Your Rating'] - x['Average Rating'], reverse=True
+        )
+
+        return average_difference, filtered_titles
+
+    def overrated_titles(self):
+        # Filter the data so that only the movies, TV series, TV miniseries, TV movies, or shorts remain
+        self.titles_data = self.filtered_data[
+            self.filtered_data['Title Type'].isin(['Movie', 'TV Series', 'TV Mini-Series', 'TV Movie', 'Short'])
+        ]
+
+        # Create a dictionary to store the movie names, their average ratings, and their user ratings
+        titles = {}
+
+        # Loop through the movies
+        for index, row in self.titles_data.iterrows():
+            # Get the movie name
+            title = row['Title']
+
+            # Get the movie rating
+            user_rating = row['Your Rating']
+
+            # Get the average rating
+            imdb_rating = row['IMDb Rating']
+
+            # Check if the movie is already in the dictionary
+            # If not, create a new entry
+            if title not in titles:
+                titles[title] = {
+                    'Title': title,
+                    'Your Rating': user_rating,
+                    'Average Rating': imdb_rating,
+                    'URL': row['URL']
                 }
 
-                # Sort the actors by the love_formula in descending order
-                sorted_actors = sorted(actor_love_formulas.items(), key=lambda x: x[1][2], reverse=True)
+        # Calculate the average difference only for titles where user rating is at least 15% lower than the IMDb rating
+        relevant_differences = [
+            (value['Average Rating'] - value['Your Rating'])
+            for value in titles.values()
+            if value['Your Rating'] <= value['Average Rating']
+        ]
 
-                return sorted_actors
-            else:
-                print("No ratings found")
-                return []
+        # Calculate the average difference
+        average_difference = sum(relevant_differences) / len(relevant_differences) if relevant_differences else 0
 
-        except mechanize.URLError as e:
-            print("URL Error: ", e)
-            return []
-        """
-        return ["This feature does not work at the moment due to IMDb's changes to their website.", "", ""]
+        # Filter and sort the titles based on the same condition
+        filtered_titles = [
+            value for value in titles.values()
+            if value['Your Rating'] <= value['Average Rating']
+        ]
+        filtered_titles = sorted(
+            filtered_titles, key=lambda x: x['Average Rating'] - x['Your Rating'], reverse=True
+        )
+
+        return average_difference, filtered_titles
 
 class InsightsWindow(QDialog):
     def __init__(self, parent=None):
